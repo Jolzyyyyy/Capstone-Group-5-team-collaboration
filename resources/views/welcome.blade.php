@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<<<<<<< HEAD
 <meta charset="UTF-8">
 <title>Printing Business Solution</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -521,11 +522,23 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
 .cart-btn-checkout:hover { background: #FF0000; box-shadow: 0 5px 15px rgba(255,0,0,0.3); }
 </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+=======
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printing Business Solution | Printify & Co.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('webproj.css') }}">
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
 </head>
 <body>
 
 <header class="top-nav-bar" id="mainHeader">
+<<<<<<< HEAD
     <div></div> 
+=======
+    <div></div>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
     <nav class="nav-horizontal">
         <a onclick="jumpTo('home')">Home</a>
         <a onclick="jumpTo('products')">Services</a>
@@ -546,10 +559,17 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
 <div class="main-content" id="pageWrapper">
     <section id="home">
         <div class="hero-container">
+<<<<<<< HEAD
         <div class="hero-slide active" style="background-image:url('images/Homesld1.jpg')"></div>
         <div class="hero-slide" style="background-image:url('images/Homesld2.jpg')"></div>
         <div class="hero-slide" style="background-image:url('images/Homesld3.jpg')"></div>
             
+=======
+            <div class="hero-slide active" style="background-image:url('{{ asset('images/Homesld1.jpg') }}')"></div>
+            <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld2.jpg') }}')"></div>
+            <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld3.jpg') }}')"></div>
+           
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
             <div class="slide-indicators">
                 <div class="dot active" onclick="jumpToHero(0)"></div>
                 <div class="dot" onclick="jumpToHero(1)"></div>
@@ -569,6 +589,7 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
     </section>
 
     <section id="products" class="section">
+<<<<<<< HEAD
     <h2>Our Services</h2>
     <div class="services-container">
         <div class="service-item" onclick="openModal('doc')">
@@ -600,6 +621,49 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
         </div>
     </div>
 </section>
+=======
+        <h2>Our Services</h2>
+        <div class="services-container">
+            <div class="service-item" onclick="openModal('doc')">
+                <div class="service-image-wrapper">
+                    <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Document Printing">
+                </div>
+                <h3>DOCUMENT PRINTING</h3>
+            </div>
+            <div class="service-item" onclick="openModal('photo')">
+                <div class="service-image-wrapper">
+                    <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Photocopy & Scanning">
+                </div>
+                <h3>PHOTOCOPY & SCANNING</h3>
+            </div>
+            <div class="service-item" onclick="openModal('id')">
+                <div class="service-image-wrapper">
+                    <img src="{{ asset('images/Prdcts1.jpg') }}" alt="ID & Photo Services">
+                </div>
+                <h3>ID & PHOTO SERVICES</h3>
+            </div>
+            
+            <div class="service-item" onclick="openModal('bind')">
+                <div class="service-image-wrapper">
+                    <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Lamination & Binding">
+                </div>
+                <h3>LAMINATION & BINDING</h3>
+            </div>
+            <div class="service-item" onclick="openModal('largeformat')">
+                <div class="service-image-wrapper">
+                    <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Large Format Printing">
+                </div>
+                <h3>LARGE FORMAT PRINTING</h3>
+            </div>
+            <div class="service-item" onclick="openModal('special')">
+                <div class="service-image-wrapper">
+                    <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Custom Special Printing">
+                </div>
+                <h3>CUSTOM SPECIAL PRINTING</h3>
+            </div>
+        </div>
+    </section>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
 
     <section id="about" class="section">
         <h2>About Us</h2>
@@ -620,6 +684,7 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
 
 <section id="productDetail" class="detail-section">
     <div class="detail-container">
+<<<<<<< HEAD
         <div class="detail-sidebar" id="detailSidebar"></div>
         <div class="detail-images-slider">
             <div class="product-title-header"><h2 id="detailTitleHeader"></h2></div>
@@ -661,13 +726,97 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
                 <div class="total-price-box" style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
                     <p class="price-label">Total Price</p>
                     <h3 class="total-price">₱<span id="totalAmount">0.00</span></h3>
+=======
+        <div class="detail-sidebar" id="detailSidebar">
+            <div class="sidebar-viewport">
+                <div class="sidebar-track" id="sidebarTrack"></div>
+            </div>
+        </div>
+        <div class="detail-images-slider">
+            <div class="product-title-header">
+                <h2 id="detailTitleHeader">DOCUMENT PRINTING</h2>
+                <div class="stock-indicator">
+                    <div class="stock-dot-glow"></div>
+                    <span id="availabilityText">IN STOCK</span>
+                </div>
+            </div>
+            <div class="preview-viewport">
+                <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">‹</button>
+                <div class="preview-track" id="previewTrack"></div>
+                <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">›</button>
+            </div>
+            <div class="reviews-yellow-box">
+                <div class="rev-header-inline">
+                    <span>Customer Reviews</span>
+                    <span style="color: #f1c40f;">★★★★★ <small style="color:#333">(Verified)</small></span>
+                </div>
+                <div class="reviews-horizontal-scroll" id="reviewsList"></div>
+            </div>
+        </div>
+        <div class="detail-info-panel">
+            <p id="productSpecs" class="specs-box">Material: 80gsm Bond Paper, Uncoated.</p>
+            <div class="custom-option-group">
+                <label>Printing Category</label>
+                <select class="custom-select" id="printCategory" onchange="updatePrice()">
+                    </select>
+            </div>
+            <div class="custom-option-group">
+                <label>Color Mode</label>
+                <select class="custom-select" id="colorMode" onchange="updatePrice()">
+                    </select>
+            </div>
+            <div class="custom-option-group">
+                <label>Paper Size / Product Size</label>
+                <select class="custom-select" id="paperSize" onchange="updatePrice()">
+                    </select>
+            </div>
+            <div class="custom-option-group">
+                <label>Quantity</label>
+                <div class="qty-container">
+                    <button class="qty-btn" onclick="changeQty(-1)">-</button>
+                    <input type="number" id="qtyInput" value="1" min="1" class="qty-input-styled" oninput="updatePrice()">
+                    <button class="qty-btn" onclick="changeQty(1)">+</button>
+                </div>
+            </div>
+            <div class="price-summary">
+                <div class="price-row-flex">
+                    <label class="price-option-wrapper">
+                        <input type="radio" name="priceType" value="retail" checked onclick="updatePrice()">
+                        <div class="price-item">
+                            <p class="price-label">Retail</p>
+                            <div class="unit-price">₱<span id="retailAmount">0.00</span></div>
+                        </div>
+                    </label>
+                    <label class="price-option-wrapper">
+                        <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
+                        <div class="price-item">
+                            <p class="price-label" style="color:#27ae60;">Bulk</p>
+                            <div class="unit-price" style="color:#27ae60;">₱<span id="bulkAmount">0.00</span></div>
+                        </div>
+                    </label>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+                <div class="total-price-box">
+                    <span style="font-size: 13px; color: #666;">Total Amount:</span>
+                    <h3 class="total-price" style="color: #d35400;">₱<span id="totalAmount">0.00</span></h3>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
                 </div>
             </div>
             <div class="btn-row">
                 <button class="btn-cart" onclick="addToCart()"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
+<<<<<<< HEAD
                 <button class="btn-buy">Place Order</button>
             </div>
             <a onclick="backToMain()" style="display:block; margin-top:35px; color:#FF0000; cursor:pointer; font-weight:600; text-transform: uppercase; font-size: 11px; letter-spacing: 1px;">← Return to Main</a>
+=======
+                <button class="btn-buy">Place Order Now</button>
+            </div>
+            <div class="return-container">
+                <a onclick="backToMain()" class="return-link-btn">
+                   <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
+                </a>
+            </div>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
         </div>
     </div>
 </section>
@@ -681,6 +830,7 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
     <div class="cart-items-list" id="cartItemsList"></div>
     <div class="cart-footer">
         <div class="voucher-container">
+<<<<<<< HEAD
             <label class="voucher-label"><i class="fa-solid fa-ticket"></i> SHOP VOUCHER</label>
             <div class="voucher-flex">
                 <input type="text" class="voucher-input" id="voucherCodeInput" placeholder="Enter EYRAPRETTY50">
@@ -690,6 +840,13 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
         <div class="discount-row" id="discountRow" style="display:none;">
             <span>Discount Applied</span>
             <span>-₱<span id="appliedDiscount">0.00</span></span>
+=======
+            <div class="voucher-input-group">
+                <input type="text" id="voucherCode" placeholder="Enter Voucher Code">
+                <button class="apply-voucher-btn" onclick="applyVoucher()">Apply</button>
+            </div>
+            <p id="voucherMsg" class="voucher-message"></p>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
         </div>
         <div class="cart-total-row">
             <span>Total</span>
@@ -702,6 +859,7 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
 <div id="productModal" class="product-modal">
     <div class="product-modal-content">
         <span class="close-modal" onclick="closeModal()">&times;</span>
+<<<<<<< HEAD
         <h2 id="modalTitle" style="text-align:center; font-size: 14px; color: #999; letter-spacing: 2px;">CHOOSE TYPE</h2>
         <div class="category-slider">
             <button class="slider-btn prev" onclick="moveSlide(-1)">‹</button>
@@ -709,10 +867,20 @@ body, html { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; backgrou
                 <div class="category-track" id="categoryTrack"></div>
             </div>
             <button class="slider-btn next" onclick="moveSlide(1)">›</button>
+=======
+        <h2 id="modalTitle">CHOOSE TYPE</h2>
+        <div class="category-slider">
+            <button class="modal-btn" id="modalPrev" onclick="moveSlide(-1)">❮</button>
+            <div class="slider-viewport">
+                <div class="category-track" id="categoryTrack"></div>
+            </div>
+            <button class="modal-btn" id="modalNext" onclick="moveSlide(1)">❯</button>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
         </div>
     </div>
 </div>
 
+<<<<<<< HEAD
 <script>
 let heroIndex = 0;
 const heroSlides = document.querySelectorAll('.hero-slide');
@@ -1069,5 +1237,8 @@ function checkoutSelected() {
 updateCartBadge();
 </script>
 
+=======
+<script src="{{ asset('webproj.js') }}"></script>
+>>>>>>> 053e9d6 (update ng codes para sa capstone)
 </body>
 </html>
