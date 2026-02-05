@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('customer_name');
             $table->string('customer_email')->nullable();
             $table->string('service_type');
-	        $table->integer('quantity');
+	    $table->integer('quantity');
             $table->string('file_path')->nullable();
             $table->string('status')->default('Pending');
             $table->decimal('total_price', 8, 2)->nullable();
