@@ -8,58 +8,119 @@ use Illuminate\Http\Request;
 class OrderController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * ADMIN: manage all orders (index/show/edit/update/destroy)
+     * USER: can only access myOrders + myShow
+     *
+     * NOTE:
+     * We enforce access using ROUTES middleware (role groups).
+     * Here we still require auth for all methods.
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER PAGES (My Orders)
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Show logged-in user's orders only.
+     * GET /my-orders
+     */
+    public function myOrders()
+    {
+        $orders = Order::query()
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(10);
+
+        return view('orders.my_index', compact('orders'));
+    }
+
+    /**
+     * Show a specific order that belongs to the logged-in user.
+     * GET /my-orders/{order}
+     */
+    public function myShow(Order $order)
+    {
+        if ((int)$order->user_id !== (int)auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $order->load(['items.service']);
+
+        return view('orders.my_show', compact('order'));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN PAGES (Manage Orders)
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Display a listing of all orders (admin).
+     * GET /orders
      */
     public function index()
     {
-        return view('orders.index');
+        $orders = Order::query()
+            ->latest()
+            ->paginate(15);
+
+        return view('orders.index', compact('orders'));
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('orders.create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
+     * Display a specific order (admin).
+     * GET /orders/{order}
      */
     public function show(Order $order)
     {
-        //
+        $order->load(['items.service', 'user']);
+
+        return view('orders.show', compact('order'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Edit order (admin).
+     * GET /orders/{order}/edit
      */
     public function edit(Order $order)
     {
-        //
+        return view('orders.edit', compact('order'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update order (admin).
+     * PUT /orders/{order}
      */
     public function update(Request $request, Order $order)
     {
-        //
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'max:255'],
+        ]);
+
+        $order->update([
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()->route('orders.index')
+            ->with('success', 'Order updated successfully.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete order (admin).
+     * DELETE /orders/{order}
      */
     public function destroy(Order $order)
     {
-        //
+        $order->delete();
+
+        return redirect()->route('orders.index')
+            ->with('success', 'Order deleted successfully.');
     }
 }

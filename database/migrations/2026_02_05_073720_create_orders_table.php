@@ -13,16 +13,30 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
+
+            // 🔐 User who placed the order
+            $table->foreignId('user_id')
+                  ->nullable()
+                  ->constrained()
+                  ->nullOnDelete();
+
+            // 🧾 Customer info (can differ from account info)
             $table->string('customer_name');
             $table->string('customer_email')->nullable();
-            $table->string('service_type');
-	    $table->integer('quantity');
-            $table->string('file_path')->nullable();
+
+            // 📦 Order status
             $table->string('status')->default('Pending');
-            $table->decimal('total_price', 8, 2)->nullable();
+
+            // 💰 Final computed total
+            $table->decimal('total_price', 10, 2)->default(0);
+
             $table->timestamps();
         });
     }
+
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('orders');
