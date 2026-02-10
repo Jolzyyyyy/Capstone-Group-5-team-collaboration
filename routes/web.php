@@ -33,20 +33,25 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 
 /*
 |--------------------------------------------------------------------------
-| Checkout routes (customer) - requires login
+| Checkout + Customer Orders (requires login)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+    // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+
+    // Place order (ZIP required before placing order)
     Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])->name('checkout.placeOrder');
+
+    // Customer: My Orders pages
+    Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
+    Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
 });
 
 /*
 |--------------------------------------------------------------------------
 | Admin routes (requires login + role)
 |--------------------------------------------------------------------------
-| NOTE: role middleware assumes you already have RoleMiddleware working.
-| If role middleware not ready yet, temporarily remove 'role:admin,developer'
 */
 Route::middleware(['auth', 'role:admin,developer'])->group(function () {
     // Services admin CRUD
@@ -65,4 +70,4 @@ Route::middleware(['auth', 'role:admin,developer'])->group(function () {
     Route::delete('/admin/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

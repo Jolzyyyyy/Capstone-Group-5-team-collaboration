@@ -17,6 +17,7 @@
         input { padding: 8px; width: 100%; max-width: 420px; }
         label { display:block; margin-top: 10px; }
         .box { border:1px solid #ddd; padding:16px; border-radius:10px; margin-top: 16px; }
+        .hint { font-size: 12px; color: #666; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -67,7 +68,8 @@
 <div class="box">
     <h3>Customer Details</h3>
 
-    <form method="POST" action="{{ route('checkout.place') }}">
+    {{-- ✅ IMPORTANT: enctype added for file upload --}}
+    <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data">
         @csrf
 
         <label for="customer_name">Full Name *</label>
@@ -75,6 +77,14 @@
 
         <label for="customer_email">Email (optional)</label>
         <input id="customer_email" name="customer_email" value="{{ old('customer_email') }}">
+
+        {{-- ✅ REQUIRED ZIP UPLOAD --}}
+        <label for="print_zip">Upload Print Files (ZIP) *</label>
+        <input id="print_zip" type="file" name="print_zip" required accept=".zip">
+
+        <div class="hint">
+            Upload ONE <strong>.zip</strong> file containing all print-ready files before placing your order.
+        </div>
 
         @if($errors->any())
             <div class="msg error">

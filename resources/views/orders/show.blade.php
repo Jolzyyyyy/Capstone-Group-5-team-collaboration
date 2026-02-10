@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Order Details (Admin)</title>
+    <title>Order Details</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 24px; }
         table { border-collapse: collapse; width: 100%; margin-top: 12px; }
@@ -14,15 +14,36 @@
         .box { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-top: 14px; }
         .pill { padding: 4px 10px; border-radius: 999px; border: 1px solid #ddd; display:inline-block; }
         .muted { color: #666; font-size: 12px; }
+        .msg { padding: 10px; margin-top: 12px; border-radius: 6px; }
+        .success { background: #eaffea; border: 1px solid #72d572; }
+        .error { background: #ffecec; border: 1px solid #ff9090; }
+        .hint { font-size: 12px; color: #666; margin-top: 6px; }
     </style>
 </head>
 <body>
 
-<h1>Order #{{ $order->id }} (Admin)</h1>
+{{-- Detect if current page is admin view or customer view --}}
+@php
+    $isAdminView = request()->routeIs('orders.show');
+@endphp
+
+<h1>Order #{{ $order->id }} {{ $isAdminView ? '(Admin)' : '(My Order)' }}</h1>
+
+@if(session('success'))
+    <div class="msg success">{{ session('success') }}</div>
+@endif
+
+@if(session('error'))
+    <div class="msg error">{{ session('error') }}</div>
+@endif
 
 <div class="row">
-    <a class="btn btn-outline" href="{{ route('orders.index') }}">Back to Orders</a>
-    <a class="btn btn-outline" href="{{ route('orders.edit', $order) }}">Edit Status</a>
+    @if($isAdminView)
+        <a class="btn btn-outline" href="{{ route('orders.index') }}">Back to Orders</a>
+        <a class="btn btn-outline" href="{{ route('orders.edit', $order) }}">Edit Status</a>
+    @else
+        <a class="btn btn-outline" href="{{ route('orders.my.index') }}">Back to My Orders</a>
+    @endif
 </div>
 
 <div class="box">
@@ -35,8 +56,13 @@
     <h3>Customer Info</h3>
     <p><strong>Customer Name:</strong> {{ $order->customer_name }}</p>
     <p><strong>Email:</strong> {{ $order->customer_email ?? '-' }}</p>
-    <p><strong>User ID:</strong> {{ $order->user_id ?? '-' }}</p>
-    <p><strong>Account Name:</strong> {{ $order->user?->name ?? 'N/A' }}</p>
+
+    @if($isAdminView)
+        <p><strong>User ID:</strong> {{ $order->user_id ?? '-' }}</p>
+        <p><strong>Account Name:</strong> {{ $order->user?->name ?? 'N/A' }}</p>
+    @else
+        <p class="muted">This order belongs to your account.</p>
+    @endif
 </div>
 
 <div class="box">
@@ -73,13 +99,36 @@
     @endif
 </div>
 
+{{-- ✅ ZIP FILE ATTACHMENT SECTION --}}
 <div class="box">
-    <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Delete this order?');">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-outline">Delete Order</button>
-    </form>
+    <h3>Attached ZIP File</h3>
+
+    @if(!isset($order->files) || $order->files->count() === 0)
+        <p class="muted">No ZIP file attached.</p>
+    @else
+        @foreach($order->files as $file)
+            <p>
+                <a class="btn btn-outline" href="{{ \Illuminate\Support\Facades\Storage::url($file->path) }}" target="_blank">
+                    Download ZIP: {{ $file->original_name }}
+                </a>
+            </p>
+            <div class="hint">
+                Uploaded file is required before placing the order.
+            </div>
+        @endforeach
+    @endif
 </div>
+
+{{-- Admin-only delete --}}
+@if($isAdminView)
+    <div class="box">
+        <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Delete this order?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-outline">Delete Order</button>
+        </form>
+    </div>
+@endif
 
 </body>
 </html>

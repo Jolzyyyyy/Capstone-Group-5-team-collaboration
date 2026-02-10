@@ -9,9 +9,6 @@ class OrderItem extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
         'order_id',
         'service_id',
@@ -21,17 +18,11 @@ class OrderItem extends Model
         'subtotal',
     ];
 
-    /**
-     * Each order item belongs to one order.
-     */
     public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
-    /**
-     * Each order item references one service.
-     */
     public function service()
     {
         return $this->belongsTo(Service::class);
