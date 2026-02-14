@@ -13,7 +13,7 @@
 <header class="top-nav-bar" id="mainHeader">
     <div></div>
     <nav class="nav-horizontal">
-        <a onclick="jumpTo('home')">Home</a>
+        <a onclick="jumpTo('home')">Dashboard</a>
         <a onclick="jumpTo('products')">Services</a>
         <a onclick="jumpTo('about')">About</a>
         <a onclick="jumpTo('contact')">Contact</a>
@@ -32,9 +32,9 @@
 <div class="main-content" id="pageWrapper">
     <section id="home">
         <div class="hero-container">
-            <div class="hero-slide active" style="background-image:url('{{ asset('images/Homesld1.jpg') }}')"></div>
-            <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld2.jpg') }}')"></div>
-            <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld3.jpg') }}')"></div>
+            <div class="hero-slide active" style="background-image:url('{{ asset('images/Dashboardsld1.jpg') }}')"></div>
+            <div class="hero-slide" style="background-image:url('{{ asset('images/Dashboardsld2.jpg') }}')"></div>
+            <div class="hero-slide" style="background-image:url('{{ asset('images/Dashboardsld3.jpg') }}')"></div>
            
             <div class="slide-indicators">
                 <div class="dot active" onclick="jumpToHero(0)"></div>
