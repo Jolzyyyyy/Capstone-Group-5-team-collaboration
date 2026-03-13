@@ -12,84 +12,101 @@ class CheckoutController extends Controller
 {
     public function index()
     {
-        // You probably already have a checkout view.
-        // Just return it as you currently do.
-        return view('checkout.index');
-    }
+        $rawCart = session()->get('cart', []);
 
-    /**
-     * Place order (ZIP required before submitting).
-     * POST /checkout/place-order
-     */
-    public function placeOrder(Request $request)
-    {
-        // ✅ ZIP REQUIRED
-        $request->validate([
-            'print_zip' => ['required', 'file', 'mimes:zip', 'max:51200'], // 50MB
-        ], [
-            'print_zip.required' => 'Please upload a ZIP file before placing the order.',
-            'print_zip.mimes' => 'The uploaded file must be a .zip file.',
-            'print_zip.max' => 'The ZIP file must be 50MB or below.',
-        ]);
-
-        // ✅ Cart required
-        $cart = session('cart', []);
-        if (empty($cart)) {
-            return back()->withErrors(['cart' => 'Your cart is empty.']);
+        if (empty($rawCart)) {
+            return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        return DB::transaction(function () use ($request, $cart) {
+        $cart = [];
+        $itemsCount = 0;
+        $total = 0;
 
-            // ✅ Create order first
+        foreach ($rawCart as $serviceId => $row) {
+            $qty = (int)($row['qty'] ?? 1);
+            $unitPrice = (float)($row['price'] ?? 0);
+            $subtotal = $qty * $unitPrice;
+
+            $itemsCount += $qty;
+            $total += $subtotal;
+
+            $cart[] = [
+                'service_id'  => (int)$serviceId,
+                'name'        => $row['name'] ?? 'Service',
+                'category'    => $row['category'] ?? '',
+                'unit'        => $row['unit'] ?? '',
+                'price_type'  => $row['price_type'] ?? 'retail',
+                'unit_price'  => $unitPrice,
+                'qty'         => $qty,
+                'subtotal'    => $subtotal,
+            ];
+        }
+
+        $summary = [
+            'items_count' => $itemsCount,
+            'total'       => $total,
+        ];
+
+        return view('checkout.index', compact('cart', 'summary'));
+    }
+
+    public function place(Request $request)
+    {
+        $rawCart = session()->get('cart', []);
+
+        if (empty($rawCart)) {
+            return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
+        }
+
+        $request->validate([
+            'customer_name'  => ['required', 'string', 'max:255'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'print_zip'      => ['required', 'file', 'mimes:zip', 'max:51200'],
+        ], [
+            'print_zip.required' => 'Please upload a ZIP file before placing the order.',
+        ]);
+
+        return DB::transaction(function () use ($request, $rawCart) {
+
             $order = Order::create([
-                'user_id' => auth()->id(),
-                'customer_name' => auth()->user()->name ?? '',
-                'customer_email' => auth()->user()->email ?? '',
-                'status' => 'Pending',
-                'total_price' => 0,
+                'user_id'        => auth()->id(),
+                'customer_name'  => $request->customer_name,
+                'customer_email' => $request->customer_email,
+                'status'         => 'Pending',
+                'total_price'    => 0,
             ]);
 
-            // ✅ Create order items (SERVICE-based + with subtotal)
-            foreach ($cart as $item) {
-                $serviceId = $item['id'];
-                $qty = $item['quantity'] ?? 1;
-
+            foreach ($rawCart as $serviceId => $row) {
                 $service = Service::findOrFail($serviceId);
 
-                // IMPORTANT: adjust if your service price column is NOT `price`
-                $unitPrice = $service->price;
-
+                $qty = (int)($row['qty'] ?? 1);
+                $unitPrice = (float)($row['price'] ?? 0);
                 $subtotal = $qty * $unitPrice;
 
                 OrderItem::create([
-                    'order_id' => $order->id,
-                    'service_id' => $service->id,
-                    'service_name' => $service->name,
-                    'unit_price' => $unitPrice,
-                    'quantity' => $qty,
-                    'subtotal' => $subtotal,
+                    'order_id'     => $order->id,
+                    'service_id'   => $service->id,
+                    'service_name' => $row['name'] ?? $service->name,
+                    'unit_price'   => $unitPrice,
+                    'quantity'     => $qty,
+                    'subtotal'     => $subtotal,
                 ]);
             }
 
-            // ✅ compute total from subtotal
             $order->recomputeTotal();
 
-            // ✅ Store ZIP
             $zip = $request->file('print_zip');
             $path = $zip->store("order-files/{$order->id}", 'public');
 
-            // ✅ Save file record in order_files
             $order->files()->create([
                 'original_name' => $zip->getClientOriginalName(),
-                'path' => $path,
-                'mime' => $zip->getClientMimeType(),
-                'size' => $zip->getSize(),
+                'path'          => $path,
+                'mime'          => $zip->getClientMimeType(),
+                'size'          => $zip->getSize(),
             ]);
 
-            // ✅ Clear cart
             session()->forget('cart');
 
-            // ✅ Redirect customer to their order details (uses orders.show)
             return redirect()
                 ->route('orders.my.show', $order->id)
                 ->with('success', 'Order placed successfully! ZIP attached ✅');

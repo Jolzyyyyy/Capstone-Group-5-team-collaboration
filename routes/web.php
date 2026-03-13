@@ -33,15 +33,21 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 
 /*
 |--------------------------------------------------------------------------
-| Checkout + Customer Orders (requires login)
+| Authenticated routes (requires login)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+
+    // ✅ Dashboard (make sure this exists for login redirect)
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+
     // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 
-    // Place order (ZIP required before placing order)
-    Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])->name('checkout.placeOrder');
+    // Place order (ZIP required) — MUST MATCH checkout form route('checkout.place')
+    Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
 
     // Customer: My Orders pages
     Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
@@ -54,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,developer'])->group(function () {
+
     // Services admin CRUD
     Route::get('/admin/services/create', [ServiceController::class, 'create'])->name('services.create');
     Route::post('/admin/services', [ServiceController::class, 'store'])->name('services.store');
@@ -70,4 +77,9 @@ Route::middleware(['auth', 'role:admin,developer'])->group(function () {
     Route::delete('/admin/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Auth routes (login/register/logout)
+|--------------------------------------------------------------------------
+*/
 require __DIR__ . '/auth.php';
