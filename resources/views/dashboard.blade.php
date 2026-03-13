@@ -1,17 +1,12 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body style="font-family:Poppins; text-align:center; padding:100px;">
+    <h1>Welcome to your Dashboard 🎉</h1>
+    <p>You are logged in!</p>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    {{ __("You're logged in!") }}
-                </div>
-            </div>
-        </div>
-    </div>
-</x-app-layout>
+    <a href="{{ url('/') }}">Back to Home</a>
+</body>
+</html>

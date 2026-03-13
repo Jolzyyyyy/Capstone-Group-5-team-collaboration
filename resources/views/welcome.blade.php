@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Printing Business Solution | Printify & Co.</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('webproj.css') }}">
@@ -12,12 +13,14 @@
 
 <header class="top-nav-bar" id="mainHeader">
     <div></div>
+
     <nav class="nav-horizontal">
     <a href="#home" onclick="jumpTo('home')">Home</a>
     <a href="#products" onclick="jumpTo('products')">Services</a>
     <a href="#about" onclick="jumpTo('about')">About Us</a>
     <a href="#contact" onclick="jumpTo('contact')">Contact</a>
     </nav>
+
 
     <div class="hero-signin-container" id="authContainer">
         @if (Route::has('login'))
@@ -81,31 +84,35 @@
                 </div>
                 <h3>DOCUMENT PRINTING</h3>
             </div>
+
             <div class="service-item" onclick="openModal('photo')">
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Photocopy & Scanning">
                 </div>
                 <h3>PHOTOCOPY & SCANNING</h3>
             </div>
+
             <div class="service-item" onclick="openModal('id')">
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="ID & Photo Services">
                 </div>
                 <h3>ID & PHOTO SERVICES</h3>
             </div>
-            
+
             <div class="service-item" onclick="openModal('bind')">
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Lamination & Binding">
                 </div>
                 <h3>LAMINATION & BINDING</h3>
             </div>
+
             <div class="service-item" onclick="openModal('largeformat')">
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Large Format Printing">
                 </div>
                 <h3>LARGE FORMAT PRINTING</h3>
             </div>
+
             <div class="service-item" onclick="openModal('special')">
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Custom Special Printing">
@@ -202,10 +209,13 @@
             </div>
         </div>
     </section>
+
 </div>
 
+{{-- ✅ PRODUCT DETAIL SECTION (restores add-to-cart UI) --}}
 <section id="productDetail" class="detail-section">
     <div class="detail-container">
+
         <div class="detail-sidebar" id="detailSidebar">
             <div class="sidebar-viewport">
                 <div class="sidebar-track" id="sidebarTrack">
@@ -221,6 +231,7 @@
                     <span id="availabilityText">IN STOCK</span>
                 </div>
             </div>
+
             
             <div class="preview-viewport">
                 <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">‹</button>
@@ -228,6 +239,7 @@
                     </div>
                 <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">›</button>
             </div>
+
 
             <div class="reviews-yellow-box">
                 <div class="rev-header-inline">
@@ -238,6 +250,7 @@
                     </div>
             </div>
         </div>
+
 
         <div class="detail-info-panel">
             <p id="productSpecs" class="specs-box">Premium 80gsm paper, crisp ink quality.</p>
@@ -285,6 +298,7 @@
                 </select>
             </div>
 
+
             <div class="custom-option-group">
                 <label>Paper Size / Product Size</label>
                 <select class="custom-select" id="paperSize" onchange="updatePrice()">
@@ -293,6 +307,7 @@
                     <option value="long">Long (8.5 x 13)</option>
                 </select>
             </div>
+
 
             <div class="custom-option-group">
                 <label>Quantity</label>
@@ -319,6 +334,7 @@
                             <div class="unit-price">₱<span id="retailAmount">0.00</span></div>
                         </div>
                     </label>
+
                     <label class="price-option-wrapper">
                         <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
                         <div class="price-item">
@@ -327,7 +343,9 @@
                         </div>
                     </label>
                 </div>
+
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+
                 <div class="total-price-box">
                     <span style="font-size: 13px; color: #666;">Total Amount:</span>
                     <h3 class="total-price" style="color: #d35400;">₱<span id="totalAmount">0.00</span></h3>
@@ -339,6 +357,7 @@
                 <button class="btn-buy">Place Order Now</button>
             </div>
 
+
             <div class="return-container">
                 <a onclick="backToMain()" class="return-link-btn" style="cursor: pointer;">
                    <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
@@ -348,13 +367,16 @@
     </div>
 </section>
 
+{{-- ✅ CART DRAWER --}}
 <div class="cart-drawer-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 <div class="cart-drawer" id="cartDrawer">
     <div class="cart-header">
         <h2>Your Shopping Cart</h2>
         <span class="close-cart" onclick="toggleCart()">&times;</span>
     </div>
+
     <div class="cart-items-list" id="cartItemsList"></div>
+
     <div class="cart-footer">
         <div class="voucher-container">
             <div class="voucher-input-group">
@@ -363,24 +385,30 @@
             </div>
             <p id="voucherMsg" class="voucher-message"></p>
         </div>
+
         <div class="cart-total-row">
             <span>Total</span>
             <span>₱<span id="drawerTotal">0.00</span></span>
         </div>
+
         <button class="cart-btn-checkout" onclick="checkoutSelected()">Checkout Now</button>
     </div>
 </div>
 
+{{-- ✅ SERVICE CATEGORY MODAL --}}
 <div id="productModal" class="product-modal">
     <div class="product-modal-content">
         <span class="close-modal" onclick="closeModal()">&times;</span>
         <h2 id="modalTitle">CHOOSE TYPE</h2>
+
         <div class="category-slider">
             <button class="modal-btn" id="modalPrev" onclick="moveSlide(-1)">❮</button>
+
             <div class="slider-viewport">
                 <div class="category-track" id="categoryTrack">
                     </div>
             </div>
+
             <button class="modal-btn" id="modalNext" onclick="moveSlide(1)">❯</button>
         </div>
     </div>

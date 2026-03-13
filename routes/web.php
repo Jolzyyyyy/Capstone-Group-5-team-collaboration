@@ -33,22 +33,34 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 
 /*
 |--------------------------------------------------------------------------
-| Checkout routes (customer) - requires login
+| Authenticated routes (requires login)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+
+    // ✅ Dashboard (make sure this exists for login redirect)
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+
+    // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])->name('checkout.placeOrder');
+
+    // Place order (ZIP required) — MUST MATCH checkout form route('checkout.place')
+    Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
+
+    // Customer: My Orders pages
+    Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
+    Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
 });
 
 /*
 |--------------------------------------------------------------------------
 | Admin routes (requires login + role)
 |--------------------------------------------------------------------------
-| NOTE: role middleware assumes you already have RoleMiddleware working.
-| If role middleware not ready yet, temporarily remove 'role:admin,developer'
 */
 Route::middleware(['auth', 'role:admin,developer'])->group(function () {
+
     // Services admin CRUD
     Route::get('/admin/services/create', [ServiceController::class, 'create'])->name('services.create');
     Route::post('/admin/services', [ServiceController::class, 'store'])->name('services.store');
@@ -65,4 +77,9 @@ Route::middleware(['auth', 'role:admin,developer'])->group(function () {
     Route::delete('/admin/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 });
 
-require __DIR__.'/auth.php';
+/*
+|--------------------------------------------------------------------------
+| Auth routes (login/register/logout)
+|--------------------------------------------------------------------------
+*/
+require __DIR__ . '/auth.php';
