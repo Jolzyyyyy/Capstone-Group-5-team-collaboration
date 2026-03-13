@@ -641,6 +641,7 @@ body.user-logged-in #navCart {
 .apply-voucher-btn { 
     padding: 8px 15px; background: #222; color: white; border: none; 
     border-radius: 4px; font-weight: 500; cursor: pointer; font-size: 11px; transition: 0.3s; height: 35px; 
+}
 
 .apply-voucher-btn {
   padding: 8px 15px;
