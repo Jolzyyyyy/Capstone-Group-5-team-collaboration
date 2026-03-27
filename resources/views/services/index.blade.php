@@ -1,167 +1,79 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Services</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Printing & Services') }}
+        </h2>
+    </x-slot>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 6px;
-            padding: 15px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        }
-
-        .card img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-
-        .card h3 {
-            margin: 0 0 5px;
-            font-size: 18px;
-        }
-
-        .category {
-            font-size: 13px;
-            color: #777;
-            margin-bottom: 10px;
-        }
-
-        .price {
-            font-weight: bold;
-            margin: 5px 0;
-        }
-
-        .controls {
-            margin-top: 10px;
-        }
-
-        .controls select,
-        .controls input {
-            width: 100%;
-            padding: 6px;
-            margin-bottom: 8px;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-cart {
-            background: #e60023;
-            color: #fff;
-        }
-
-        .btn-cart:hover {
-            background: #c4001d;
-        }
-
-        .top-links {
-            margin-bottom: 20px;
-        }
-
-        .top-links a {
-            margin-right: 15px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-
-<h1>Printing & Services</h1>
-
-<div class="top-links">
-    <a href="{{ route('cart.index') }}">🛒 View Cart</a>
-</div>
-
-@if($services->count() === 0)
-    <p>No services available.</p>
-@else
-
-<div class="grid">
-
-@foreach($services as $service)
-
-    <div class="card">
-
-        {{-- Service Image --}}
-        @if($service->image_path)
-            <img src="{{ asset('storage/'.$service->image_path) }}" alt="{{ $service->name }}">
-        @else
-            <img src="https://via.placeholder.com/300x160?text=Service" alt="No image">
-        @endif
-
-        {{-- Service Info --}}
-        <h3>{{ $service->name }}</h3>
-        <div class="category">{{ $service->category }}</div>
-
-        <div class="price">
-            Retail: ₱{{ number_format($service->retail_price, 2) }}
-        </div>
-        <div class="price">
-            Bulk: ₱{{ number_format($service->bulk_price, 2) }}
-        </div>
-
-        {{-- ADD TO CART FORM --}}
-        <form method="POST" action="{{ route('cart.add', $service->id) }}">
-            @csrf
-
-            <div class="controls">
-                {{-- Price Type --}}
-                <label>
-                    Price Type
-                    <select name="price_type">
-                        <option value="retail">Retail</option>
-                        <option value="bulk">Bulk</option>
-                    </select>
-                </label>
-
-                {{-- Quantity --}}
-                <label>
-                    Quantity
-                    <input type="number" name="qty" min="1" value="1">
-                </label>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            
+            <div class="mb-6 flex justify-between items-center">
+                <a href="{{ route('cart.index') }}" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 transition ease-in-out duration-150 shadow-sm">
+                    🛒 View Cart
+                </a>
             </div>
 
-            <button type="submit" class="btn btn-cart">
-                ➕ Add to Cart
-            </button>
-        </form>
+            @if($services->count() === 0)
+                <div class="bg-white p-6 rounded-lg shadow text-center">
+                    <p class="text-gray-500 italic">No services available at the moment.</p>
+                </div>
+            @else
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    @foreach($services as $service)
+                        <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100">
+                            
+                            <div class="relative h-48 w-full bg-gray-200">
+                                @if($service->image_path)
+                                    <img src="{{ asset('storage/'.$service->image_path) }}" alt="{{ $service->name }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="flex items-center justify-center h-full text-gray-400">
+                                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
 
+                            <div class="p-5">
+                                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">{{ $service->category }}</span>
+                                <h3 class="text-lg font-bold text-gray-800 mt-1">{{ $service->name }}</h3>
+                                
+                                <div class="mt-3 space-y-1">
+                                    <p class="text-sm text-gray-600">Retail: <span class="font-bold text-gray-900">₱{{ number_format($service->retail_price, 2) }}</span></p>
+                                    <p class="text-sm text-gray-600">Bulk: <span class="font-bold text-gray-900">₱{{ number_format($service->bulk_price, 2) }}</span></p>
+                                </div>
+
+                                <form method="POST" action="{{ route('cart.add', $service->id) }}" class="mt-4">
+                                    @csrf
+                                    <div class="grid grid-cols-2 gap-2 mb-3">
+                                        <div>
+                                            <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Type</label>
+                                            <select name="price_type" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                <option value="retail">Retail</option>
+                                                <option value="bulk">Bulk</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Qty</label>
+                                            <input type="number" name="qty" min="1" value="1" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm shadow-sm">
+                                        ➕ Add to Cart
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-10">
+                    {{ $services->links() }}
+                </div>
+            @endif
+
+        </div>
     </div>
-
-@endforeach
-
-</div>
-
-{{-- Pagination --}}
-<div style="margin-top:20px;">
-    {{ $services->links() }}
-</div>
-
-@endif
-
-</body>
-</html>
+</x-app-layout>
