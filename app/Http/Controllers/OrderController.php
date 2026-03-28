@@ -7,14 +7,6 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    /**
-     * ADMIN: manage all orders (index/show/edit/update/destroy)
-     * USER: can only access myOrders + myShow
-     *
-     * NOTE:
-     * We enforce access using ROUTES middleware (role groups).
-     * Here we still require auth for all methods.
-     */
     public function __construct()
     {
         $this->middleware('auth');
@@ -26,10 +18,6 @@ class OrderController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Show logged-in user's orders only.
-     * GET /my-orders
-     */
     public function myOrders()
     {
         $orders = Order::query()
@@ -40,19 +28,17 @@ class OrderController extends Controller
         return view('orders.my_index', compact('orders'));
     }
 
-    /**
-     * Show a specific order that belongs to the logged-in user.
-     * GET /my-orders/{order}
-     */
     public function myShow(Order $order)
     {
-        if ((int)$order->user_id !== (int)auth()->id()) {
+        if ((int) $order->user_id !== (int) auth()->id()) {
             abort(403, 'Unauthorized');
         }
 
-        $order->load(['items.service']);
+        // ✅ Load items + service + files (ZIP)
+        $order->load(['items.service', 'files']);
 
-        return view('orders.my_show', compact('order'));
+        // ✅ Reuse orders.show
+        return view('orders.show', compact('order'));
     }
 
     /*
@@ -61,10 +47,6 @@ class OrderController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Display a listing of all orders (admin).
-     * GET /orders
-     */
     public function index()
     {
         $orders = Order::query()
@@ -74,30 +56,18 @@ class OrderController extends Controller
         return view('orders.index', compact('orders'));
     }
 
-    /**
-     * Display a specific order (admin).
-     * GET /orders/{order}
-     */
     public function show(Order $order)
     {
-        $order->load(['items.service', 'user']);
+        $order->load(['items.service', 'user', 'files']);
 
         return view('orders.show', compact('order'));
     }
 
-    /**
-     * Edit order (admin).
-     * GET /orders/{order}/edit
-     */
     public function edit(Order $order)
     {
         return view('orders.edit', compact('order'));
     }
 
-    /**
-     * Update order (admin).
-     * PUT /orders/{order}
-     */
     public function update(Request $request, Order $order)
     {
         $validated = $request->validate([
@@ -112,10 +82,6 @@ class OrderController extends Controller
             ->with('success', 'Order updated successfully.');
     }
 
-    /**
-     * Delete order (admin).
-     * DELETE /orders/{order}
-     */
     public function destroy(Order $order)
     {
         $order->delete();

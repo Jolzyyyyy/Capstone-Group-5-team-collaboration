@@ -86,18 +86,7 @@ class RegisteredUserController extends Controller
         // 5. Auto-login the user into a "restricted" session
         Auth::login($user);
 
-        /**
-         * 6. Session markers (Standardized)
-         * Gagamitin natin ang 'customer_otp_passed' para sa middleware check.
-         */
-        $request->session()->put([
-            'customer_otp_passed' => false,
-            'otp_email' => $user->email,
-            'auth_type' => 'register', 
-        ]);
-
-        // 7. Redirect to the OTP verification page (Match sa routes/auth.php name)
-        return redirect()->route('otp.verify')
-            ->with('status', 'Registration successful! Please check your email for the 6-digit verification code.');
+        // ✅ After registration go to homepage
+        return redirect('/');
     }
 }

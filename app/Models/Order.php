@@ -9,9 +9,6 @@ class Order extends Model
 {
     use HasFactory;
 
-    /**
-     * Mass assignable fields.
-     */
     protected $fillable = [
         'user_id',
         'customer_name',
@@ -20,26 +17,21 @@ class Order extends Model
         'total_price',
     ];
 
-    /**
-     * An order belongs to a user (customer account).
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * An order has many items.
-     */
     public function items()
     {
         return $this->hasMany(OrderItem::class);
     }
 
-    /**
-     * Recompute total_price based on items.
-     * (Useful for admin recalculation if needed.)
-     */
+    public function files()
+    {
+        return $this->hasMany(\App\Models\OrderFile::class);
+    }
+
     public function recomputeTotal(): void
     {
         $total = $this->items()->sum('subtotal');

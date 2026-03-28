@@ -52,42 +52,8 @@ class AuthenticatedSessionController extends Controller
         // 2. Regenerate session after successful credential check
         $request->session()->regenerate();
 
-        // 3. Generate 6-digit OTP
-        $otp = sprintf("%06d", mt_rand(0, 999999));
-
-        $user->update([
-            'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
-        ]);
-
-        // 4. Send OTP Email Notification
-        try {
-            $user->notify(new SendOTP($otp));
-        } catch (\Exception $e) {
-            Log::error('Login OTP Email failed: ' . $e->getMessage());
-
-            // Logout user if email fails to prevent unauthorized access
-            Auth::guard('web')->logout();
-            
-            return back()->withErrors([
-                'email' => 'Failed to send verification code. Please check your connection and try again.',
-            ]);
-        }
-
-        /**
-         * 5. Session Markers (OTP Lock)
-         * Gagamitin ito ng iyong middleware para pigilan ang user
-         * na makapasok sa dashboard hangga't 'otp_passed' is false.
-         */
-        $request->session()->put([
-            'otp_passed' => false, 
-            'otp_email' => $user->email,
-            'auth_type' => 'login',
-        ]);
-
-        // 6. Redirect to OTP verification page
-        return redirect()->route('otp.verify')
-            ->with('status', 'A 6-digit verification code has been sent to your email.');
+        // ✅ After login go to homepage
+        return redirect()->route('dashboard');
     }
 
     /**

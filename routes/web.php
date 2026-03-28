@@ -83,34 +83,25 @@ Route::post('/resend-otp', [VerifyOtpController::class, 'resend'])->name('custom
 
 /*
 |--------------------------------------------------------------------------
-| 4. CUSTOMER SECTION (Authenticated & OTP Protected)
+| Authenticated routes (requires login)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
-    
-    Route::get('/dashboard-redirect', function () {
-        $user = Auth::user();
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.otp.verify');
-        }
-        return session('customer_otp_passed') === true 
-            ? redirect()->route('dashboard') 
-            : redirect()->route('customer.otp.verify');
-    })->name('dashboard.redirect');
 
-    Route::middleware(['customer_otp'])->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard'); 
-        })->name('dashboard');
+    // ✅ Dashboard (make sure this exists for login redirect)
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
 
-        Route::prefix('profile')->name('profile.')->group(function () {
-            Route::get('/', [ProfileController::class, 'edit'])->name('edit');
-            Route::patch('/', [ProfileController::class, 'update'])->name('update');
-        });
+    // Checkout page
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 
-        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-        Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('customer.logout');
-    });
+    // Place order (ZIP required) — MUST MATCH checkout form route('checkout.place')
+    Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
+
+    // Customer: My Orders pages
+    Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
+    Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
 });
 
 /*
@@ -118,25 +109,27 @@ Route::middleware(['auth'])->group(function () {
 | 5. GUEST & PASSWORD RECOVERY ROUTES
 |--------------------------------------------------------------------------
 */
-Route::middleware('guest')->group(function () {
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
-    Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('register', [RegisteredUserController::class, 'store']);
+Route::middleware(['auth', 'role:admin,developer'])->group(function () {
 
-    // Forgot Password Request
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
-    
-    // Reset Password Form (Dapat accessible as guest)
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    // Services admin CRUD
+    Route::get('/admin/services/create', [ServiceController::class, 'create'])->name('services.create');
+    Route::post('/admin/services', [ServiceController::class, 'store'])->name('services.store');
+    Route::get('/admin/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/admin/services/{service}', [ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/admin/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+    Route::patch('/admin/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('services.toggle');
+
+    // Orders admin pages
+    Route::get('/admin/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/admin/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/admin/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
+    Route::put('/admin/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+    Route::delete('/admin/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 });
 
-/**
- * FIXED: Inilabas natin ang POST request sa 'guest' middleware group.
- * Kapag nag-Auto Login ang user sa Controller, hindi na siya "Guest".
- * Kung naka-wrap ito sa 'guest', mag-rereload lang ang page dahil haharangin siya ni Laravel.
- */
-Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.update');
-
+/*
+|--------------------------------------------------------------------------
+| Auth routes (login/register/logout)
+|--------------------------------------------------------------------------
+*/
 require __DIR__ . '/auth.php';
