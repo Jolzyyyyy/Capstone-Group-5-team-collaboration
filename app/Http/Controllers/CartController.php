@@ -137,4 +137,86 @@ class CartController extends Controller
 
         return redirect()->route('cart.index')->with('success', 'Cart cleared.');
     }
+
+    // ============================================================
+    // ===================== ✅ OURS BELOW =========================
+    // ========== (CHECKOUT/PAYMENT SUPPORT ONLY) ==================
+    // ============================================================
+
+    /**
+     * ✅ SYNC CART (from LocalStorage -> Laravel Session 'cart')
+     * POST /cart/sync
+     *
+     * Expects JSON:
+     * { items: [{ name, qty, unit_price, service_code?, price_type? }] }
+     */
+    public function syncCart(Request $request)
+    {
+        $validated = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.name' => ['required', 'string'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:999'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.service_code' => ['nullable', 'string'],
+            'items.*.price_type' => ['nullable', 'in:retail,bulk'],
+        ]);
+
+        $cart = [];
+
+        foreach ($validated['items'] as $idx => $i) {
+            $key = $i['service_code'] ?: ('LS-' . $idx . '-' . uniqid());
+
+            $cart[$key] = [
+                'name'       => $i['name'],
+                'category'   => null,
+                'unit'       => null,
+                'price'      => (float) $i['unit_price'], // ✅ unit price
+                'price_type' => $i['price_type'] ?? 'retail',
+                'qty'        => (int) $i['qty'],
+                'image_path' => null,
+            ];
+        }
+
+        session()->put('cart', $cart);
+
+        // important: clear buy_now para cart-based checkout ang priority
+        session()->forget('buy_now');
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * ✅ BUY NOW (Product Detail -> Laravel Session 'buy_now')
+     * POST /cart/buy-now
+     *
+     * Expects JSON:
+     * { name, qty, unit_price, price_type, service_code? }
+     */
+    public function buyNow(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string'],
+            'qty' => ['required', 'integer', 'min:1', 'max:999'],
+            'unit_price' => ['required', 'numeric', 'min:0'],
+            'price_type' => ['required', 'in:retail,bulk'],
+            'service_code' => ['nullable', 'string'],
+        ]);
+
+        $key = $validated['service_code'] ?: ('BUY-' . uniqid());
+
+        session()->put('buy_now', [
+            $key => [
+                'name'       => $validated['name'],
+                'category'   => null,
+                'unit'       => null,
+                'price'      => (float) $validated['unit_price'], // ✅ unit price
+                'price_type' => $validated['price_type'],
+                'qty'        => (int) $validated['qty'],
+                'image_path' => null,
+            ]
+        ]);
+
+        // ✅ go to SAME checkout page
+        return response()->json(['ok' => true]);
+    }
 }
