@@ -60,11 +60,15 @@
                                         </div>
                                     </div>
 
-                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm shadow-sm">
-                                        ➕ Add to Cart
-                                    </button>
-                                </form>
+                                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm shadow-sm">
+                                            ➕ Add to Cart
+                                        </button>
+                                    </form>
                             </div>
+        @else
+            <div class="no-variation">No active variations available.</div>
+        @endif
+
                         </div>
                     @endforeach
                 </div>

@@ -12,6 +12,7 @@
 @if(session('success'))
     <p style="color: green;">{{ session('success') }}</p>
 @endif
+
 @if(session('error'))
     <p style="color: red;">{{ session('error') }}</p>
 @endif
@@ -25,6 +26,7 @@
     <thead>
         <tr>
             <th>Service</th>
+            <th>Variation</th>
             <th>Price Type</th>
             <th>Price</th>
             <th>Qty</th>
@@ -37,31 +39,47 @@
         <tr>
             <td>
                 <strong>{{ $item['name'] }}</strong><br>
-                <small>{{ $item['category'] }} {{ $item['unit'] ? '• '.$item['unit'] : '' }}</small>
+                <small>
+                    {{ $item['category'] }}
+                    @if(!empty($item['unit']))
+                        • {{ $item['unit'] }}
+                    @endif
+                </small>
             </td>
 
             <td>
-                <form method="POST" action="{{ route('cart.update', $item['service_id']) }}">
+                <strong>{{ $item['service_item_id'] }}</strong><br>
+                @if(!empty($item['variation_label']))
+                    <small>{{ $item['variation_label'] }}</small>
+                @endif
+            </td>
+
+            <td>
+                <form method="POST" action="{{ route('cart.update', $item['cart_key']) }}">
                     @csrf
                     <select name="price_type">
-                        <option value="retail" {{ $item['price_type']=='retail' ? 'selected' : '' }}>Retail</option>
-                        <option value="bulk" {{ $item['price_type']=='bulk' ? 'selected' : '' }}>Bulk</option>
+                        <option value="retail" {{ $item['price_type'] == 'retail' ? 'selected' : '' }}>Retail</option>
+                        <option value="bulk" {{ $item['price_type'] == 'bulk' ? 'selected' : '' }}>Bulk</option>
                     </select>
             </td>
 
-            <td>₱{{ number_format($item['price'], 2) }}</td>
+            <td>
+                ₱{{ number_format($item['price'], 2) }}
+            </td>
 
             <td>
                     <input type="number" name="qty" min="1" value="{{ $item['qty'] }}" style="width:70px;">
             </td>
 
-            <td>₱{{ number_format($item['line_total'], 2) }}</td>
+            <td>
+                ₱{{ number_format($item['line_total'], 2) }}
+            </td>
 
             <td>
                     <button type="submit">Update</button>
                 </form>
 
-                <form method="POST" action="{{ route('cart.remove', $item['service_id']) }}" style="margin-top:5px;">
+                <form method="POST" action="{{ route('cart.remove', $item['cart_key']) }}" style="margin-top:5px;">
                     @csrf
                     <button type="submit">Remove</button>
                 </form>

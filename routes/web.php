@@ -83,15 +83,23 @@ Route::post('/resend-otp', [VerifyOtpController::class, 'resend'])->name('custom
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated routes (requires login)
+| Authenticated routes
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
 
-    // ✅ Dashboard (make sure this exists for login redirect)
+    // Keep dashboard under auth for now to avoid login redirect issues
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Customer routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:customer'])->group(function () {
 
     // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
@@ -111,13 +119,27 @@ Route::middleware(['auth'])->group(function () {
 */
 Route::middleware(['auth', 'role:admin,developer'])->group(function () {
 
-    // Services admin CRUD
-    Route::get('/admin/services/create', [ServiceController::class, 'create'])->name('services.create');
-    Route::post('/admin/services', [ServiceController::class, 'store'])->name('services.store');
-    Route::get('/admin/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-    Route::put('/admin/services/{service}', [ServiceController::class, 'update'])->name('services.update');
-    Route::delete('/admin/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
-    Route::patch('/admin/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('services.toggle');
+    // Services admin pages
+    Route::get('/admin/services', [ServiceController::class, 'adminIndex'])
+        ->name('services.admin.index');
+
+    Route::get('/admin/services/create', [ServiceController::class, 'create'])
+        ->name('services.create');
+
+    Route::post('/admin/services', [ServiceController::class, 'store'])
+        ->name('services.store');
+
+    Route::get('/admin/services/{service}/edit', [ServiceController::class, 'edit'])
+        ->name('services.edit');
+
+    Route::put('/admin/services/{service}', [ServiceController::class, 'update'])
+        ->name('services.update');
+
+    Route::delete('/admin/services/{service}', [ServiceController::class, 'destroy'])
+        ->name('services.destroy');
+
+    Route::patch('/admin/services/{service}/toggle', [ServiceController::class, 'toggleActive'])
+        ->name('services.toggle');
 
     // Orders admin pages
     Route::get('/admin/orders', [OrderController::class, 'index'])->name('orders.index');
