@@ -231,21 +231,24 @@ function closeModal() {
     }
 }
 
-function moveSlide(dir) {
-    const track = document.getElementById('categoryTrack');
-    const total = currentCategorySet.length;
-    currentSlideIndex += dir;
-    if (currentSlideIndex < 0) currentSlideIndex = 0;
-    if (currentSlideIndex >= total) currentSlideIndex = total - 1;
-    track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
-    updateModalButtons();
+function getPreviewTrack(){return document.getElementById('previewTrack');}
+function getPreviewImages(){const track=getPreviewTrack();return track?Array.from(track.querySelectorAll('img')):[];}
+function setPreviewIndex(index){
+  const track=getPreviewTrack(),imgs=getPreviewImages();
+  if(!track||imgs.length===0)return;
+  currentPreviewIndex=Math.max(0,Math.min(index,imgs.length-1));
+  track.style.transition='transform .35s ease';
+  track.style.transform=`translateX(-${currentPreviewIndex*100}%)`;
+  updatePreviewButtons();
 }
 
-function updateModalButtons() {
-    const prev = document.getElementById('modalPrev');
-    const next = document.getElementById('modalNext');
-    if (prev) prev.style.display = (currentSlideIndex === 0) ? 'none' : 'flex';
-    if (next) next.style.display = (currentSlideIndex >= currentCategorySet.length - 1) ? 'none' : 'flex';
+function syncPreviewFromDropdowns(){
+  const colorModeDropdown=document.getElementById('colorMode'),paperSizeDropdown=document.getElementById('paperSize'),detailTitle=document.getElementById('detailTitleHeader');
+  if(!detailTitle)return;
+  if((currentCategoryType==='printing'||currentCategoryType==='xerox')&&colorModeDropdown){setPreviewIndex(colorModeDropdown.selectedIndex);return;}
+  if(currentCategoryType==='id'&&detailTitle.innerText==='PACKAGE'&&paperSizeDropdown){setPreviewIndex(paperSizeDropdown.selectedIndex);return;}
+  if(currentCategoryType==='id'&&detailTitle.innerText==='SINGLE PHOTO'&&paperSizeDropdown){setPreviewIndex(paperSizeDropdown.selectedIndex<=3?0:1);return;}
+  if(currentCategoryType==='largeformat')setPreviewIndex(0);
 }
 
 function openDetail(index) {
@@ -504,16 +507,22 @@ function addToCart() {
     toggleCart();
 }
 
-function updateCartBadge() {
-    const badge = document.getElementById('cartBadge');
-    if (badge) badge.innerText = cart.length;
+function addToCart(){
+  const title=document.getElementById('detailTitleHeader')?.innerText||'',size=document.getElementById('paperSize')?.value||'',qty=parseInt(document.getElementById('qtyInput')?.value||'1',10),totalStr=(document.getElementById('totalAmount')?.innerText||'0').replace(/,/g,''),firstImg=document.querySelector('#previewTrack img'),sId=document.getElementById('currentServiceId')?.innerText||'';
+  let detailText=`ID: ${sId} | Size: ${String(size).toUpperCase()}`;
+  if(currentCategoryType==="largeformat")detailText+=` | Finish: ${document.getElementById('printCategory')?.value||''}`;
+  cart.push({id:Date.now(),name:title,details:detailText,qty:qty,price:parseFloat(totalStr),img:firstImg?firstImg.src:'',checked:true});
+  localStorage.setItem('printCart',JSON.stringify(cart));
+  updateCartBadge();toggleCart();
 }
 
-function removeFromCart(index) {
-    cart.splice(index, 1);
-    localStorage.setItem('printCart', JSON.stringify(cart));
-    updateCartBadge();
-    renderCart();
+function updateCartBadge(){const badge=document.getElementById('cartBadge');if(badge)badge.innerText=cart.length;}
+function removeFromCart(index){cart.splice(index,1);localStorage.setItem('printCart',JSON.stringify(cart));updateCartBadge();renderCart();}
+
+function renderCart(){
+  const list=document.getElementById('cartItemsList');if(!list)return;list.innerHTML='';
+  cart.forEach((item,index)=>{list.innerHTML+=`<div class="cart-item"><label class="cart-item-check-wrap"><input type="checkbox" class="cart-item-check" ${item.checked?'checked':''} onchange="toggleItemCheck(${index})"></label><img src="${item.img}"><div class="cart-item-info"><h4>${item.name}</h4><p style="font-size:10px; color:#777;">${item.details}</p><p class="cart-item-price">Qty: ${item.qty} | ₱${item.price.toLocaleString()}</p><span onclick="removeFromCart(${index})" style="color:red; cursor:pointer; font-size:11px;">REMOVE</span></div></div>`;});
+  calculateCartTotal();
 }
 
 function renderCart() {
@@ -536,16 +545,34 @@ function renderCart() {
     calculateCartTotal();
 }
 
-function toggleItemCheck(index) {
-    cart[index].checked = !cart[index].checked;
-    localStorage.setItem('printCart', JSON.stringify(cart));
-    calculateCartTotal();
+function initMap(){
+  const mapDiv=document.querySelector('.map-placeholder');
+  if(mapDiv)mapDiv.innerHTML=`<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12345!2d121.0!3d14.5!2m3!1f0!2f0!3f0!2m3!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDMwJzAwLjAiTiAxMjHCsDAwJzAwLjAiRQ!5e0!3m2!1sen!2sph!4v123456789" width="100%" height="100%" style="border:0; border-radius:8px;" allowfullscreen="" loading="lazy"></iframe>`;
 }
 
-function calculateCartTotal() {
-    const drawerTotal = document.getElementById('drawerTotal');
-    let subtotal = cart.reduce((acc, item) => item.checked ? acc + item.price : acc, 0);
-    if (drawerTotal) drawerTotal.innerText = subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+document.addEventListener('DOMContentLoaded',()=>{
+  document.documentElement.classList.add('page-loading');document.body.classList.add('page-loading');
+  if(isLoggedIn)document.body.classList.add('services-active');else document.body.classList.remove('services-active');
+  jumpTo('home');updateCartBadge();bindFavoriteButtons();applyServiceCardEffects();
+  heroIndex=0;updateHero();
+  const heroBgUrls=Array.from(document.querySelectorAll('.hero-slide')).map(getBgUrl);
+  preloadImages(heroBgUrls).then(()=>{document.documentElement.classList.remove('page-loading');document.body.classList.remove('page-loading');});
+  if(slideInterval)clearInterval(slideInterval);slideInterval=null;
+  handleContactForm();initMap();
+  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting)entry.target.classList.add('animate');});},{threshold:0.1});
+  document.querySelectorAll('.section').forEach(s=>observer.observe(s));
+  bindDetailControlSync();bindDetailButtons();
+});
+
+function checkoutSelected(){
+  const selected=cart.filter(i=>i.checked);
+  if(selected.length===0){alert("Please select at least 1 item to checkout.");return;}
+  const payload={items:selected.map(i=>({name:i.name,qty:i.qty,unit_price:(i.price/i.qty),service_code:(i.details&&i.details.includes("ID: "))?(i.details.split("ID: ")[1].split(" |")[0]).trim():null,price_type:"retail"}))};
+  const tokenTag=document.querySelector('meta[name="csrf-token"]'),token=tokenTag?tokenTag.getAttribute('content'):'';
+  fetch('/cart/sync',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(payload)})
+  .then(res=>{if(!res.ok)throw new Error("Sync failed");return res.json();})
+  .then(()=>{window.location.href='/payment/checkout';})
+  .catch(()=>{alert("Checkout failed. Please try again.");});
 }
 
 // --- FORMS & EXTERNAL APIS ---

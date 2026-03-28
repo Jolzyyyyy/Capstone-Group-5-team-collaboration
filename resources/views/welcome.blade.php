@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Printing Business Solution | Printify & Co.</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -47,6 +48,25 @@
             <i class="fa-solid fa-cart-shopping"></i>
             <span class="cart-badge" id="cartBadge">0</span>
         </a>
+
+        @auth
+    @if(Auth::user()->role === 'admin')
+        <a href="{{ route('admin.dashboard') }}" class="nav-icon-link" title="Admin Panel">
+            <img src="{{ asset('images/user-logged.svg') }}" alt="Admin Profile" class="nav-svg-icon" style="filter: hue-rotate(200deg);"> 
+            <span class="account-label text-blue-600 font-bold">ADMIN: {{ Auth::user()->name }}</span>
+        </a>
+    @else
+        <a href="{{ route('dashboard') }}" class="nav-icon-link">
+            <img src="{{ asset('images/user-logged.svg') }}" alt="Profile" class="nav-svg-icon">
+            <span class="account-label">{{ Auth::user()->name }}</span>
+        </a>
+    @endif
+@else
+    <a href="{{ route('login') }}" id="navUserPlus" class="nav-icon-link">
+        <img src="{{ asset('images/User plus.svg') }}" alt="User Plus" class="nav-svg-icon">
+        <span class="account-label">ACCOUNT</span>
+    </a>
+@endauth
     </div>
 </header>
 
@@ -63,17 +83,8 @@
                 <div class="dot" onclick="jumpToHero(2)"></div>
             </div>
 
-            <div class="hero-text animate" id="homeText">
-                <h1>Printify & Co.</h1>
-                <p style="font-size: 18px; letter-spacing: 5px; text-transform: uppercase; font-weight: 300; margin-top: 10px;">
-                    Crafting Your Vision into Reality
-                </p>
-                <p style="font-size: 13px; font-style: italic; color: #FF0000; margin-top: 20px; letter-spacing: 1px;">
-                    Premium Prints • Fast Delivery • Unlimited Possibilities
-                </p>
-            </div>
-        </div>
-    </section>
+        <section id="home" class="section active">
+            <div class="hero-container">
 
     <section id="products" class="section">
         <h2 style="text-align: center; margin-top: 40px;">Our Services</h2>
@@ -96,7 +107,7 @@
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="ID & Photo Services">
                 </div>
-                <h3>ID & PHOTO SERVICES</h3>
+
             </div>
 
             <div class="service-item" onclick="openModal('bind')">
@@ -117,10 +128,8 @@
                 <div class="service-image-wrapper">
                     <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Custom Special Printing">
                 </div>
-                <h3>CUSTOM SPECIAL PRINTING</h3>
             </div>
-        </div>
-    </section>
+        </section>
 
     <section id="about" class="section">
         <h2 style="text-align: center; margin-top: 40px;">About Us</h2>
@@ -341,7 +350,45 @@
                             <p class="price-label" style="color:#27ae60;">Bulk</p>
                             <div class="unit-price" style="color:#27ae60;">₱<span id="bulkAmount">0.00</span></div>
                         </div>
-                    </label>
+                    </div>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>Service Option:</label>
+                    <select class="custom-select" id="serviceOption">
+                        <option value="">Select Option</option>
+                        <option value="enhancement">Enhancement</option>
+                        <option value="layout">Layout</option>
+                        <option value="design">Design</option>
+                    </select>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>File Type:</label>
+                    <select class="custom-select" id="fileType">
+                        <option value="">Select File Type</option>
+                        <option value="pdf">PDF</option>
+                        <option value="doc">DOC/DOCX</option>
+                        <option value="img">JPG/PNG</option>
+                    </select>
+                </div>
+
+                <div class="custom-option-group note-group">
+                    <label>Note:</label>
+                    <div class="note-box">
+                        <p>
+                            Files that require editing, layout adjustments, or design enhancements may have additional
+                            charges depending on the type and complexity of the service needed. For best results,
+                            please upload high-resolution files.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>SERVICE ID:</label>
+                    <div>
+                        <span id="currentServiceId">DOC-TX-001</span>
+                    </div>
                 </div>
 
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
@@ -363,9 +410,6 @@
                    <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
                 </a>
             </div>
-        </div>
-    </div>
-</section>
 
 {{-- ✅ CART DRAWER --}}
 <div class="cart-drawer-overlay" id="cartOverlay" onclick="toggleCart()"></div>
@@ -412,7 +456,6 @@
             <button class="modal-btn" id="modalNext" onclick="moveSlide(1)">❯</button>
         </div>
     </div>
-</div>
 
 <script src="{{ asset('webproj.js') }}"></script>
 

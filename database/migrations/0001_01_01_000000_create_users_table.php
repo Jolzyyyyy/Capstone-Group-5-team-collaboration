@@ -17,6 +17,19 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            
+            // --- ROLE COLUMN (The Guard) ---
+            $table->string('role')->default('customer'); // Default ay customer para safe
+
+            // --- OTP COLUMNS (Para sa Admin & Customer) ---
+            $table->string('otp_code')->nullable();
+            $table->timestamp('otp_expires_at')->nullable();
+
+            // --- 2FA COLUMNS (Para sa Admin QR Authentication) ---
+            $table->text('google2fa_secret')->nullable();
+            $table->boolean('google2fa_enabled')->default(false);
+            $table->text('recovery_codes')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;  // ✅ ADD THIS
+
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Service;
@@ -124,5 +126,30 @@ class CheckoutController extends Controller
                 ->route('orders.my.show', $order->id)
                 ->with('success', 'Order placed successfully! ZIP attached ✅');
         });
+    }
+
+    // ============================================================
+    // ===================== ✅ OURS BELOW =========================
+    // ========== (CHECKOUT/PAYMENT SUPPORT ONLY) ==================
+    // ============================================================
+    /**
+     * ✅ IMPORTANT:
+     * Team route already uses /checkout -> CheckoutController@index.
+     * We want /checkout to show OUR PayMongo checkout page (payment.checkout)
+     * WITHOUT changing web.php team structure.
+     *
+     * So we "override" behavior by adding a NEW method and updating route usage
+     * is NOT allowed per your rule — therefore:
+     *
+     * ✅ We will keep the team code above intact.
+     * ✅ But you MUST change the team route handler to use this method:
+     *    Route::get('/checkout', [CheckoutController::class, 'paymongoIndex'])->name('checkout.index');
+     *
+     * If you truly cannot touch that single line in web.php, then it is impossible
+     * for /checkout to show payment.checkout because routes decide the controller.
+     */
+    public function paymongoIndex(Request $request)
+    {
+        return app(\App\Http\Controllers\PaymongoCheckoutController::class)->checkout($request);
     }
 }
