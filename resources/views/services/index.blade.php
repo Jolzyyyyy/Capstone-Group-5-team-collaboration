@@ -44,6 +44,12 @@
             margin-bottom: 10px;
         }
 
+        .description {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 10px;
+        }
+
         .price {
             font-weight: bold;
             margin: 5px 0;
@@ -86,6 +92,17 @@
             text-decoration: none;
             font-weight: bold;
         }
+
+        .variation-meta {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .no-variation {
+            color: #999;
+            font-style: italic;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -117,38 +134,58 @@
         <h3>{{ $service->name }}</h3>
         <div class="category">{{ $service->category }}</div>
 
-        <div class="price">
-            Retail: ₱{{ number_format($service->retail_price, 2) }}
-        </div>
-        <div class="price">
-            Bulk: ₱{{ number_format($service->bulk_price, 2) }}
-        </div>
+        @if($service->description)
+            <div class="description">{{ $service->description }}</div>
+        @endif
 
-        {{-- ADD TO CART FORM --}}
-        <form method="POST" action="{{ route('cart.add', $service->id) }}">
-            @csrf
+        @if($service->activeVariations && $service->activeVariations->count() > 0)
 
-            <div class="controls">
-                {{-- Price Type --}}
-                <label>
-                    Price Type
-                    <select name="price_type">
-                        <option value="retail">Retail</option>
-                        <option value="bulk">Bulk</option>
-                    </select>
-                </label>
+            <form method="POST" action="{{ route('cart.add', $service->id) }}">
+                @csrf
 
-                {{-- Quantity --}}
-                <label>
-                    Quantity
-                    <input type="number" name="qty" min="1" value="1">
-                </label>
-            </div>
+                <div class="controls">
+                    {{-- Variation --}}
+                    <label>
+                        Variation
+                        <select name="service_variation_id" required>
+                            <option value="">Select variation</option>
+                            @foreach($service->activeVariations as $variation)
+                                <option value="{{ $variation->id }}">
+                                    {{ $variation->service_item_id }}
+                                    @if($variation->variation_label)
+                                        — {{ $variation->variation_label }}
+                                    @endif
+                                    — Retail ₱{{ number_format($variation->retail_price, 2) }}
+                                    — Bulk ₱{{ number_format($variation->bulk_price, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </label>
 
-            <button type="submit" class="btn btn-cart">
-                ➕ Add to Cart
-            </button>
-        </form>
+                    {{-- Price Type --}}
+                    <label>
+                        Price Type
+                        <select name="price_type" required>
+                            <option value="retail">Retail</option>
+                            <option value="bulk">Bulk</option>
+                        </select>
+                    </label>
+
+                    {{-- Quantity --}}
+                    <label>
+                        Quantity
+                        <input type="number" name="qty" min="1" value="1" required>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-cart">
+                    ➕ Add to Cart
+                </button>
+            </form>
+
+        @else
+            <div class="no-variation">No active variations available.</div>
+        @endif
 
     </div>
 
@@ -156,7 +193,6 @@
 
 </div>
 
-{{-- Pagination --}}
 <div style="margin-top:20px;">
     {{ $services->links() }}
 </div>

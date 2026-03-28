@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Service;
+use App\Models\ServiceVariation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -22,23 +23,27 @@ class CheckoutController extends Controller
         $itemsCount = 0;
         $total = 0;
 
-        foreach ($rawCart as $serviceId => $row) {
-            $qty = (int)($row['qty'] ?? 1);
-            $unitPrice = (float)($row['price'] ?? 0);
+        foreach ($rawCart as $cartKey => $row) {
+            $qty = (int) ($row['qty'] ?? 1);
+            $unitPrice = (float) ($row['price'] ?? 0);
             $subtotal = $qty * $unitPrice;
 
             $itemsCount += $qty;
             $total += $subtotal;
 
             $cart[] = [
-                'service_id'  => (int)$serviceId,
-                'name'        => $row['name'] ?? 'Service',
-                'category'    => $row['category'] ?? '',
-                'unit'        => $row['unit'] ?? '',
-                'price_type'  => $row['price_type'] ?? 'retail',
-                'unit_price'  => $unitPrice,
-                'qty'         => $qty,
-                'subtotal'    => $subtotal,
+                'cart_key'        => $cartKey,
+                'service_id'      => (int) ($row['service_id'] ?? 0),
+                'variation_id'    => (int) ($row['variation_id'] ?? 0),
+                'service_item_id' => $row['service_item_id'] ?? '',
+                'name'            => $row['name'] ?? 'Service',
+                'category'        => $row['category'] ?? '',
+                'variation_label' => $row['variation_label'] ?? '',
+                'unit'            => $row['unit'] ?? '',
+                'price_type'      => $row['price_type'] ?? 'retail',
+                'unit_price'      => $unitPrice,
+                'qty'             => $qty,
+                'subtotal'        => $subtotal,
             ];
         }
 
@@ -76,20 +81,28 @@ class CheckoutController extends Controller
                 'total_price'    => 0,
             ]);
 
-            foreach ($rawCart as $serviceId => $row) {
-                $service = Service::findOrFail($serviceId);
+            foreach ($rawCart as $cartKey => $row) {
+                $service = Service::findOrFail($row['service_id']);
 
-                $qty = (int)($row['qty'] ?? 1);
-                $unitPrice = (float)($row['price'] ?? 0);
+                $variation = ServiceVariation::where('id', $row['variation_id'] ?? 0)
+                    ->where('service_id', $service->id)
+                    ->first();
+
+                $qty = (int) ($row['qty'] ?? 1);
+                $unitPrice = (float) ($row['price'] ?? 0);
                 $subtotal = $qty * $unitPrice;
 
                 OrderItem::create([
-                    'order_id'     => $order->id,
-                    'service_id'   => $service->id,
-                    'service_name' => $row['name'] ?? $service->name,
-                    'unit_price'   => $unitPrice,
-                    'quantity'     => $qty,
-                    'subtotal'     => $subtotal,
+                    'order_id'             => $order->id,
+                    'service_id'           => $service->id,
+                    'service_variation_id' => $variation?->id,
+                    'service_item_id'      => $row['service_item_id'] ?? $variation?->service_item_id,
+                    'service_name'         => $row['name'] ?? $service->name,
+                    'variation_label'      => $row['variation_label'] ?? $variation?->variation_label,
+                    'price_type'           => $row['price_type'] ?? 'retail',
+                    'unit_price'           => $unitPrice,
+                    'quantity'             => $qty,
+                    'subtotal'             => $subtotal,
                 ]);
             }
 

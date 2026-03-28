@@ -12,10 +12,19 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'service_id',
+        'service_variation_id', // NEW
+        'service_item_id',      // NEW
         'service_name',
+        'variation_label',      // NEW
+        'price_type',           // NEW
         'unit_price',
         'quantity',
         'subtotal',
+    ];
+
+    protected $casts = [
+        'unit_price' => 'decimal:2',
+        'subtotal' => 'decimal:2',
     ];
 
     public function order()
@@ -26,5 +35,11 @@ class OrderItem extends Model
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    // NEW: relation to variation
+    public function serviceVariation()
+    {
+        return $this->belongsTo(ServiceVariation::class);
     }
 }

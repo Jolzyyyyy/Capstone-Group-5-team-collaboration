@@ -9,7 +9,7 @@ use App\Http\Controllers\OrderController;
 
 /*
 |--------------------------------------------------------------------------
-| Public routes (customer)
+| Public routes
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
@@ -22,26 +22,34 @@ Route::get('/services/{service}', [ServiceController::class, 'show'])->name('ser
 
 /*
 |--------------------------------------------------------------------------
-| Cart routes (customer)
+| Cart routes
 |--------------------------------------------------------------------------
 */
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add/{service}', [CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/update/{service}', [CartController::class, 'update'])->name('cart.update');
-Route::post('/cart/remove/{service}', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/update/{cartKey}', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove/{cartKey}', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated routes (requires login)
+| Authenticated routes
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
 
-    // ✅ Dashboard (make sure this exists for login redirect)
+    // Keep dashboard under auth for now to avoid login redirect issues
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Customer routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:customer'])->group(function () {
 
     // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
@@ -56,18 +64,32 @@ Route::middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin routes (requires login + role)
+| Admin routes
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,developer'])->group(function () {
 
-    // Services admin CRUD
-    Route::get('/admin/services/create', [ServiceController::class, 'create'])->name('services.create');
-    Route::post('/admin/services', [ServiceController::class, 'store'])->name('services.store');
-    Route::get('/admin/services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-    Route::put('/admin/services/{service}', [ServiceController::class, 'update'])->name('services.update');
-    Route::delete('/admin/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
-    Route::patch('/admin/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('services.toggle');
+    // Services admin pages
+    Route::get('/admin/services', [ServiceController::class, 'adminIndex'])
+        ->name('services.admin.index');
+
+    Route::get('/admin/services/create', [ServiceController::class, 'create'])
+        ->name('services.create');
+
+    Route::post('/admin/services', [ServiceController::class, 'store'])
+        ->name('services.store');
+
+    Route::get('/admin/services/{service}/edit', [ServiceController::class, 'edit'])
+        ->name('services.edit');
+
+    Route::put('/admin/services/{service}', [ServiceController::class, 'update'])
+        ->name('services.update');
+
+    Route::delete('/admin/services/{service}', [ServiceController::class, 'destroy'])
+        ->name('services.destroy');
+
+    Route::patch('/admin/services/{service}/toggle', [ServiceController::class, 'toggleActive'])
+        ->name('services.toggle');
 
     // Orders admin pages
     Route::get('/admin/orders', [OrderController::class, 'index'])->name('orders.index');
