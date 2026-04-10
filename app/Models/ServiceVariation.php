@@ -9,6 +9,7 @@ class ServiceVariation extends Model
     protected $fillable = [
         'service_id',
         'service_item_id',
+        'variation_image_path',
         'printing_category',
         'color_mode',
         'product_size',

@@ -82,6 +82,7 @@ class ServiceController extends Controller
             'variations.*.retail_price' => ['required', 'numeric', 'min:0'],
             'variations.*.bulk_price' => ['required', 'numeric', 'min:0'],
             'variations.*.is_active' => ['nullable', 'boolean'],
+            'variation_images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         DB::transaction(function () use ($request, $validated) {
@@ -104,7 +105,12 @@ class ServiceController extends Controller
                 'unit' => null,
             ]);
 
-            foreach ($validated['variations'] as $variation) {
+            foreach ($validated['variations'] as $index => $variation) {
+                $variationImagePath = null;
+                if ($request->hasFile("variation_images.$index")) {
+                    $variationImagePath = $request->file("variation_images.$index")->store('service-variations', 'public');
+                }
+
                 $service->variations()->create([
                     'service_item_id' => $this->generateServiceItemId(
                         $service->category,
@@ -114,6 +120,7 @@ class ServiceController extends Controller
                         $variation['product_size'] ?? null,
                         $variation['package_type'] ?? null
                     ),
+                    'variation_image_path' => $variationImagePath,
                     'printing_category' => $variation['printing_category'] ?? null,
                     'color_mode' => $variation['color_mode'] ?? null,
                     'product_size' => $variation['product_size'] ?? null,
@@ -161,6 +168,7 @@ class ServiceController extends Controller
             'variations.*.retail_price' => ['required', 'numeric', 'min:0'],
             'variations.*.bulk_price' => ['required', 'numeric', 'min:0'],
             'variations.*.is_active' => ['nullable', 'boolean'],
+            'variation_images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
         DB::transaction(function () use ($request, $validated, $service) {
@@ -184,9 +192,20 @@ class ServiceController extends Controller
                 'bulk_price' => $validated['variations'][0]['bulk_price'],
             ]);
 
+            foreach ($service->variations as $existingVariation) {
+                if ($existingVariation->variation_image_path) {
+                    Storage::disk('public')->delete($existingVariation->variation_image_path);
+                }
+            }
+
             $service->variations()->delete();
 
-            foreach ($validated['variations'] as $variation) {
+            foreach ($validated['variations'] as $index => $variation) {
+                $variationImagePath = null;
+                if ($request->hasFile("variation_images.$index")) {
+                    $variationImagePath = $request->file("variation_images.$index")->store('service-variations', 'public');
+                }
+
                 $service->variations()->create([
                     'service_item_id' => $this->generateServiceItemId(
                         $service->category,
@@ -196,6 +215,7 @@ class ServiceController extends Controller
                         $variation['product_size'] ?? null,
                         $variation['package_type'] ?? null
                     ),
+                    'variation_image_path' => $variationImagePath,
                     'printing_category' => $variation['printing_category'] ?? null,
                     'color_mode' => $variation['color_mode'] ?? null,
                     'product_size' => $variation['product_size'] ?? null,

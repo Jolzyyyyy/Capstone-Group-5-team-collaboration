@@ -9,6 +9,9 @@
         $variants = $service->activeVariations->map(fn ($variation) => [
             'id' => $variation->id,
             'service_item_id' => $variation->service_item_id,
+            'image' => $variation->variation_image_path
+                ? asset('storage/' . $variation->variation_image_path)
+                : ($service->image_path ? asset('storage/' . $service->image_path) : 'https://via.placeholder.com/900x640?text=No+Image'),
             'printing_category' => $variation->printing_category ?? 'General',
             'color_mode' => $variation->color_mode ?? 'Default',
             'product_size' => $variation->product_size ?? 'Default',
@@ -45,8 +48,8 @@
                                     class="w-full border rounded-xl p-2 text-left transition"
                                     :class="activeIndex === index ? 'border-red-500 ring-2 ring-red-100' : 'border-gray-200 hover:border-gray-300'"
                                     @click="activeIndex = index">
-                                <img src="{{ $service->image_path ? asset('storage/' . $service->image_path) : 'https://via.placeholder.com/300x180?text=No+Image' }}"
-                                     alt="{{ $service->name }}"
+                                <img :src="variant.image"
+                                     :alt="variant.package_type"
                                      class="w-full h-20 object-cover rounded-md">
                                 <p class="mt-2 text-xs font-semibold text-gray-700" x-text="variant.package_type"></p>
                                 <p class="text-[11px] text-gray-500 truncate" x-text="variant.product_size"></p>
@@ -57,8 +60,8 @@
                     <div class="lg:col-span-5">
                         <div class="border border-gray-200 rounded-2xl p-4 h-full">
                             <div class="relative">
-                                <img src="{{ $service->image_path ? asset('storage/' . $service->image_path) : 'https://via.placeholder.com/900x640?text=No+Image' }}"
-                                     alt="{{ $service->name }}"
+                                <img :src="current ? current.image : ''"
+                                     :alt="current ? current.package_type : '{{ $service->name }}'"
                                      class="w-full h-[450px] object-cover rounded-xl">
                             </div>
 
@@ -93,10 +96,10 @@
 
                                 <div class="border-t border-b border-gray-200 py-4 space-y-4">
                                     <div class="grid grid-cols-2 gap-3 items-center">
-                                        <label class="text-sm font-semibold text-gray-700">Printing Category</label>
+                                        <label class="text-sm font-semibold text-gray-700">Package / Variant ID</label>
                                         <select class="rounded-xl border-gray-300 bg-gray-50" x-model="activeIndex">
                                             <template x-for="(variant, index) in variants" :key="'cat-' + variant.id">
-                                                <option :value="index" x-text="variant.printing_category"></option>
+                                                <option :value="index" x-text="`${variant.package_type} (${variant.service_item_id})`"></option>
                                             </template>
                                         </select>
                                     </div>

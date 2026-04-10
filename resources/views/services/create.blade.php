@@ -135,6 +135,11 @@
             </p>
 
             <p>
+                Variation Preview Image:<br>
+                <input type="file" name="variation_images[0]" accept="image/*">
+            </p>
+
+            <p>
                 Retail Price:<br>
                 <input type="number" step="0.01" min="0" name="variations[0][retail_price]" value="{{ old('variations.0.retail_price') }}" required>
             </p>
@@ -231,6 +236,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         <option value="Package E">Package E</option>
                         <option value="Package F">Package F</option>
                     </select>
+                </p>
+
+                <p>
+                    Variation Preview Image:<br>
+                    <input type="file" name="variation_images[\${variationIndex}]" accept="image/*">
                 </p>
 
                 <p>

@@ -77,6 +77,7 @@
             $oldVariations = old('variations');
             $variations = is_array($oldVariations) ? $oldVariations : $service->variations->map(function ($variation) {
                 return [
+                    'variation_image_path' => $variation->variation_image_path,
                     'printing_category' => $variation->printing_category,
                     'color_mode' => $variation->color_mode,
                     'product_size' => $variation->product_size,
@@ -152,6 +153,20 @@
                         <option value="Package E" {{ ($variation['package_type'] ?? '') === 'Package E' ? 'selected' : '' }}>Package E</option>
                         <option value="Package F" {{ ($variation['package_type'] ?? '') === 'Package F' ? 'selected' : '' }}>Package F</option>
                     </select>
+                </p>
+
+                <p>
+                    Current Variation Image:<br>
+                    @if(!empty($variation['variation_image_path']))
+                        <img src="{{ asset('storage/' . $variation['variation_image_path']) }}" alt="Variation image" width="120"><br>
+                    @else
+                        No variation image
+                    @endif
+                </p>
+
+                <p>
+                    Change Variation Image:<br>
+                    <input type="file" name="variation_images[{{ $i }}]" accept="image/*">
                 </p>
 
                 <p>
@@ -236,6 +251,11 @@
                         <option value="Package E">Package E</option>
                         <option value="Package F">Package F</option>
                     </select>
+                </p>
+
+                <p>
+                    Variation Preview Image:<br>
+                    <input type="file" name="variation_images[0]" accept="image/*">
                 </p>
 
                 <p>
@@ -336,6 +356,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         <option value="Package E">Package E</option>
                         <option value="Package F">Package F</option>
                     </select>
+                </p>
+
+                <p>
+                    Variation Preview Image:<br>
+                    <input type="file" name="variation_images[\${variationIndex}]" accept="image/*">
                 </p>
 
                 <p>

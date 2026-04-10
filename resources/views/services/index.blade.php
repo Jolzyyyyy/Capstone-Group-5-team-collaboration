@@ -38,8 +38,13 @@
                             
                             <a href="{{ route('services.show', $service) }}" class="block group">
                             <div class="relative h-72 w-full bg-gray-100 overflow-hidden">
-                                @if($service->image_path)
-                                    <img src="{{ asset('storage/'.$service->image_path) }}" alt="{{ $service->name }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition">
+                                @php
+                                    $previewImage = optional($service->activeVariations->first())->variation_image_path
+                                        ? asset('storage/' . $service->activeVariations->first()->variation_image_path)
+                                        : ($service->image_path ? asset('storage/' . $service->image_path) : null);
+                                @endphp
+                                @if($previewImage)
+                                    <img src="{{ $previewImage }}" alt="{{ $service->name }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition">
                                 @else
                                     <div class="flex items-center justify-center h-full text-gray-400">
                                         <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
