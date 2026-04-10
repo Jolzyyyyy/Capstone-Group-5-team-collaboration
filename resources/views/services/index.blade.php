@@ -5,27 +5,41 @@
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
-            <div class="mb-6 flex justify-between items-center">
-                <a href="{{ route('cart.index') }}" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 transition ease-in-out duration-150 shadow-sm">
-                    🛒 View Cart
+    <div class="py-12 bg-[#f6f6f6] min-h-screen">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
+            <div class="mb-10 flex justify-end">
+                <a href="{{ route('cart.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 transition">
+                    <span>🛒</span>
+                    <span>View Cart</span>
                 </a>
             </div>
+
+            <h2 class="text-4xl font-extrabold text-center text-gray-900 mb-8">Our Services</h2>
 
             @if($services->count() === 0)
                 <div class="bg-white p-6 rounded-lg shadow text-center">
                     <p class="text-gray-500 italic">No services available at the moment.</p>
                 </div>
             @else
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                @if($errors->any())
+                    <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        <p class="font-semibold mb-1">Unable to add item to cart.</p>
+                        <ul class="list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     @foreach($services as $service)
-                        <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100">
+                        <div class="bg-white border border-gray-200 p-4 hover:shadow-md transition">
                             
-                            <div class="relative h-48 w-full bg-gray-200">
+                            <a href="{{ route('services.show', $service) }}" class="block group">
+                            <div class="relative h-72 w-full bg-gray-100 overflow-hidden">
                                 @if($service->image_path)
-                                    <img src="{{ asset('storage/'.$service->image_path) }}" alt="{{ $service->name }}" class="w-full h-full object-cover">
+                                    <img src="{{ asset('storage/'.$service->image_path) }}" alt="{{ $service->name }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition">
                                 @else
                                     <div class="flex items-center justify-center h-full text-gray-400">
                                         <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,40 +48,60 @@
                                     </div>
                                 @endif
                             </div>
+                            </a>
 
-                            <div class="p-5">
-                                <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">{{ $service->category }}</span>
-                                <h3 class="text-lg font-bold text-gray-800 mt-1">{{ $service->name }}</h3>
-                                
-                                <div class="mt-3 space-y-1">
-                                    <p class="text-sm text-gray-600">Retail: <span class="font-bold text-gray-900">₱{{ number_format($service->retail_price, 2) }}</span></p>
-                                    <p class="text-sm text-gray-600">Bulk: <span class="font-bold text-gray-900">₱{{ number_format($service->bulk_price, 2) }}</span></p>
+                            <div class="pt-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs tracking-wide uppercase text-gray-500">{{ $service->category }}</p>
+                                        <h3 class="text-2xl font-extrabold text-gray-900 mt-1">{{ \Illuminate\Support\Str::upper($service->name) }}</h3>
+                                    </div>
+                                    <span class="text-xl text-gray-500">♡</span>
                                 </div>
 
-                                <form method="POST" action="{{ route('cart.add', $service->id) }}" class="mt-4">
-                                    @csrf
-                                    <div class="grid grid-cols-2 gap-2 mb-3">
+                                @if($service->activeVariations->isNotEmpty())
+                                    <form method="POST" action="{{ route('cart.add', $service->id) }}" class="mt-4 space-y-2">
+                                        @csrf
                                         <div>
-                                            <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Type</label>
-                                            <select name="price_type" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                                <option value="retail">Retail</option>
-                                                <option value="bulk">Bulk</option>
+                                            <label class="block text-[11px] uppercase text-gray-500 font-bold mb-1">Package</label>
+                                            <select name="service_variation_id" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                                @foreach($service->activeVariations as $variation)
+                                                    <option value="{{ $variation->id }}">
+                                                        {{ $variation->package_type ?: $variation->service_item_id }} ({{ $variation->variation_label ?: 'Default variant' }})
+                                                    </option>
+                                                @endforeach
                                             </select>
                                         </div>
-                                        <div>
-                                            <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Qty</label>
-                                            <input type="number" name="qty" min="1" value="1" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        </div>
-                                    </div>
 
-                                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm shadow-sm">
-                                            ➕ Add to Cart
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label class="block text-[11px] uppercase text-gray-500 font-bold mb-1">Price Type</label>
+                                                <select name="price_type" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                    <option value="retail">Retail</option>
+                                                    <option value="bulk">Bulk</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] uppercase text-gray-500 font-bold mb-1">Qty</label>
+                                                <input type="number" name="qty" min="1" value="1" class="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-xs uppercase">
+                                            Select Type
                                         </button>
                                     </form>
+                                @else
+                                    <div class="mt-4 rounded-md bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-700">
+                                        No active variants available for this service.
+                                    </div>
+                                @endif
+
+                                <a href="{{ route('services.show', $service) }}"
+                                   class="mt-3 inline-flex w-full justify-center rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    View Details
+                                </a>
                             </div>
-        @else
-            <div class="no-variation">No active variations available.</div>
-        @endif
 
                         </div>
                     @endforeach
