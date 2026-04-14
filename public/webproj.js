@@ -102,6 +102,22 @@ window.addEventListener('scroll', function () {
 
     if (window.scrollY > 50) {
         mainHeader.classList.add('scrolled');
+// Compatibility alias used by welcome.blade.php nav links
+function showSection(sectionId) {
+    jumpTo(sectionId);
+    return false;
+}
+
+window.addEventListener('scroll', function() {
+    const mainHeader = document.getElementById('mainHeader');
+    const activeSection = document.querySelector('.section.active');
+    
+    if (activeSection && activeSection.id === 'home') {
+        if (window.scrollY > 50) {
+            mainHeader.classList.add('scrolled');
+        } else {
+            mainHeader.classList.remove('scrolled');
+        }
     } else {
         mainHeader.classList.remove('scrolled');
     }
@@ -729,7 +745,6 @@ function initMap() {
         mapDiv.innerHTML = `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15442.271842835922!2d121.0504!3d14.6137!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM2JzQ5LjMiTiAxMjHCsDAzJzAxLjQiRQ!5e0!3m2!1sen!2sph!4v1620000000000!5m2!1sen!2sph" width="100%" height="100%" style="border:0; border-radius:8px;" allowfullscreen="" loading="lazy"></iframe>`;
     }
 }
-<<<<<<< Updated upstream
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -753,5 +768,3 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
 });
-=======
->>>>>>> Stashed changes
