@@ -21,6 +21,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 // --- ADMIN CONTROLLERS ---
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\SecurityController;
+use App\Models\Service;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,7 +29,11 @@ use App\Http\Controllers\Admin\SecurityController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
-    return view('welcome');
+    $services = Service::where('is_active', 1)
+        ->with('activeVariations')
+        ->get();
+
+    return view('welcome', compact('services'));
 })->name('home');
 
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
@@ -64,9 +69,21 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
         Route::get('/security/2fa', [SecurityController::class, 'show2faForm'])->name('admin.security.2fa');
         Route::post('/security/2fa/activate', [SecurityController::class, 'activate2fa'])->name('admin.security.2fa.activate');
 
-        Route::resource('services-admin', ServiceController::class)->except(['index', 'show']);
-        Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('services.toggle');
-        Route::resource('orders', OrderController::class);
+        // Admin services
+        Route::get('/services', [ServiceController::class, 'adminIndex'])->name('admin.services.index');
+        Route::get('/services/create', [ServiceController::class, 'create'])->name('admin.services.create');
+        Route::post('/services', [ServiceController::class, 'store'])->name('admin.services.store');
+        Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('admin.services.edit');
+        Route::put('/services/{service}', [ServiceController::class, 'update'])->name('admin.services.update');
+        Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('admin.services.destroy');
+        Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('admin.services.toggle');
+
+        // Admin orders
+        Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('admin.orders.show');
+        Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('admin.orders.edit');
+        Route::put('/orders/{order}', [OrderController::class, 'update'])->name('admin.orders.update');
+        Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('admin.orders.destroy');
 
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     });
@@ -101,6 +118,8 @@ Route::middleware(['auth'])->group(function () {
 */
 Route::middleware(['auth', 'role:customer'])->group(function () {
 
+    Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
+    
     // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 
@@ -110,43 +129,6 @@ Route::middleware(['auth', 'role:customer'])->group(function () {
     // Customer: My Orders pages
     Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
     Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
-});
-
-/*
-|--------------------------------------------------------------------------
-| 5. GUEST & PASSWORD RECOVERY ROUTES
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth', 'role:admin,developer'])->group(function () {
-
-    // Services admin pages
-    Route::get('/admin/services', [ServiceController::class, 'adminIndex'])
-        ->name('services.admin.index');
-
-    Route::get('/admin/services/create', [ServiceController::class, 'create'])
-        ->name('services.create');
-
-    Route::post('/admin/services', [ServiceController::class, 'store'])
-        ->name('services.store');
-
-    Route::get('/admin/services/{service}/edit', [ServiceController::class, 'edit'])
-        ->name('services.edit');
-
-    Route::put('/admin/services/{service}', [ServiceController::class, 'update'])
-        ->name('services.update');
-
-    Route::delete('/admin/services/{service}', [ServiceController::class, 'destroy'])
-        ->name('services.destroy');
-
-    Route::patch('/admin/services/{service}/toggle', [ServiceController::class, 'toggleActive'])
-        ->name('services.toggle');
-
-    // Orders admin pages
-    Route::get('/admin/orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/admin/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::get('/admin/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
-    Route::put('/admin/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
-    Route::delete('/admin/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 });
 
 /*

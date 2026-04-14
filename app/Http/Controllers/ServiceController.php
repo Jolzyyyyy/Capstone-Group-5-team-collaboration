@@ -36,7 +36,7 @@ class ServiceController extends Controller
 
         $services = $query->paginate(12)->withQueryString();
 
-        return view('services.index', compact('services'));
+        return view('welcome', compact('services'));
     }
 
     /**

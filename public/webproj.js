@@ -12,15 +12,25 @@ let currentPreviewIndex = 0;
 let currentSlideIndex = 0;
 let voucherDiscount = 0;
 
+let currentServiceVariations = [];
+
+// --- DOM HELPER ---
+const $id = (id) => document.getElementById(id);
+
 // LOGIN SIMULATION
-let isLoggedIn = false; 
+let isLoggedIn = document.body.dataset.loggedIn === "true";
 
 const heroSlides = document.querySelectorAll('.hero-slide');
 const dots = document.querySelectorAll('.dot');
-let slideInterval = setInterval(nextHeroSlide, 8000);
+let slideInterval = heroSlides.length ? setInterval(nextHeroSlide, 8000) : null;
 
 // Initialize Cart from LocalStorage
 let cart = JSON.parse(localStorage.getItem('printCart')) || [];
+
+// --- CART STORAGE HELPER ---
+function saveCart(){
+    localStorage.setItem('printCart', JSON.stringify(cart));
+}
 
 // --- HERO SECTION FUNCTIONS ---
 function updateHero() {
@@ -46,33 +56,25 @@ function jumpToHero(index) {
 
 // --- NAVIGATION & SECTION LOGIC ---
 function jumpTo(sectionId) {
-    const productDetail = document.getElementById('productDetail');
-    const pageWrapper = document.getElementById('pageWrapper');
-    const mainHeader = document.getElementById('mainHeader');
+    const productDetail = $id('productDetail');
+    const pageWrapper = $id('pageWrapper');
+    const mainHeader = $id('mainHeader');
+    const target = $id(sectionId);
+
+    if (!target) return;
 
     if (productDetail) productDetail.style.display = 'none';
     if (pageWrapper) pageWrapper.style.display = 'block';
     if (mainHeader) mainHeader.classList.remove('detail-active');
 
+    document.body.classList.remove('services-active', 'about-active', 'contact-active');
+
     if (sectionId === 'products') {
         document.body.classList.add('services-active');
-        if (mainHeader) mainHeader.classList.add('scrolled'); 
-    } 
-    else if (sectionId === 'home') {
-        if (window.scrollY < 50) {
-            if (mainHeader) mainHeader.classList.remove('scrolled');
-        }
-        if (isLoggedIn) {
-            document.body.classList.add('services-active');
-        } else {
-            document.body.classList.remove('services-active');
-        }
-    } 
-    else {
-        if (mainHeader) mainHeader.classList.add('scrolled');
-        if (!isLoggedIn) {
-            document.body.classList.remove('services-active');
-        }
+    } else if (sectionId === 'about') {
+        document.body.classList.add('about-active');
+    } else if (sectionId === 'contact') {
+        document.body.classList.add('contact-active');
     }
 
     const sections = document.querySelectorAll('.section');
@@ -81,31 +83,27 @@ function jumpTo(sectionId) {
         sec.style.display = 'none';
     });
 
-    const target = document.getElementById(sectionId);
-    if (target) {
-        target.style.display = 'block';
-        setTimeout(() => { target.classList.add('active'); }, 10);
-        
-        if (sectionId === 'home') {
-            window.scrollTo({ top: 0, behavior: 'instant' });
-        } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
+    target.style.display = 'block';
+
+    requestAnimationFrame(() => {
+        target.classList.add('active');
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    history.replaceState(null, null, '#' + sectionId);
 }
 
-window.addEventListener('scroll', function() {
-    const mainHeader = document.getElementById('mainHeader');
-    const activeSection = document.querySelector('.section.active');
-    
-    if (activeSection && activeSection.id === 'home') {
-        if (window.scrollY > 50) {
-            mainHeader.classList.add('scrolled');
-        } else {
-            mainHeader.classList.remove('scrolled');
-        }
+window.addEventListener('scroll', function () {
+    const mainHeader = $id('mainHeader');
+    if (!mainHeader) return;
+
+    if (window.scrollY > 50) {
+        mainHeader.classList.add('scrolled');
     } else {
-        if (mainHeader) mainHeader.classList.add('scrolled');
+        mainHeader.classList.remove('scrolled');
     }
 });
 
@@ -113,43 +111,6 @@ function backToMain() {
     document.body.classList.add('services-active');
     jumpTo('products');
 }
-
-// --- DATA DEFINITION ---
-const allData = {
-    'doc': {
-        name: "DOCUMENT PRINTING",
-        type: "printing",
-        categories: [
-            { name: "Text Only", imgs: ["images/TXTONLY (B&W).png", "images/TXTONLY (PC).png", "images/TXTONLY (FC).png"], specs: "Paper: Bond Paper, 80gsm. Standard document printing for reports and letters." },
-            { name: "Text with Image", imgs: ["images/TXTWI (B&W).png", "images/TXTWI (PC).png", "images/TXTWI (FC).png"], specs: "Paper: Bond Paper, 80gsm. Mixed text & image printing." },
-            { name: "Image Only", imgs: ["images/IO (B&W).png", "images/IO (PC).png", "images/IO (FC).png"], specs: "Paper: Bond Paper, 80gsm. High-ink coverage for documents with graphics." }
-        ]
-    },
-    'photo': {
-        name: "PHOTOCOPY & SCANNING",
-        type: "xerox",
-        categories: [
-            { name: "B&W Photocopy", imgs: ["images/PHOTOC (FC).png"], specs: "Standard 80gsm Copy Paper. Fast and clear duplication." },
-            { name: "Partial Color Copy", imgs: ["images/PHOTOC (PC).png"], specs: "Standard 80gsm. Best for forms with small colored logos or text." },
-            { name: "Full Color Copy", imgs: ["images/PHOTOC (B&W).png"], specs: "Standard 80gsm. Full vibrant color duplication." }
-        ]
-    },
-    'id': {
-        name: "ID & PHOTO SERVICES",
-        type: "id",
-        categories: [
-            { name: "PACKAGE", imgs: ["images/PCKGA.png", "images/PCKGB.png", "images/PCKGC.png", "images/PCKGD.png", "images/PCKGE.png", "images/PCKGF.png"], specs: "Best value bundles for applications and school." },
-            { name: "SINGLE PHOTO", imgs: ["images/SP (2-5).png", "images/SP (6-A4).png"], specs: "High-quality prints for frames and memories." }
-        ]
-    },
-    'largeformat': {
-        name: "LARGE FORMAT PRINTING",
-        type: "largeformat",
-        categories: [
-            { name: "SINTRA BOARD PRINTING", imgs: ["sintra1.jpg"], specs: "Material: Sintra Board (3mm Flat PVC), A4 Size.<br>Durable, moisture-resistant, and lightweight PVC foam board.<br>Smooth surface direct print, intended for indoor display." }
-        ]
-    }
-};
 
 // --- PRICING DATABASES ---
 const printingPricing = {
@@ -193,30 +154,78 @@ const idDetails = {
 };
 
 // --- MODAL & DETAIL UI LOGIC ---
-function openModal(key) {
-    const data = allData[key] || { name: "PRINTING SERVICE", categories: [] };
-    currentCategoryType = data.type;
+function openModal(serviceId) {
+    const service = window.servicesData?.[serviceId];
 
-    const modalTitle = document.getElementById('modalTitle');
-    const track = document.getElementById('categoryTrack');
-
-    if (modalTitle) modalTitle.innerText = data.name;
-    if (track) {
-        track.innerHTML = '';
-        currentCategorySet = data.categories;
-        currentCategorySet.forEach((cat, index) => {
-            track.innerHTML += `
-                <div class="category-card">
-                    <img src="${cat.imgs[0]}">
-                    <h4>${cat.name}</h4>
-                    <p onclick="openDetail(${index})">SELECT TYPE</p>
-                </div>`;
-        });
-        currentSlideIndex = 0;
-        track.style.transform = `translateX(0)`;
-        updateModalButtons();
+    if (!service) {
+        console.error('Service not found for ID:', serviceId);
+        return;
     }
-    const modal = document.getElementById('productModal');
+
+    currentServiceVariations = service.variations || [];
+    currentCategoryType = (service.category || '').toLowerCase();
+
+    const modalTitle = $id('modalTitle');
+    const track = $id('categoryTrack');
+
+    if (modalTitle) {
+        modalTitle.innerText = service.name || 'PRINTING SERVICE';
+    }
+
+if (track) {
+    track.innerHTML = '';
+    currentCategorySet = currentServiceVariations;
+
+    currentCategorySet.forEach((variation, index) => {
+
+        const image = variation.image || service.image || 'images/Prdcts1.jpg';
+
+        const serviceTitle = service.name || 'SERVICE';
+
+        const subTitle =
+            variation.package_type ||
+            variation.product_size ||
+            variation.finish_type ||
+            variation.color_mode ||
+            variation.service_item_id ||
+            `Option ${index + 1}`;
+
+        const descriptionParts = [
+            variation.printing_category,
+            variation.color_mode,
+            variation.product_size,
+            variation.finish_type
+        ].filter(Boolean);
+
+        const description = descriptionParts.join(' • ');
+
+        track.innerHTML += `
+            <div class="category-card" onclick="openDetail(${index})">
+
+                <h4>${serviceTitle}</h4>
+
+                <img src="${image}" alt="${subTitle}">
+
+                <div class="category-subtitle">${subTitle}</div>
+
+                <div class="category-description">${description || ''}</div>
+
+                <div class="category-label">PACKAGE</div>
+
+                <button type="button" class="select-type-btn">
+                    SELECT TYPE
+                </button>
+
+            </div>
+        `;
+    });
+
+    currentSlideIndex = 0;
+    track.style.transform = `translateX(0)`;
+    updateModalButtons();
+}
+
+    const modal = $id('productModal');
     if (modal) {
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('active'), 10);
@@ -224,14 +233,39 @@ function openModal(key) {
 }
 
 function closeModal() {
-    const modal = document.getElementById('productModal');
+    const modal = $id('productModal');
     if (modal) {
         modal.classList.remove('active');
         setTimeout(() => modal.style.display = 'none', 300);
     }
 }
 
-function getPreviewTrack(){return document.getElementById('previewTrack');}
+// ADD THIS FUNCTION HERE
+function moveSlide(dir) {
+    const track = document.getElementById('categoryTrack');
+    if (!track) return;
+
+    const cards = track.children.length;
+    currentSlideIndex = Math.max(0, Math.min(currentSlideIndex + dir, cards - 1));
+
+    track.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+    updateModalButtons();
+}
+
+function updateModalButtons() {
+    const prev = $id('modalPrev');
+    const next = $id('modalNext');
+    const track = $id('categoryTrack');
+
+    if (!prev || !next || !track) return;
+
+    const totalCards = track.children.length;
+
+    prev.style.display = currentSlideIndex <= 0 ? 'none' : 'flex';
+    next.style.display = currentSlideIndex >= totalCards - 1 ? 'none' : 'flex';
+}
+
+function getPreviewTrack(){return $id('previewTrack');}
 function getPreviewImages(){const track=getPreviewTrack();return track?Array.from(track.querySelectorAll('img')):[];}
 function setPreviewIndex(index){
   const track=getPreviewTrack(),imgs=getPreviewImages();
@@ -243,7 +277,7 @@ function setPreviewIndex(index){
 }
 
 function syncPreviewFromDropdowns(){
-  const colorModeDropdown=document.getElementById('colorMode'),paperSizeDropdown=document.getElementById('paperSize'),detailTitle=document.getElementById('detailTitleHeader');
+  const colorModeDropdown=$id('colorMode'),paperSizeDropdown=$id('paperSize'),detailTitle=$id('detailTitle');
   if(!detailTitle)return;
   if((currentCategoryType==='printing'||currentCategoryType==='xerox')&&colorModeDropdown){setPreviewIndex(colorModeDropdown.selectedIndex);return;}
   if(currentCategoryType==='id'&&detailTitle.innerText==='PACKAGE'&&paperSizeDropdown){setPreviewIndex(paperSizeDropdown.selectedIndex);return;}
@@ -252,70 +286,95 @@ function syncPreviewFromDropdowns(){
 }
 
 function openDetail(index) {
-    const cat = currentCategorySet[index];
-    if (!cat) return;
+    const variation = currentCategorySet[index];
+    if (!variation) return;
+
+    const previewTrack = document.getElementById('previewTrack');
+
+    if (previewTrack) {
+        const image = variation.image || 'images/Prdcts1.jpg';
+
+        previewTrack.innerHTML = `
+            <img src="${image}" alt="${variation.service_item_id || 'Service'}">
+        `;
+
+        currentPreviewIndex = 0;
+        previewTrack.style.transform = 'translateX(0)';
+    }
 
     document.body.classList.add('services-active');
 
-    document.getElementById('detailTitleHeader').innerText = cat.name;
-    document.getElementById('productSpecs').innerHTML = cat.specs;
+    const detailTitle = $id('detailTitle');
+    const currentServiceId = $id('currentServiceId');
+    const currentServiceName = $id('currentServiceName');
+    const retailAmount = $id('retailAmount');
+    const bulkAmount = $id('bulkAmount');
+    const totalAmount = $id('totalAmount');
+    const quantityInput = $id('quantityInput');
 
-    const printCategory = document.getElementById('printCategory');
-    const colorMode = document.getElementById('colorMode');
-    const paperSize = document.getElementById('paperSize');
+    const label =
+        variation.printing_category ||
+        variation.package_type ||
+        variation.finish_type ||
+        variation.product_size ||
+        'Service Detail';
 
-    if (currentCategoryType === 'printing' || currentCategoryType === 'xerox') {
-        printCategory.innerHTML = `<option value="text_only">Text Only</option><option value="text_image">Text with Image</option><option value="image_only">Image Only</option>`;
-        paperSize.innerHTML = `<option value="short">Short (8.5 x 11)</option><option value="a4">A4 (8.27 x 11.69)</option><option value="legal">Legal (8.5 x 14)</option>`;
-        colorMode.innerHTML = `<option value="bw">B&W</option><option value="partial">Partial Color</option><option value="full">Full Color</option>`;
+    if (detailTitle) detailTitle.innerText = label;
+    if (currentServiceId) currentServiceId.innerText = variation.service_item_id || 'N/A';
+    if (currentServiceName) currentServiceName.innerText = label;
 
-        if (cat.name.includes("Text Only") || cat.name.includes("B&W")) {
-            printCategory.value = "text_only"; colorMode.value = "bw";
-        } else if (cat.name.includes("Text with Image") || cat.name.includes("Partial")) {
-            printCategory.value = "text_image"; colorMode.value = "partial";
-        } else if (cat.name.includes("Image Only") || cat.name.includes("Full")) {
-            printCategory.value = "image_only"; colorMode.value = "full";
-        }
+    const retail = Number(variation.retail_price || 0);
+    const bulk = Number(variation.bulk_price || 0);
+    const qty = parseInt(quantityInput?.value || 1);
+
+    if (retailAmount) retailAmount.innerText = retail.toFixed(2);
+    if (bulkAmount) bulkAmount.innerText = bulk.toFixed(2);
+
+    const selectedPriceType = document.querySelector('input[name="priceType"]:checked')?.value || 'retail';
+    const unitPrice = selectedPriceType === 'bulk' ? bulk : retail;
+
+    if (totalAmount) totalAmount.innerText = (unitPrice * qty).toFixed(2);
+
+    const sidebarTrack = $id('sidebarTrack');
+    if (sidebarTrack) {
+        sidebarTrack.innerHTML = '';
+
+        currentCategorySet.forEach((item, idx) => {
+            const itemLabel =
+                item.printing_category ||
+                item.package_type ||
+                item.finish_type ||
+                item.product_size ||
+                item.service_item_id ||
+                `Option ${idx + 1}`;
+            
+            const itemImage = item.image || 'images/Prdcts1.jpg';
+
+            sidebarTrack.innerHTML += `
+                <div class="sidebar-item ${idx === index ? 'active' : ''}" onclick="openDetail(${idx})">
+                    <img src="${itemImage}" alt="${itemLabel}">
+                    <p>${itemLabel}</p>
+                </div>
+            `;
+        });
     }
 
-    if (currentCategoryType === "id") updateDropdownsForID(cat.name);
-    if (currentCategoryType === "largeformat") updateDropdownsForLargeFormat(cat.name);
+    closeModal();
 
-    const previewTrack = document.getElementById('previewTrack');
-    previewTrack.innerHTML = '';
-    cat.imgs.forEach(imgSrc => {
-        previewTrack.innerHTML += `<img src="${imgSrc}" style="min-width:100%; height:100%; object-fit:contain;">`;
-    });
+    const pageWrapper = $id('pageWrapper');
+    const productDetail = $id('productDetail');
 
-    currentPreviewIndex = 0;
-    previewTrack.style.transform = `translateX(0)`;
-    updatePreviewButtons();
+    if (pageWrapper) pageWrapper.style.display = 'none';
+    if (productDetail) productDetail.style.display = 'block';
 
-    const sidebarTrack = document.getElementById('sidebarTrack');
-    sidebarTrack.innerHTML = '';
-    currentCategorySet.forEach((sidebarCat, idx) => {
-        sidebarTrack.innerHTML += `
-            <div class="sidebar-item ${idx === index ? 'active' : ''}" onclick="openDetail(${idx})">
-                <img src="${sidebarCat.imgs[0]}">
-                <p>${sidebarCat.name}</p>
-            </div>`;
-    });
-
-    document.getElementById('productModal').classList.remove('active');
-    document.getElementById('productModal').style.display = 'none';
-    document.getElementById('pageWrapper').style.display = 'none';
-    document.getElementById('productDetail').style.display = 'block';
-    document.getElementById('mainHeader').classList.add('detail-active');
-
-    updatePrice();
     window.scrollTo(0, 0);
 }
 
 // --- DROPDOWN BUILDERS ---
 function updateDropdownsForID(categoryName) {
-    const paperSize = document.getElementById('paperSize');
-    const printCategory = document.getElementById('printCategory');
-    const colorMode = document.getElementById('colorMode');
+    const paperSize = $id('paperSize');
+    const printCategory = $id('printCategory');
+    const colorMode = $id('colorMode');
     paperSize.innerHTML = '';
 
     if (categoryName === "PACKAGE") {
@@ -336,9 +395,9 @@ function updateDropdownsForID(categoryName) {
 }
 
 function updateDropdownsForLargeFormat(categoryName) {
-    const paperSize = document.getElementById('paperSize');
-    const printCategory = document.getElementById('printCategory');
-    const colorMode = document.getElementById('colorMode');
+    const paperSize = $id('paperSize');
+    const printCategory = $id('printCategory');
+    const colorMode = $id('colorMode');
 
     if (categoryName === "SINTRA BOARD PRINTING") {
         paperSize.innerHTML = '<option value="a4">A4 (8.27 x 11.69)</option>';
@@ -351,85 +410,42 @@ function updateDropdownsForLargeFormat(categoryName) {
     }
 }
 
-// --- UPDATED PRICE & DYNAMIC SERVICE ID LOGIC ---
+// --- UPDATED PRICE LOGIC ---
 function updatePrice() {
-    const categoryValue = document.getElementById('printCategory').value;
-    const categoryName = document.getElementById('detailTitleHeader').innerText;
-    const color = document.getElementById('colorMode').value;
-    const size = document.getElementById('paperSize').value;
-    const qtyInput = document.getElementById('qtyInput');
-    const qty = parseInt(qtyInput.value) || 1;
-    const priceTypeInput = document.querySelector('input[name="priceType"]:checked');
-    const priceType = priceTypeInput ? priceTypeInput.value : 'retail';
-    const specsDisplay = document.getElementById('productSpecs');
-    const serviceIdDisplay = document.getElementById('currentServiceId');
+    const currentServiceId = $id('currentServiceId');
+    const retailAmount = $id('retailAmount');
+    const bulkAmount = $id('bulkAmount');
+    const totalAmount = $id('totalAmount');
+    const quantityInput = $id('quantityInput');
 
-    let retail = 0, bulk = 0;
-    let computedId = "N/A";
-
-    // 1. DOCUMENT PRINTING
-    if (currentCategoryType === "printing") {
-        const docIdMap = {
-            "text_only": { "bw": "DOC-TX-001", "partial": "DOC-TX-002", "full": "DOC-TX-003" },
-            "text_image": { "bw": "DOC-TWI-004", "partial": "DOC-TWI-005", "full": "DOC-TWI-006" },
-            "image_only": { "bw": "DOC-IM-007", "partial": "DOC-IM-008", "full": "DOC-IM-009" }
-        };
-        computedId = docIdMap[categoryValue][color];
-        const p = printingPricing[categoryValue][color][size];
-        retail = p[0]; bulk = p[1];
-        document.getElementById('bulkAmount').innerText = bulk.toFixed(2);
-    } 
-    // 2. ID PHOTO SERVICES
-    else if (currentCategoryType === "id") {
-        if (categoryName === "PACKAGE") {
-            const packageIdMap = {
-                'Package A': "IDP-PKG-001", 'Package B': "IDP-PKG-002", 'Package C': "IDP-PKG-003",
-                'Package D': "IDP-PKG-004", 'Package E': "IDP-PKG-005", 'Package F': "IDP-PKG-006"
-            };
-            computedId = packageIdMap[size];
-            specsDisplay.innerHTML = `Premium Photo Paper (260gsm)<br><strong style="color:#e67e22;">${idDetails[size] || ""}</strong>`;
-        } else {
-            computedId = "IDP-SP-" + size;
-            specsDisplay.innerHTML = `Premium Photo Paper (260gsm)`;
-        }
-        retail = idPricing[categoryName][size] || 0;
-        bulk = retail;
-        document.getElementById('bulkAmount').innerText = "Fixed";
-    }
-    // 3. LARGE FORMAT
-    else if (currentCategoryType === "largeformat") {
-        computedId = "SINTRA-001";
-        retail = sintraPricing[categoryValue] || 0;
-        bulk = retail;
-        document.getElementById('bulkAmount').innerText = "Fixed";
-    }
-    // 4. PHOTOCOPY & SCANNING (UPDATED IDs LOGIC)
-    else if (currentCategoryType === "xerox") {
-        const xeroxIdMap = {
-            "bw": "DOC-PCPY-001",
-            "partial": "DOC-PCPY-002",
-            "full": "DOC-PCPY-003"
-        };
-        computedId = xeroxIdMap[color] || "DOC-PCPY-001";
-        
-        // Xerox currently only uses B&W pricing database as per requirements
-        const p = xeroxPricing[categoryValue].bw[size];
-        retail = p[0]; bulk = p[1];
-        document.getElementById('bulkAmount').innerText = bulk.toFixed(2);
+    if (!currentServiceId || !retailAmount || !bulkAmount || !totalAmount || !quantityInput) {
+        return;
     }
 
-    if (serviceIdDisplay) serviceIdDisplay.innerText = computedId;
-    document.getElementById('retailAmount').innerText = retail.toFixed(2);
-    const unitPrice = (priceType === 'retail') ? retail : bulk;
-    const total = unitPrice * qty;
-    document.getElementById('totalAmount').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    const selectedVariation = currentCategorySet.find(
+        item => item.service_item_id === currentServiceId.innerText
+    );
+
+    if (!selectedVariation) return;
+
+    const retail = Number(selectedVariation.retail_price || 0);
+    const bulk = Number(selectedVariation.bulk_price || 0);
+    const qty = parseInt(quantityInput.value || 1);
+    const selectedPriceType =
+        document.querySelector('input[name="priceType"]:checked')?.value || 'retail';
+
+    retailAmount.innerText = retail.toFixed(2);
+    bulkAmount.innerText = bulk.toFixed(2);
+
+    const unitPrice = selectedPriceType === 'bulk' ? bulk : retail;
+    totalAmount.innerText = (unitPrice * qty).toFixed(2);
 }
 
 /**
  * AUTO-SYNC LOGIC: Updated movePreview
  */
 function movePreview(dir) {
-    const track = document.getElementById('previewTrack');
+    const track = $id('previewTrack');
     const imgs = track.querySelectorAll('img');
     const totalImgs = imgs.length;
     
@@ -437,7 +453,7 @@ function movePreview(dir) {
     track.style.transform = `translateX(-${currentPreviewIndex * 100}%)`;
 
     // SYNC COLOR MODE FOR DOCUMENT PRINTING & XEROX
-    const colorModeDropdown = document.getElementById('colorMode');
+    const colorModeDropdown = $id('colorMode');
     if ((currentCategoryType === "printing" || currentCategoryType === "xerox") && colorModeDropdown) {
         if (colorModeDropdown.options[currentPreviewIndex]) {
             colorModeDropdown.selectedIndex = currentPreviewIndex;
@@ -446,7 +462,7 @@ function movePreview(dir) {
     }
 
     // SYNC SIZE/PACKAGE FOR ID
-    const paperSizeDropdown = document.getElementById('paperSize');
+    const paperSizeDropdown = $id('paperSize');
     if (currentCategoryType === "id" && paperSizeDropdown) {
         if (paperSizeDropdown.options[currentPreviewIndex]) {
             paperSizeDropdown.selectedIndex = currentPreviewIndex;
@@ -458,8 +474,8 @@ function movePreview(dir) {
 }
 
 function updatePreviewButtons() {
-    const prev = document.getElementById('detailPrevBtn');
-    const next = document.getElementById('detailNextBtn');
+    const prev = $id('detailPrevBtn');
+    const next = $id('detailNextBtn');
     const imgs = document.querySelectorAll('#previewTrack img');
     const totalImgs = imgs.length;
     if (prev) prev.style.display = (currentPreviewIndex === 0) ? 'none' : 'flex';
@@ -488,66 +504,67 @@ function bindDetailButtons() {
 }
 
 function changeQty(d) {
-    let q = document.getElementById('qtyInput');
-    q.value = Math.max(1, parseInt(q.value) + d);
+    const q = $id('quantityInput');
+    if (!q) return;
+
+    q.value = Math.max(1, (parseInt(q.value) || 1) + d);
     updatePrice();
 }
 
 // --- CART SYSTEM ---
 function toggleCart() {
-    const overlay = document.getElementById('cartOverlay');
-    const drawer = document.getElementById('cartDrawer');
+    const overlay = $id('cartOverlay');
+    const drawer = $id('cartDrawer');
     if (overlay) overlay.classList.toggle('active');
     if (drawer) drawer.classList.toggle('active');
     renderCart();
 }
 
 function addToCart() {
-    const title = document.getElementById('detailTitleHeader').innerText;
-    const size = document.getElementById('paperSize').value;
-    const qty = parseInt(document.getElementById('qtyInput').value);
-    const totalStr = document.getElementById('totalAmount').innerText.replace(/,/g, '');
-    const firstImg = document.querySelector('#previewTrack img');
-    const sId = document.getElementById('currentServiceId').innerText;
+    const title = $id('currentServiceName')?.innerText || 'Service';
+    const qty = parseInt($id('quantityInput')?.value || '1');
+    const totalStr = ($id('totalAmount')?.innerText || '0').replace(/,/g, '');
+    const sId = $id('currentServiceId')?.innerText || '';
 
-    let detailText = `ID: ${sId} | Size: ${size.toUpperCase()}`;
-    if (currentCategoryType === "largeformat") detailText += ` | Finish: ${document.getElementById('printCategory').value}`;
+    if (!sId) {
+        alert("Please select a service first.");
+        return;
+    }
 
     cart.push({
         id: Date.now(),
         name: title,
-        details: detailText,
+        details: `ID: ${sId}`,
         qty: qty,
-        price: parseFloat(totalStr),
-        img: firstImg ? firstImg.src : '',
+        total_price: parseFloat(totalStr),
+        img: '',
         checked: true
     });
-    
-    localStorage.setItem('printCart', JSON.stringify(cart));
+
+    saveCart();
     updateCartBadge();
     toggleCart();
 }
 
-function addToCart(){
-  const title=document.getElementById('detailTitleHeader')?.innerText||'',size=document.getElementById('paperSize')?.value||'',qty=parseInt(document.getElementById('qtyInput')?.value||'1',10),totalStr=(document.getElementById('totalAmount')?.innerText||'0').replace(/,/g,''),firstImg=document.querySelector('#previewTrack img'),sId=document.getElementById('currentServiceId')?.innerText||'';
-  let detailText=`ID: ${sId} | Size: ${String(size).toUpperCase()}`;
-  if(currentCategoryType==="largeformat")detailText+=` | Finish: ${document.getElementById('printCategory')?.value||''}`;
-  cart.push({id:Date.now(),name:title,details:detailText,qty:qty,price:parseFloat(totalStr),img:firstImg?firstImg.src:'',checked:true});
-  localStorage.setItem('printCart',JSON.stringify(cart));
-  updateCartBadge();toggleCart();
+function updateCartBadge(){const badge=$id('cartBadge');if(badge)badge.innerText=cart.length;}
+function removeFromCart(index){cart.splice(index,1);saveCart();updateCartBadge();renderCart();}
+function toggleItemCheck(index) {if (!cart[index]) return;
+    cart[index].checked = !cart[index].checked;
+    saveCart();calculateCartTotal();renderCart();
 }
 
-function updateCartBadge(){const badge=document.getElementById('cartBadge');if(badge)badge.innerText=cart.length;}
-function removeFromCart(index){cart.splice(index,1);localStorage.setItem('printCart',JSON.stringify(cart));updateCartBadge();renderCart();}
-
-function renderCart(){
-  const list=document.getElementById('cartItemsList');if(!list)return;list.innerHTML='';
-  cart.forEach((item,index)=>{list.innerHTML+=`<div class="cart-item"><label class="cart-item-check-wrap"><input type="checkbox" class="cart-item-check" ${item.checked?'checked':''} onchange="toggleItemCheck(${index})"></label><img src="${item.img}"><div class="cart-item-info"><h4>${item.name}</h4><p style="font-size:10px; color:#777;">${item.details}</p><p class="cart-item-price">Qty: ${item.qty} | ₱${item.price.toLocaleString()}</p><span onclick="removeFromCart(${index})" style="color:red; cursor:pointer; font-size:11px;">REMOVE</span></div></div>`;});
-  calculateCartTotal();
+function calculateCartTotal() {const totalEl = $id('drawerTotal');if (!totalEl) return;
+    const total = cart
+        .filter(item => item.checked)
+        .reduce((sum, item) => sum + (Number(item.total_price) || 0), 0);
+    totalEl.innerText = total.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 }
 
 function renderCart() {
-    const list = document.getElementById('cartItemsList');
+    const list = $id('cartItemsList');
     if (!list) return;
     list.innerHTML = '';
     cart.forEach((item, index) => {
@@ -558,7 +575,7 @@ function renderCart() {
                 <div class="cart-item-info">
                     <h4>${item.name}</h4>
                     <p style="font-size:10px; color:#777;">${item.details}</p>
-                    <p class="cart-item-price">Qty: ${item.qty} | ₱${item.price.toLocaleString()}</p>
+                    <p class="cart-item-price">Qty: ${item.qty} | ₱${item.total_price.toLocaleString()}</p>
                     <span onclick="removeFromCart(${index})" style="color:red; cursor:pointer; font-size:11px;">REMOVE</span>
                 </div>
             </div>`;
@@ -566,34 +583,119 @@ function renderCart() {
     calculateCartTotal();
 }
 
-function initMap(){
-  const mapDiv=document.querySelector('.map-placeholder');
-  if(mapDiv)mapDiv.innerHTML=`<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12345!2d121.0!3d14.5!2m3!1f0!2f0!3f0!2m3!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDMwJzAwLjAiTiAxMjHCsDAwJzAwLjAiRQ!5e0!3m2!1sen!2sph!4v123456789" width="100%" height="100%" style="border:0; border-radius:8px;" allowfullscreen="" loading="lazy"></iframe>`;
+function getBgUrl(el) {
+    const bg = window.getComputedStyle(el).backgroundImage;
+    if (!bg) return null;
+
+    const match = bg.match(/url\(["']?(.*?)["']?\)/);
+    return match ? match[1] : null;
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  document.documentElement.classList.add('page-loading');document.body.classList.add('page-loading');
-  if(isLoggedIn)document.body.classList.add('services-active');else document.body.classList.remove('services-active');
-  jumpTo('home');updateCartBadge();bindFavoriteButtons();applyServiceCardEffects();
-  heroIndex=0;updateHero();
-  const heroBgUrls=Array.from(document.querySelectorAll('.hero-slide')).map(getBgUrl);
-  preloadImages(heroBgUrls).then(()=>{document.documentElement.classList.remove('page-loading');document.body.classList.remove('page-loading');});
-  if(slideInterval)clearInterval(slideInterval);slideInterval=null;
-  handleContactForm();initMap();
-  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting)entry.target.classList.add('animate');});},{threshold:0.1});
-  document.querySelectorAll('.section').forEach(s=>observer.observe(s));
-  bindDetailControlSync();bindDetailButtons();
+function preloadImages(urls) {
+    urls.forEach(url => {
+        if (!url) return;
+        const img = new Image();
+        img.src = url;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.documentElement.classList.add('page-loading');
+    document.body.classList.add('page-loading');
+
+    if (isLoggedIn) {
+        document.body.classList.add('services-active');
+    } else {
+        document.body.classList.remove('services-active');
+    }
+
+    const initialSection = window.location.hash
+        ? window.location.hash.substring(1)
+        : 'home';
+
+    jumpTo(initialSection);
+    updateCartBadge();
+
+    heroIndex = 0;
+    updateHero();
+
+    const heroBgUrls = Array.from(document.querySelectorAll('.hero-slide')).map(getBgUrl);
+    preloadImages(heroBgUrls);
+
+    document.documentElement.classList.remove('page-loading');
+    document.body.classList.remove('page-loading');
+
+    if (slideInterval) clearInterval(slideInterval);
+    slideInterval = null;
+
+    handleContactForm();
+    initMap();
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) entry.target.classList.add('animate');
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.section').forEach((s) => observer.observe(s));
 });
 
 function checkoutSelected(){
   const selected=cart.filter(i=>i.checked);
   if(selected.length===0){alert("Please select at least 1 item to checkout.");return;}
-  const payload={items:selected.map(i=>({name:i.name,qty:i.qty,unit_price:(i.price/i.qty),service_code:(i.details&&i.details.includes("ID: "))?(i.details.split("ID: ")[1].split(" |")[0]).trim():null,price_type:"retail"}))};
+  const payload={items:selected.map(i=>({name:i.name,qty:i.qty,unit_price:(i.total_price/i.qty),service_code:(i.details&&i.details.includes("ID: "))?(i.details.split("ID: ")[1].split(" |")[0]).trim():null,price_type:"retail"}))};
   const tokenTag=document.querySelector('meta[name="csrf-token"]'),token=tokenTag?tokenTag.getAttribute('content'):'';
   fetch('/cart/sync',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(payload)})
   .then(res=>{if(!res.ok)throw new Error("Sync failed");return res.json();})
-  .then(()=>{window.location.href='/payment/checkout';})
+  .then(()=>{window.location.href='/checkout';})
   .catch(()=>{alert("Checkout failed. Please try again.");});
+}
+
+function placeOrderNow() {
+    const title = $id('currentServiceName')?.innerText || '';
+    const qty = parseInt($id('quantityInput')?.value || '1');
+    const totalStr = ($id('totalAmount')?.innerText || '0').replace(/,/g, '');
+    const sId = $id('currentServiceId')?.innerText || '';
+
+    if (!title || !sId) {
+        alert("Please select a service first.");
+        return;
+    }
+
+    const selectedPriceType =
+        document.querySelector('input[name="priceType"]:checked')?.value || 'retail';
+
+    const payload = {
+        items: [{
+            name: title,
+            qty: qty,
+            unit_price: parseFloat(totalStr) / qty,
+            service_code: sId,
+            price_type: selectedPriceType
+        }]
+    };
+
+    const tokenTag = document.querySelector('meta[name="csrf-token"]');
+    const token = tokenTag ? tokenTag.getAttribute('content') : '';
+
+    fetch('/cart/sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': token
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Sync failed");
+        return res.json();
+    })
+    .then(() => {
+        window.location.href = '/checkout';
+    })
+    .catch(() => {
+        alert("Checkout failed. Please try again.");
+    });
 }
 
 // --- FORMS & EXTERNAL APIS ---
@@ -627,6 +729,7 @@ function initMap() {
         mapDiv.innerHTML = `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15442.271842835922!2d121.0504!3d14.6137!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM2JzQ5LjMiTiAxMjHCsDAzJzAxLjQiRQ!5e0!3m2!1sen!2sph!4v1620000000000!5m2!1sen!2sph" width="100%" height="100%" style="border:0; border-radius:8px;" allowfullscreen="" loading="lazy"></iframe>`;
     }
 }
+<<<<<<< Updated upstream
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -650,3 +753,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
 });
+=======
+>>>>>>> Stashed changes

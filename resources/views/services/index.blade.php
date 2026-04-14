@@ -15,7 +15,11 @@
             </div>
 
             <h2 class="text-4xl font-extrabold text-center text-gray-900 mb-8">Our Services</h2>
+<<<<<<< Updated upstream
 
+=======
+            
+>>>>>>> Stashed changes
             @if($services->count() === 0)
                 <div class="bg-white p-6 rounded-lg shadow text-center">
                     <p class="text-gray-500 italic">No services available at the moment.</p>

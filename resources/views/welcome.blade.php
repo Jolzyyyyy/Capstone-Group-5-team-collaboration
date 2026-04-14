@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
     <title>Printing Business Solution | Printify</title>
 
     @vite(['resources/css/app.css','resources/js/app.js'])
@@ -11,45 +14,44 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
-    <header class="top-nav-bar">
+<body data-logged-in="{{ auth()->check() ? 'true' : 'false' }}">
+    <header class="top-nav-bar" id="mainHeader">
     <div class="nav-left">
-        <a href="{{ route('home') }}" class="logo-link">
-            <img src="{{ asset('images/printify-logo.png') }}" alt="Printify Logo" class="logo">
-        </a>
+        <a href="{{ route('home') }}" class="brand">PRINTIFY & CO.</a>
     </div>
 
     <nav class="nav-horizontal">
-        <a href="#home" onclick="showSection('home')">HOME</a>
-        <a href="#products" onclick="showSection('products')">SERVICES</a>
-        <a href="#about" onclick="showSection('about')">ABOUT</a>
-        <a href="#contact" onclick="showSection('contact')">CONTACT</a>
+        <a href="#" onclick="jumpTo('home'); return false;">HOME</a>
+        <a href="#" onclick="jumpTo('about'); return false;">ABOUT</a>
+        <a href="#" onclick="jumpTo('services'); return false;">SERVICES</a>
+        <a href="#" onclick="jumpTo('contact'); return false;">CONTACT</a>
     </nav>
 
     <div class="hero-signin-container">
-        <div id="navCart" onclick="toggleCart()" title="Cart">
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span class="cart-badge" id="cartBadge">0</span>
-        </div>
+    <a href="{{ route('cart.index') }}" id="navCart" title="Cart">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span class="cart-badge" id="cartBadge">0</span>
+    </a>
 
-        @auth
-            @if(Auth::user()->role === 'admin')
-                <a href="{{ route('admin.dashboard') }}" class="auth-btn" title="Admin Panel">
-                    <i class="fa-solid fa-user-shield"></i>
-                    <span>ADMIN: {{ Auth::user()->name }}</span>
-                </a>
-            @else
-                <a href="{{ route('dashboard') }}" class="auth-btn username" title="Profile">
-                    <i class="fa-solid fa-user"></i>
-                    <span>{{ Auth::user()->name }}</span>
-                </a>
-            @endif
+    @auth
+        @if(auth()->user()->isAdmin())
+            <a href="{{ route('admin.dashboard') }}" class="auth-btn" title="Admin Panel">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>ADMIN: {{ auth()->user()->name }}</span>
+            </a>
+        @else
+            <a href="{{ route('dashboard') }}" class="auth-btn username" title="Profile">
+                <i class="fa-solid fa-user"></i>
+                <span>{{ auth()->user()->name }}</span>
+            </a>
+        @endif
 
-            <span class="auth-divider">|</span>
+        <span class="auth-divider">|</span>
 
-            <form method="POST" action="{{ route('logout') }}" style="display:inline;">
+        @if(auth()->user()->isAdmin())
+            <form method="POST" action="{{ route('admin.logout') }}" style="display:inline;">
                 @csrf
                 <button type="submit" class="auth-btn">
                     <i class="fa-solid fa-right-from-bracket"></i>
@@ -57,11 +59,20 @@
                 </button>
             </form>
         @else
-            <a href="{{ route('login') }}" id="navUserPlus" class="auth-btn">
-                <i class="fa-solid fa-user-plus"></i>
-                <span>ACCOUNT</span>
-            </a>
-        @endauth
+            <form method="POST" action="{{ route('logout') }}" style="display:inline;">
+                @csrf
+                <button type="submit" class="auth-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>LOGOUT</span>
+                </button>
+            </form>
+        @endif
+    @else
+        <a href="{{ route('login') }}" id="navUserPlus" class="auth-btn">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>ACCOUNT</span>
+        </a>
+    @endauth
     </div>
     </header>
 
@@ -69,97 +80,124 @@
         {{-- HOME --}}
         <section id="home" class="section active">
             <div class="hero-container">
+
                 <div class="hero-slide active" style="background-image:url('{{ asset('images/Homesld1.jpg') }}')"></div>
                 <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld2.jpg') }}')"></div>
                 <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld3.jpg') }}')"></div>
+
+                <!-- HERO TEXT -->
+                <div class="hero-overlay">
+                    <h1>PRINTIFY & CO.</h1>
+                    <p class="hero-tagline">CRAFTING YOUR VISION INTO REALITY</p>
+                    <p class="hero-sub">PREMIUM PRINTS • FAST DELIVERY • UNLIMITED POSSIBILITIES</p>
+                </div>
 
                 <div class="slide-indicators">
                     <div class="dot active" onclick="jumpToHero(0)"></div>
                     <div class="dot" onclick="jumpToHero(1)"></div>
                     <div class="dot" onclick="jumpToHero(2)"></div>
                 </div>
-            </div>
-        </section>
 
-        {{-- PRODUCTS / SERVICES --}}
-        <section id="products" class="section">
-            <h2 style="text-align: center; margin-top: 40px;">Our Services</h2>
-
-            <div class="services-container">
-                <div class="service-item" onclick="openModal('doc')">
-                    <div class="service-image-wrapper">
-                        <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Document Printing">
-                    </div>
-                    <h3>DOCUMENT PRINTING</h3>
-                </div>
-
-                <div class="service-item" onclick="openModal('photo')">
-                    <div class="service-image-wrapper">
-                        <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Photocopy &amp; Scanning">
-                    </div>
-                    <h3>PHOTOCOPY &amp; SCANNING</h3>
-                </div>
-
-                <div class="service-item" onclick="openModal('id')">
-                    <div class="service-image-wrapper">
-                        <img src="{{ asset('images/Prdcts1.jpg') }}" alt="ID &amp; Photo Services">
-                    </div>
-                    <h3>ID &amp; PHOTO SERVICES</h3>
-                </div>
-
-                <div class="service-item" onclick="openModal('bind')">
-                    <div class="service-image-wrapper">
-                        <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Lamination &amp; Binding">
-                    </div>
-                    <h3>LAMINATION &amp; BINDING</h3>
-                </div>
-
-                <div class="service-item" onclick="openModal('largeformat')">
-                    <div class="service-image-wrapper">
-                        <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Large Format Printing">
-                    </div>
-                    <h3>LARGE FORMAT PRINTING</h3>
-                </div>
-
-                <div class="service-item" onclick="openModal('special')">
-                    <div class="service-image-wrapper">
-                        <img src="{{ asset('images/Prdcts1.jpg') }}" alt="Custom Special Printing">
-                    </div>
-                    <h3>CUSTOM SPECIAL PRINTING</h3>
-                </div>
             </div>
         </section>
 
         {{-- ABOUT --}}
         <section id="about" class="section">
-            <h2 style="text-align: center; margin-top: 40px;">About Us</h2>
+            <div class="about-section-wrap">
+                <h2 class="about-heading">About Us</h2>
 
-            <div class="about-grid-container" style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <div class="about-intro" style="text-align: center; margin-bottom: 40px;">
-                    <p style="font-size: 1.1rem; line-height: 1.8; color: #555;">
-                        At Printify &amp; Co. we are a leading provider of high-quality printing solutions,
-                        dedicated to helping businesses and individuals bring their ideas to life with precision and care.
-                    </p>
-                </div>
+                <p class="about-description">
+                    At Printify &amp; Co., we are a leading provider of high-quality printing solutions,
+                    dedicated to helping businesses and individuals bring their ideas to life with precision and care.
+                </p>
 
-                <div class="about-main-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; text-align: left;">
-                    <div class="about-col">
-                        <div class="info-block">
-                            <h3 style="color: #d35400;">Who We Are</h3>
-                            <p>We specialize in modern, reliable, and affordable printing services for academic, personal, and business needs.</p>
-                        </div>
+                <div class="about-feature-grid">
+                    <div class="about-feature-item">
+                        <h3 class="about-feature-title"><i class="fa-solid fa-bullseye"></i> Mission &amp; Vision</h3>
+                        <p>
+                            Clearly presenting our long-term goals to help users understand our business
+                            direction and service commitment to excellence.
+                        </p>
                     </div>
 
-                    <div class="about-col">
-                        <div class="info-block">
-                            <h3 style="color: #d35400;">What We Offer</h3>
-                            <p>From document printing to photo services, large format outputs, and custom specialty items, we provide end-to-end print solutions.</p>
-                        </div>
+                    <div class="about-feature-item">
+                        <h3 class="about-feature-title"><i class="fa-solid fa-gears"></i> Technology &amp; Equipment</h3>
+                        <p>
+                            We showcase modern printing machines and software to emphasize quality,
+                            efficiency, and modern production standards.
+                        </p>
                     </div>
-                </div>
+
+                    <div class="about-feature-item">
+                        <h3 class="about-feature-title"><i class="fa-solid fa-star"></i> Core Values</h3>
+                        <p>
+                            Quality, reliability, customer satisfaction, and timely delivery.
+                            We reinforce trust through professional craftsmanship.
+                        </p>
+                    </div>
+
+                    <div class="about-feature-item">
+                        <h3 class="about-feature-title"><i class="fa-solid fa-users"></i> Meet the Team</h3>
+                        <p>
+                            Our key staff and management work together to humanize the business
+                            and build lasting customer trust.
+                        </p>
+                    </div>
+
+                    <div class="about-feature-item">
+                        <h3 class="about-feature-title"><i class="fa-solid fa-clock-rotate-left"></i> Company History</h3>
+                        <p>
+                            Established with a passion for printing, showing growth and experience
+                            through major achievements in the industry.
+                        </p>
+                    </div>
+
+                    <div class="about-feature-item">
+                        <h3 class="about-feature-title"><i class="fa-solid fa-award"></i> Why Choose Us</h3>
+                        <p>
+                            Competitive advantages including affordable pricing, fast turnaround time,
+                            and high-end quality assurance.
+                        </p>
+                    </div>
+                </div> <!-- closes .about-feature-grid -->
+
+                   <div class="testimonials-block">
+                        
+                        <h3 class="testimonials-title">Customer Testimonials</h3>
+
+                        <p class="testimonial-line">
+                            <span class="testimonial-quote">
+                                The best printing service in the city! Fast and very reliable.
+                            </span>
+                        </p>
+
+                            <span class="testimonial-author">- Satisfied Client</span>
+                    </div>
             </div>
         </section>
 
+        {{-- SERVICES --}}
+        <section id="services" class="section">
+            <h2 class="services-heading">Our Services</h2>
+            <p class="services-count">Total services: {{ $services->count() }}</p>
+
+            <div class="services-container">
+                @foreach($services as $service)
+                    <div class="service-item" onclick="openModal({{ $service->id }})">
+                        <div class="service-image-wrapper">
+                            <img
+                                src="{{ asset('images/Prdcts1.jpg') }}"
+                                alt="{{ $service->name }}"
+                            >
+                            <span class="service-heart">
+                                    <i class="fa-regular fa-heart"></i>
+                            </span>
+                        </div>
+                        <h3>{{ strtoupper($service->name) }}</h3>
+                    </div>
+                @endforeach
+            </div>
+        </section>
         {{-- CONTACT --}}
         <section id="contact" class="section">
             <h2 style="text-align: center; margin-top: 40px;">Contact Us</h2>
@@ -219,6 +257,7 @@
                 </div>
 
                 <div class="preview-viewport">
+<<<<<<< Updated upstream
                     <button type="button" class="preview-btn" id="detailPrevBtn" onclick="movePreview(-1)">❮</button>
                     <div class="preview-track" id="previewTrack"></div>
                     <button type="button" class="preview-btn" id="detailNextBtn" onclick="movePreview(1)">❯</button>
@@ -303,8 +342,80 @@
                     <a onclick="backToMain()" class="return-link-btn" style="cursor: pointer;">
                         <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
                     </a>
+=======
+                    <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">‹</button>
+
+                    <div class="preview-track" id="previewTrack"></div>
+
+                    <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">›</button>
                 </div>
             </div>
+
+        <div class="detail-info-panel">
+            <div class="custom-option-group">
+                <label>SERVICE ID:</label>
+                <div>
+                    <span id="currentServiceId">DOC-TX-001</span>
+>>>>>>> Stashed changes
+                </div>
+            </div>
+
+            <div class="custom-option-group">
+                <label>SERVICE NAME:</label>
+                <div>
+                    <span id="currentServiceName">Document Printing</span>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+
+            <div class="price-options-container">
+                <label class="price-option-wrapper">
+                    <input type="radio" name="priceType" value="retail" checked onclick="updatePrice()">
+                    <div class="price-item">
+                        <p class="price-label">Retail</p>
+                        <div class="unit-price">₱<span id="retailAmount">0.00</span></div>
+                    </div>
+                </label>
+
+                <label class="price-option-wrapper">
+                    <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
+                    <div class="price-item">
+                        <p class="price-label" style="color:#27ae60;">Bulk</p>
+                        <div class="unit-price" style="color:#27ae60;">₱<span id="bulkAmount">0.00</span></div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="custom-option-group">
+                <label>QUANTITY:</label>
+                <div class="qty-box">
+                    <button type="button" onclick="changeQty(-1)">−</button>
+                    <input type="number" id="quantityInput" value="1" min="1" onchange="updatePrice()">
+                    <button type="button" onclick="changeQty(1)">+</button>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+
+            <div class="total-price-box">
+                <span style="font-size: 13px; color: #666;">Total Amount:</span>
+                <h3 class="total-price" style="color: #d35400;">₱<span id="totalAmount">0.00</span></h3>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-cart" onclick="addToCart()">
+                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                </button>
+                <button class="btn-buy" onclick="placeOrderNow()">Place Order Now</button>
+            </div>
+
+            <div class="return-container">
+                <a onclick="backToMain()" class="return-link-btn" style="cursor: pointer;">
+                    <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
+                </a>
+            </div>
+        </div>
         </div>
     </section>
 
@@ -353,6 +464,45 @@
             </div>
         </div>
     </div>
+
+    @php
+    $servicesData = $services->mapWithKeys(function ($service) {
+        return [
+            $service->id => [
+                'id' => $service->id,
+                'name' => $service->name,
+                'category' => $service->category,
+                'image' => !empty($variation->image_path)
+                    ? asset('storage/' . $variation->image_path)
+                    : (!empty($service->image_path)
+                        ? asset('storage/' . $service->image_path)
+                        : asset('images/Prdcts1.jpg')),
+                'variations' => $service->activeVariations->map(function ($variation) use ($service) {
+                    return [
+                        'id' => $variation->id,
+                        'service_item_id' => $variation->service_item_id,
+                        'printing_category' => $variation->printing_category,
+                        'color_mode' => $variation->color_mode,
+                        'product_size' => $variation->product_size,
+                        'finish_type' => $variation->finish_type,
+                        'package_type' => $variation->package_type,
+                        'retail_price' => $variation->retail_price,
+                        'bulk_price' => $variation->bulk_price,
+
+                         // pass image to each variation
+                    'image' => $service->image_path
+                        ? asset('storage/' . $service->image_path)
+                        : asset('images/Prdcts1.jpg'),
+                    ];
+                })->values(),
+            ],
+        ];
+    });
+    @endphp
+
+    <script>
+    window.servicesData = @json($servicesData);
+    </script>
 
     <script src="{{ asset('webproj.js') }}"></script>
 

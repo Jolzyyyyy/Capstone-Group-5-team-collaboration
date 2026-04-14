@@ -14,18 +14,7 @@
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
             
-            @if ($errors->has('email'))
-                @php
-                    $emailValue = old('email');
-                    $userExists = \App\Models\User::where('email', $emailValue)->exists();
-                @endphp
-
-                @if (!$userExists || !filter_var($emailValue, FILTER_VALIDATE_EMAIL))
-                    <p class="mt-1 text-[9px] text-red-600 font-bold tracking-tight">
-                        {{ __('Invalid email address.') }}
-                    </p>
-                @endif
-            @endif
+            
         </div>
 
         {{-- PASSWORD FIELD --}}
@@ -60,6 +49,17 @@
                 <p class="mt-1 text-[9px] text-red-600 font-bold tracking-tight">
                     {{ __('The password you entered is incorrect. Please try again.') }}
                 </p>
+            @endif@if ($errors->has('email'))
+                @php
+                    $emailValue = old('email');
+                    $userExists = \App\Models\User::where('email', $emailValue)->exists();
+                @endphp
+
+                @if (!$userExists || !filter_var($emailValue, FILTER_VALIDATE_EMAIL))
+                    <p class="mt-1 text-[9px] text-red-600 font-bold tracking-tight">
+                        {{ __('Invalid email address.') }}
+                    </p>
+                @endif
             @endif
         </div>
 

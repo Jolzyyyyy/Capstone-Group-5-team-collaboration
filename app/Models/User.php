@@ -14,26 +14,32 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE CONSTANTS
+    |--------------------------------------------------------------------------
+    */
+    const ROLE_ADMIN = 'admin';
+    const ROLE_CUSTOMER = 'customer';
+
     /**
      * The attributes that are mass assignable.
-     * Idinagdag natin ang role, otp, at google2fa columns.
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',               // 'admin' o 'customer'
-        'otp_code',           // 6-digit code
-        'otp_expires_at',     // Expiration timestamp
+        'role',
+        'otp_code',
+        'otp_expires_at',
         'email_verified_at',
-        'google2fa_secret',   // Para sa Admin Google Authenticator
-        'google2fa_enabled',  // 2FA toggle para sa Admin
-        'recovery_codes',     // Backup codes
+        'google2fa_secret',
+        'google2fa_enabled',
+        'recovery_codes',
     ];
 
     /**
      * Attributes hidden from serialization.
-     * Sinisiguro nating hindi lalabas ang OTP at 2FA secrets sa logs o API.
      */
     protected $hidden = [
         'password',
@@ -44,7 +50,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Attribute casting.
-     * Ginagawa nating Carbon instances ang dates para madaling i-manipulate.
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
@@ -62,12 +67,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === self::ROLE_ADMIN;
     }
 
     public function isCustomer(): bool
     {
-        return $this->role === 'customer';
+        return $this->role === self::ROLE_CUSTOMER;
     }
 
     /*
@@ -77,7 +82,7 @@ class User extends Authenticatable implements MustVerifyEmail
     */
 
     /**
-     * Check kung expired na ang OTP (10 mins limit).
+     * Check kung expired na ang OTP.
      */
     public function isOtpExpired(): bool
     {
@@ -127,14 +132,15 @@ class User extends Authenticatable implements MustVerifyEmail
     | BOOT METHOD
     |--------------------------------------------------------------------------
     */
+
     protected static function boot()
     {
         parent::boot();
 
-        // Awtomatikong 'customer' ang role ng sinumang mag-register sa front-end.
+        // Default role for new users
         static::creating(function ($user) {
             if (empty($user->role)) {
-                $user->role = 'customer';
+                $user->role = self::ROLE_CUSTOMER;
             }
         });
     }

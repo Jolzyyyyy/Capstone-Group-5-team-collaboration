@@ -7,84 +7,76 @@ use App\Models\Service;
 
 class ServiceSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $services = [
 
-            // DOCUMENT PRINTING
             [
-                'name' => 'Document Printing (Black & White)',
-                'category' => 'Document Printing',
-                'retail_price' => 2.00,
-                'bulk_price' => 1.50,
-                'unit' => 'per page',
-                'description' => 'Standard black and white document printing using 80gsm paper.',
-                'image_path' => 'images/services/bw-printing.jpg',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Document Printing (Colored)',
-                'category' => 'Document Printing',
-                'retail_price' => 10.00,
-                'bulk_price' => 8.00,
-                'unit' => 'per page',
-                'description' => 'High quality colored document printing.',
-                'image_path' => 'images/services/color-printing.jpg',
+                'name' => 'Document Printing',
+                'category' => 'Printing',
+                'retail_price' => 5,
+                'bulk_price' => 4,
+                'description' => 'Professional document printing services.',
+                'image_path' => 'images/services/document-printing.jpg',
                 'is_active' => true,
             ],
 
-            // PHOTOCOPY
             [
-                'name' => 'Photocopy (Black & White)',
-                'category' => 'Photocopy & Scanning',
-                'retail_price' => 2.00,
-                'bulk_price' => 1.50,
-                'unit' => 'per page',
-                'description' => 'Fast and clear black and white photocopy service.',
-                'image_path' => 'images/services/bw-photocopy.jpg',
-                'is_active' => true,
-            ],
-            [
-                'name' => 'Photocopy (Colored)',
-                'category' => 'Photocopy & Scanning',
-                'retail_price' => 8.00,
-                'bulk_price' => 6.00,
-                'unit' => 'per page',
-                'description' => 'Colored photocopy with accurate color reproduction.',
-                'image_path' => 'images/services/color-photocopy.jpg',
+                'name' => 'Photocopy & Scanning',
+                'category' => 'Printing',
+                'retail_price' => 3,
+                'bulk_price' => 2,
+                'description' => 'High speed photocopy and scanning services.',
+                'image_path' => 'images/services/photocopy.jpg',
                 'is_active' => true,
             ],
 
-            // ID & PHOTO SERVICES
             [
-                'name' => 'ID Picture Package',
-                'category' => 'ID & Photo Services',
-                'retail_price' => 120.00,
-                'bulk_price' => 100.00,
-                'unit' => 'per set',
-                'description' => 'Standard ID picture with layout and minor photo enhancement.',
-                'image_path' => 'images/services/id-picture.jpg',
+                'name' => 'ID & Photo Services',
+                'category' => 'Photo',
+                'retail_price' => 60,
+                'bulk_price' => 60,
+                'description' => 'Professional ID and photo printing services.',
+                'image_path' => 'images/services/id-photo.jpg',
                 'is_active' => true,
             ],
 
-            // LARGE FORMAT
             [
-                'name' => 'Tarpaulin Printing',
-                'category' => 'Large Format Printing',
-                'retail_price' => 150.00,
-                'bulk_price' => 120.00,
-                'unit' => 'per sq ft',
-                'description' => 'Durable tarpaulin printing for banners and signage.',
+                'name' => 'Lamination & Binding',
+                'category' => 'Finishing',
+                'retail_price' => 25,
+                'bulk_price' => 20,
+                'description' => 'Document lamination and binding.',
+                'image_path' => 'images/services/lamination.jpg',
+                'is_active' => true,
+            ],
+
+            [
+                'name' => 'Large Format Printing',
+                'category' => 'Large Format',
+                'retail_price' => 100,
+                'bulk_price' => 95,
+                'description' => 'Tarpaulin and large format printing.',
                 'image_path' => 'images/services/tarpaulin.jpg',
+                'is_active' => true,
+            ],
+
+            [
+                'name' => 'Custom Special Printing',
+                'category' => 'Custom',
+                'retail_price' => 150,
+                'bulk_price' => 140,
+                'description' => 'Special custom printing services.',
+                'image_path' => 'images/services/custom.jpg',
                 'is_active' => true,
             ],
         ];
 
         foreach ($services as $service) {
-            Service::create($service);
+            Service::updateOrCreate(
+                ['name' => $service['name']],
+                $service
+            );
         }
     }
 }
