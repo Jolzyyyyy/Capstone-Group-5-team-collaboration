@@ -466,6 +466,27 @@ function updatePreviewButtons() {
     if (next) next.style.display = (currentPreviewIndex >= totalImgs - 1) ? 'none' : 'flex';
 }
 
+function bindDetailControlSync() {
+    ['printCategory', 'colorMode', 'paperSize'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.syncBound === 'true') return;
+        el.addEventListener('change', () => {
+            syncPreviewFromDropdowns();
+            updatePrice();
+        });
+        el.dataset.syncBound = 'true';
+    });
+}
+
+function bindDetailButtons() {
+    const qtyInput = document.getElementById('qtyInput');
+    if (qtyInput && qtyInput.dataset.bound !== 'true') {
+        qtyInput.addEventListener('change', () => updatePrice());
+        qtyInput.dataset.bound = 'true';
+    }
+    updatePreviewButtons();
+}
+
 function changeQty(d) {
     let q = document.getElementById('qtyInput');
     q.value = Math.max(1, parseInt(q.value) + d);
