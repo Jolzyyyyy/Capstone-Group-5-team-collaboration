@@ -94,6 +94,12 @@ function jumpTo(sectionId) {
     }
 }
 
+// Compatibility alias used by welcome.blade.php nav links
+function showSection(sectionId) {
+    jumpTo(sectionId);
+    return false;
+}
+
 window.addEventListener('scroll', function() {
     const mainHeader = document.getElementById('mainHeader');
     const activeSection = document.querySelector('.section.active');
