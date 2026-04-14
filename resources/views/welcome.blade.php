@@ -215,17 +215,53 @@
 
             <div class="detail-images-slider">
                 <div class="product-title-header">
-                    <h2 id="detailTitle">Service Details</h2>
+                    <h2 id="detailTitleHeader">Service Details</h2>
                 </div>
 
-                <div class="main-image-wrapper">
-                    <img id="detailMainImage" src="{{ asset('images/Prdcts1.jpg') }}" alt="Selected Service">
+                <div class="preview-viewport">
+                    <button type="button" class="preview-btn" id="detailPrevBtn" onclick="movePreview(-1)">❮</button>
+                    <div class="preview-track" id="previewTrack"></div>
+                    <button type="button" class="preview-btn" id="detailNextBtn" onclick="movePreview(1)">❯</button>
                 </div>
             </div>
 
             <div class="detail-info-panel">
+                <div class="specs-box" id="productSpecs">
+                    Select a service option to view inclusions and specifications.
+                </div>
+
                 <div class="custom-option-group">
-                    <label>SERVICE ID:</label>
+                    <label>Printing Category</label>
+                    <select id="printCategory" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                        <option value="text_only">Text Only</option>
+                    </select>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>Color Variation</label>
+                    <select id="colorMode" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                        <option value="bw">B&W</option>
+                    </select>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>Paper Size</label>
+                    <select id="paperSize" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                        <option value="short">Short (8.5 x 11)</option>
+                    </select>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>Quantity</label>
+                    <div class="qty-box">
+                        <button type="button" onclick="changeQty(-1)">−</button>
+                        <input type="number" id="qtyInput" value="1" min="1" onchange="updatePrice()">
+                        <button type="button" onclick="changeQty(1)">+</button>
+                    </div>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>SERVICE ID</label>
                     <div>
                         <span id="currentServiceId">DOC-TX-001</span>
                     </div>
@@ -250,24 +286,6 @@
                         </div>
                     </label>
                 </div>
-
-                <div class="custom-option-group">
-                    <label>QUANTITY:</label>
-                    <div class="qty-box">
-                        <button type="button" onclick="changeQty(-1)">−</button>
-                        <input type="number" id="quantityInput" value="1" min="1" onchange="updatePrice()">
-                        <button type="button" onclick="changeQty(1)">+</button>
-                    </div>
-                </div>
-
-                <div class="custom-option-group">
-                    <label>SERVICE ID:</label>
-                    <div>
-                        <span>DOC-TX-001</span>
-                    </div>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
 
                 <div class="total-price-box">
                     <span style="font-size: 13px; color: #666;">Total Amount:</span>
