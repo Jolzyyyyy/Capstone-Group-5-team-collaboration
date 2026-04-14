@@ -94,6 +94,12 @@ function jumpTo(sectionId) {
     }
 }
 
+// Compatibility alias used by welcome.blade.php nav links
+function showSection(sectionId) {
+    jumpTo(sectionId);
+    return false;
+}
+
 window.addEventListener('scroll', function() {
     const mainHeader = document.getElementById('mainHeader');
     const activeSection = document.querySelector('.section.active');
@@ -464,6 +470,27 @@ function updatePreviewButtons() {
     const totalImgs = imgs.length;
     if (prev) prev.style.display = (currentPreviewIndex === 0) ? 'none' : 'flex';
     if (next) next.style.display = (currentPreviewIndex >= totalImgs - 1) ? 'none' : 'flex';
+}
+
+function bindDetailControlSync() {
+    ['printCategory', 'colorMode', 'paperSize'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.syncBound === 'true') return;
+        el.addEventListener('change', () => {
+            syncPreviewFromDropdowns();
+            updatePrice();
+        });
+        el.dataset.syncBound = 'true';
+    });
+}
+
+function bindDetailButtons() {
+    const qtyInput = document.getElementById('qtyInput');
+    if (qtyInput && qtyInput.dataset.bound !== 'true') {
+        qtyInput.addEventListener('change', () => updatePrice());
+        qtyInput.dataset.bound = 'true';
+    }
+    updatePreviewButtons();
 }
 
 function changeQty(d) {
