@@ -56,25 +56,33 @@ function jumpToHero(index) {
 
 // --- NAVIGATION & SECTION LOGIC ---
 function jumpTo(sectionId) {
-    const productDetail = $id('productDetail');
-    const pageWrapper = $id('pageWrapper');
-    const mainHeader = $id('mainHeader');
-    const target = $id(sectionId);
-
-    if (!target) return;
+    const productDetail = document.getElementById('productDetail');
+    const pageWrapper = document.getElementById('pageWrapper');
+    const mainHeader = document.getElementById('mainHeader');
 
     if (productDetail) productDetail.style.display = 'none';
     if (pageWrapper) pageWrapper.style.display = 'block';
     if (mainHeader) mainHeader.classList.remove('detail-active');
 
-    document.body.classList.remove('services-active', 'about-active', 'contact-active');
-
     if (sectionId === 'products') {
         document.body.classList.add('services-active');
-    } else if (sectionId === 'about') {
-        document.body.classList.add('about-active');
-    } else if (sectionId === 'contact') {
-        document.body.classList.add('contact-active');
+        if (mainHeader) mainHeader.classList.add('scrolled'); 
+    } 
+    else if (sectionId === 'home') {
+        if (window.scrollY < 50) {
+            if (mainHeader) mainHeader.classList.remove('scrolled');
+        }
+        if (isLoggedIn) {
+            document.body.classList.add('services-active');
+        } else {
+            document.body.classList.remove('services-active');
+        }
+    } 
+    else {
+        if (mainHeader) mainHeader.classList.add('scrolled');
+        if (!isLoggedIn) {
+            document.body.classList.remove('services-active');
+        }
     }
 
     const sections = document.querySelectorAll('.section');
@@ -83,25 +91,19 @@ function jumpTo(sectionId) {
         sec.style.display = 'none';
     });
 
-    target.style.display = 'block';
-
-    requestAnimationFrame(() => {
-        target.classList.add('active');
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
-
-    history.replaceState(null, null, '#' + sectionId);
+    const target = document.getElementById(sectionId);
+    if (target) {
+        target.style.display = 'block';
+        setTimeout(() => { target.classList.add('active'); }, 10);
+        
+        if (sectionId === 'home') {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
 }
 
-window.addEventListener('scroll', function () {
-    const mainHeader = $id('mainHeader');
-    if (!mainHeader) return;
-
-    if (window.scrollY > 50) {
-        mainHeader.classList.add('scrolled');
 // Compatibility alias used by welcome.blade.php nav links
 function showSection(sectionId) {
     jumpTo(sectionId);
@@ -119,7 +121,7 @@ window.addEventListener('scroll', function() {
             mainHeader.classList.remove('scrolled');
         }
     } else {
-        mainHeader.classList.remove('scrolled');
+        if (mainHeader) mainHeader.classList.add('scrolled');
     }
 });
 
@@ -615,7 +617,7 @@ function preloadImages(urls) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.classList.add('page-loading');
     document.body.classList.add('page-loading');
 
@@ -746,19 +748,55 @@ function initMap() {
     }
 }
 
+function getBgUrl(el) {
+    const bg = window.getComputedStyle(el).backgroundImage;
+    if (!bg) return null;
+
+    const match = bg.match(/url\(["']?(.*?)["']?\)/);
+    return match ? match[1] : null;
+}
+
+function preloadImages(urls) {
+    urls.forEach((url) => {
+        if (!url) return;
+        const img = new Image();
+        img.src = url;
+    });
+}
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
+    document.documentElement.classList.add('page-loading');
+    document.body.classList.add('page-loading');
+
     if (isLoggedIn) {
         document.body.classList.add('services-active');
     } else {
         document.body.classList.remove('services-active');
     }
 
-    jumpTo('home');
+    const initialSection = window.location.hash
+        ? window.location.hash.substring(1)
+        : 'home';
+
+    jumpTo(initialSection);
     updateCartBadge();
+    heroIndex = 0;
     updateHero();
+
+    const heroBgUrls = Array.from(document.querySelectorAll('.hero-slide')).map(getBgUrl);
+    preloadImages(heroBgUrls);
+
+    document.documentElement.classList.remove('page-loading');
+    document.body.classList.remove('page-loading');
+
+    if (slideInterval) clearInterval(slideInterval);
+    slideInterval = null;
+
     handleContactForm();
     initMap();
+    bindDetailControlSync();
+    bindDetailButtons();
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => { 
