@@ -450,18 +450,32 @@
     </div>
 
     @php
-    $servicesData = $services->mapWithKeys(function ($service) {
+    $resolveImageUrl = function (?string $path): ?string {
+        if (empty($path)) {
+            return null;
+        }
+
+        if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        if (\Illuminate\Support\Str::startsWith($path, ['images/', 'img/'])) {
+            return asset($path);
+        }
+
+        return asset('storage/' . ltrim($path, '/'));
+    };
+
+    $servicesData = $services->mapWithKeys(function ($service) use ($resolveImageUrl) {
+        $serviceImage = $resolveImageUrl($service->image_path) ?? asset('images/Prdcts1.jpg');
+
         return [
             $service->id => [
                 'id' => $service->id,
                 'name' => $service->name,
                 'category' => $service->category,
-                'image' => !empty($variation->image_path)
-                    ? asset('storage/' . $variation->image_path)
-                    : (!empty($service->image_path)
-                        ? asset('storage/' . $service->image_path)
-                        : asset('images/Prdcts1.jpg')),
-                'variations' => $service->activeVariations->map(function ($variation) use ($service) {
+                'image' => $serviceImage,
+                'variations' => $service->activeVariations->map(function ($variation) use ($service, $resolveImageUrl) {
                     return [
                         'id' => $variation->id,
                         'service_item_id' => $variation->service_item_id,
@@ -473,10 +487,9 @@
                         'retail_price' => $variation->retail_price,
                         'bulk_price' => $variation->bulk_price,
 
-                         // pass image to each variation
-                    'image' => $service->image_path
-                        ? asset('storage/' . $service->image_path)
-                        : asset('images/Prdcts1.jpg'),
+                        'image' => $resolveImageUrl($variation->variation_image_path)
+                            ?? $resolveImageUrl($service->image_path)
+                            ?? asset('images/Prdcts1.jpg'),
                     ];
                 })->values(),
             ],
