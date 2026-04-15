@@ -266,6 +266,31 @@
             </div>
 
         <div class="detail-info-panel">
+            <div class="specs-box" id="productSpecs">
+                Select a service option to view inclusions and specifications.
+            </div>
+
+            <div class="custom-option-group">
+                <label>Printing Category</label>
+                <select id="printCategory" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                    <option value="text_only">Text Only</option>
+                </select>
+            </div>
+
+            <div class="custom-option-group">
+                <label>Color Variation</label>
+                <select id="colorMode" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                    <option value="bw">B&W</option>
+                </select>
+            </div>
+
+            <div class="custom-option-group">
+                <label>Paper Size</label>
+                <select id="paperSize" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                    <option value="short">Short (8.5 x 11)</option>
+                </select>
+            </div>
+
             <div class="custom-option-group">
                 <label>SERVICE ID:</label>
                 <div>
@@ -384,15 +409,29 @@
             return null;
         }
 
+        $path = trim($path);
+
         if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://'])) {
             return $path;
         }
 
-        if (\Illuminate\Support\Str::startsWith($path, ['images/', 'img/'])) {
-            return asset($path);
+        $normalizedPath = ltrim($path, '/');
+
+        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['images/', 'img/'])) {
+            return file_exists(public_path($normalizedPath))
+                ? asset($normalizedPath)
+                : null;
         }
 
-        return asset('storage/' . ltrim($path, '/'));
+        if (file_exists(public_path('images/' . $normalizedPath))) {
+            return asset('images/' . $normalizedPath);
+        }
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($normalizedPath)) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        return null;
     };
 
     $servicesData = $services->mapWithKeys(function ($service) use ($resolveImageUrl) {
