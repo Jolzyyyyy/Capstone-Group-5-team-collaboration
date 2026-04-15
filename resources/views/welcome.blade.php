@@ -474,7 +474,7 @@
         }
 
         if (\Illuminate\Support\Facades\Storage::disk('public')->exists($normalizedPath)) {
-            return asset('storage/' . $normalizedPath);git add resources/views/welcome.blade.php
+            return asset('storage/' . $normalizedPath);
         }
 
         return null;
