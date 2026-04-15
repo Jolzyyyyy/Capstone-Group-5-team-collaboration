@@ -257,92 +257,6 @@
                 </div>
 
                 <div class="preview-viewport">
-<<<<<<< Updated upstream
-                    <button type="button" class="preview-btn" id="detailPrevBtn" onclick="movePreview(-1)">❮</button>
-                    <div class="preview-track" id="previewTrack"></div>
-                    <button type="button" class="preview-btn" id="detailNextBtn" onclick="movePreview(1)">❯</button>
-                </div>
-            </div>
-
-            <div class="detail-info-panel">
-                <div class="specs-box" id="productSpecs">
-                    Select a service option to view inclusions and specifications.
-                </div>
-
-                <div class="custom-option-group">
-                    <label>Printing Category</label>
-                    <select id="printCategory" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
-                        <option value="text_only">Text Only</option>
-                    </select>
-                </div>
-
-                <div class="custom-option-group">
-                    <label>Color Variation</label>
-                    <select id="colorMode" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
-                        <option value="bw">B&W</option>
-                    </select>
-                </div>
-
-                <div class="custom-option-group">
-                    <label>Paper Size</label>
-                    <select id="paperSize" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
-                        <option value="short">Short (8.5 x 11)</option>
-                    </select>
-                </div>
-
-                <div class="custom-option-group">
-                    <label>Quantity</label>
-                    <div class="qty-box">
-                        <button type="button" onclick="changeQty(-1)">−</button>
-                        <input type="number" id="qtyInput" value="1" min="1" onchange="updatePrice()">
-                        <button type="button" onclick="changeQty(1)">+</button>
-                    </div>
-                </div>
-
-                <div class="custom-option-group">
-                    <label>SERVICE ID</label>
-                    <div>
-                        <span id="currentServiceId">DOC-TX-001</span>
-                    </div>
-                </div>
-
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-
-                <div class="price-options-container">
-                    <label class="price-option-wrapper">
-                        <input type="radio" name="priceType" value="retail" checked onclick="updatePrice()">
-                        <div class="price-item">
-                            <p class="price-label">Retail</p>
-                            <div class="unit-price">₱<span id="retailAmount">0.00</span></div>
-                        </div>
-                    </label>
-
-                    <label class="price-option-wrapper">
-                        <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
-                        <div class="price-item">
-                            <p class="price-label" style="color:#27ae60;">Bulk</p>
-                            <div class="unit-price" style="color:#27ae60;">₱<span id="bulkAmount">0.00</span></div>
-                        </div>
-                    </label>
-                </div>
-
-                <div class="total-price-box">
-                    <span style="font-size: 13px; color: #666;">Total Amount:</span>
-                    <h3 class="total-price" style="color: #d35400;">₱<span id="totalAmount">0.00</span></h3>
-                </div>
-
-                <div class="btn-row">
-                    <button class="btn-cart" onclick="addToCart()">
-                        <i class="fa-solid fa-cart-plus"></i> Add to Cart
-                    </button>
-                    <button class="btn-buy">Place Order Now</button>
-                </div>
-
-                <div class="return-container">
-                    <a onclick="backToMain()" class="return-link-btn" style="cursor: pointer;">
-                        <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
-                    </a>
-=======
                     <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">‹</button>
 
                     <div class="preview-track" id="previewTrack"></div>
@@ -352,11 +266,35 @@
             </div>
 
         <div class="detail-info-panel">
+            <div class="specs-box" id="productSpecs">
+                Select a service option to view inclusions and specifications.
+            </div>
+
+            <div class="custom-option-group">
+                <label>Printing Category</label>
+                <select id="printCategory" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                    <option value="text_only">Text Only</option>
+                </select>
+            </div>
+
+            <div class="custom-option-group">
+                <label>Color Variation</label>
+                <select id="colorMode" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                    <option value="bw">B&W</option>
+                </select>
+            </div>
+
+            <div class="custom-option-group">
+                <label>Paper Size</label>
+                <select id="paperSize" class="custom-select" onchange="syncPreviewFromDropdowns(); updatePrice();">
+                    <option value="short">Short (8.5 x 11)</option>
+                </select>
+            </div>
+
             <div class="custom-option-group">
                 <label>SERVICE ID:</label>
                 <div>
                     <span id="currentServiceId">DOC-TX-001</span>
->>>>>>> Stashed changes
                 </div>
             </div>
 
@@ -466,18 +404,46 @@
     </div>
 
     @php
-    $servicesData = $services->mapWithKeys(function ($service) {
+    $resolveImageUrl = function (?string $path): ?string {
+        if (empty($path)) {
+            return null;
+        }
+
+        $path = trim($path);
+
+        if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        $normalizedPath = ltrim($path, '/');
+
+        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['images/', 'img/'])) {
+            return file_exists(public_path($normalizedPath))
+                ? asset($normalizedPath)
+                : null;
+        }
+
+        if (file_exists(public_path('images/' . $normalizedPath))) {
+            return asset('images/' . $normalizedPath);
+        }
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($normalizedPath)) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        return null;
+    };
+
+    $servicesData = $services->mapWithKeys(function ($service) use ($resolveImageUrl) {
+        $serviceImage = $resolveImageUrl($service->image_path) ?? asset('images/Prdcts1.jpg');
+
         return [
             $service->id => [
                 'id' => $service->id,
                 'name' => $service->name,
                 'category' => $service->category,
-                'image' => !empty($variation->image_path)
-                    ? asset('storage/' . $variation->image_path)
-                    : (!empty($service->image_path)
-                        ? asset('storage/' . $service->image_path)
-                        : asset('images/Prdcts1.jpg')),
-                'variations' => $service->activeVariations->map(function ($variation) use ($service) {
+                'image' => $serviceImage,
+                'variations' => $service->activeVariations->map(function ($variation) use ($service, $resolveImageUrl) {
                     return [
                         'id' => $variation->id,
                         'service_item_id' => $variation->service_item_id,
@@ -489,10 +455,9 @@
                         'retail_price' => $variation->retail_price,
                         'bulk_price' => $variation->bulk_price,
 
-                         // pass image to each variation
-                    'image' => $service->image_path
-                        ? asset('storage/' . $service->image_path)
-                        : asset('images/Prdcts1.jpg'),
+                        'image' => $resolveImageUrl($variation->variation_image_path)
+                            ?? $resolveImageUrl($service->image_path)
+                            ?? asset('images/Prdcts1.jpg'),
                     ];
                 })->values(),
             ],
