@@ -257,7 +257,6 @@
                 </div>
 
                 <div class="preview-viewport">
-<<<<<<< Updated upstream
                     <button type="button" class="preview-btn" id="detailPrevBtn" onclick="movePreview(-1)">❮</button>
                     <div class="preview-track" id="previewTrack"></div>
                     <button type="button" class="preview-btn" id="detailNextBtn" onclick="movePreview(1)">❯</button>
@@ -342,21 +341,6 @@
                     <a onclick="backToMain()" class="return-link-btn" style="cursor: pointer;">
                         <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
                     </a>
-=======
-                    <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">‹</button>
-
-                    <div class="preview-track" id="previewTrack"></div>
-
-                    <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">›</button>
-                </div>
-            </div>
-
-        <div class="detail-info-panel">
-            <div class="custom-option-group">
-                <label>SERVICE ID:</label>
-                <div>
-                    <span id="currentServiceId">DOC-TX-001</span>
->>>>>>> Stashed changes
                 </div>
             </div>
 
