@@ -455,15 +455,29 @@
             return null;
         }
 
+        $path = trim($path);
+
         if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://'])) {
             return $path;
         }
 
-        if (\Illuminate\Support\Str::startsWith($path, ['images/', 'img/'])) {
-            return asset($path);
+        $normalizedPath = ltrim($path, '/');
+
+        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['images/', 'img/'])) {
+            return file_exists(public_path($normalizedPath))
+                ? asset($normalizedPath)
+                : null;
         }
 
-        return asset('storage/' . ltrim($path, '/'));
+        if (file_exists(public_path('images/' . $normalizedPath))) {
+            return asset('images/' . $normalizedPath);
+        }
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($normalizedPath)) {
+            return asset('storage/' . $normalizedPath);
+        }
+
+        return null;
     };
 
     $servicesData = $services->mapWithKeys(function ($service) use ($resolveImageUrl) {

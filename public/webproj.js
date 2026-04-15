@@ -222,7 +222,7 @@ if (track) {
 
                 <h4>${serviceTitle}</h4>
 
-                <img src="${image}" alt="${subTitle}">
+                <img src="${image}" alt="${subTitle}" onerror="this.onerror=null;this.src='images/Prdcts1.jpg';">
 
                 <div class="category-subtitle">${subTitle}</div>
 
@@ -313,7 +313,7 @@ function openDetail(index) {
         const image = variation.image || 'images/Prdcts1.jpg';
 
         previewTrack.innerHTML = `
-            <img src="${image}" alt="${variation.service_item_id || 'Service'}">
+            <img src="${image}" alt="${variation.service_item_id || 'Service'}" onerror="this.onerror=null;this.src='images/Prdcts1.jpg';">
         `;
 
         currentPreviewIndex = 0;
@@ -370,7 +370,7 @@ function openDetail(index) {
 
             sidebarTrack.innerHTML += `
                 <div class="sidebar-item ${idx === index ? 'active' : ''}" onclick="openDetail(${idx})">
-                    <img src="${itemImage}" alt="${itemLabel}">
+                    <img src="${itemImage}" alt="${itemLabel}" onerror="this.onerror=null;this.src='images/Prdcts1.jpg';">
                     <p>${itemLabel}</p>
                 </div>
             `;
@@ -513,7 +513,7 @@ function bindDetailControlSync() {
 }
 
 function bindDetailButtons() {
-    const qtyInput = document.getElementById('qtyInput');
+    const qtyInput = document.getElementById('quantityInput') || document.getElementById('qtyInput');
     if (qtyInput && qtyInput.dataset.bound !== 'true') {
         qtyInput.addEventListener('change', () => updatePrice());
         qtyInput.dataset.bound = 'true';
@@ -589,7 +589,7 @@ function renderCart() {
         list.innerHTML += `
             <div class="cart-item">
                 <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItemCheck(${index})">
-                <img src="${item.img}">
+                <img src="${item.img}" onerror="this.onerror=null;this.src='images/Prdcts1.jpg';">
                 <div class="cart-item-info">
                     <h4>${item.name}</h4>
                     <p style="font-size:10px; color:#777;">${item.details}</p>
