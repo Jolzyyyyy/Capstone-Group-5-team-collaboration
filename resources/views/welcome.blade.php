@@ -57,8 +57,8 @@
     <div></div>
     <nav class="nav-horizontal">
     <a href="#home" onclick="jumpTo('home'); return false;">Home</a>
-    <a href="#services" onclick="jumpTo('services'); return false;">Services</a>
     <a href="#about" onclick="jumpTo('about'); return false;">About Us</a>
+    <a href="#services" onclick="jumpTo('services'); return false;">Services</a>
     <a href="#contact" onclick="jumpTo('contact'); return false;">Contact</a>
     </nav>
 
