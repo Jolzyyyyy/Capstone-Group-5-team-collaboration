@@ -241,11 +241,26 @@ function openModal(key) {
         currentCategorySet = data.categories;
         currentCategorySet.forEach((cat, index) => {
             const previewImage = withFallbackImage(cat.imgs?.[0] || data.serviceImage);
+            const imageCount = Array.isArray(cat.imgs) ? cat.imgs.length : 0;
+            const optionMeta = imageCount > 1 ? `${imageCount} previews available` : 'Single preview available';
+            const specsSnippet = String(cat.specs || '')
+                .replace(/<br\s*\/?>/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
             track.innerHTML += `
-                <div class="category-card">
-                    <img src="${escapeHtml(previewImage)}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
-                    <h4>${cat.name}</h4>
-                    <p onclick="openDetail(${index})">SELECT TYPE</p>
+                <div class="category-card" onclick="openDetail(${index})">
+                    <div class="category-card-media">
+                        <img src="${escapeHtml(previewImage)}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
+                    </div>
+                    <div class="category-card-body">
+                        <div class="category-label">Service option</div>
+                        <h4>${escapeHtml(cat.name)}</h4>
+                        <div class="category-subtitle">${escapeHtml(optionMeta)}</div>
+                        <div class="category-description">${escapeHtml(specsSnippet || 'Choose this option to view full specifications and pricing.')}</div>
+                    </div>
+                    <button type="button" class="select-type-btn">
+                        View Option
+                    </button>
                 </div>`;
         });
         currentSlideIndex = 0;
