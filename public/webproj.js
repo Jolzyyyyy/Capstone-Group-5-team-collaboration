@@ -12,6 +12,8 @@ let currentPreviewIndex = 0;
 let currentSlideIndex = 0;
 let voucherDiscount = 0;
 const fallbackImage = 'images/Prdcts1.jpg';
+let currentModalKey = '';
+let currentSelectedOptionIndex = -1;
 
 // LOGIN SIMULATION
 let isLoggedIn = false; 
@@ -111,8 +113,29 @@ window.addEventListener('scroll', function() {
 });
 
 function backToMain() {
+    currentPreviewIndex = 0;
+    currentSelectedOptionIndex = -1;
+
+    const productDetail = document.getElementById('productDetail');
+    const pageWrapper = document.getElementById('pageWrapper');
+    const mainHeader = document.getElementById('mainHeader');
+    const servicesSection = document.getElementById('services');
+
     document.body.classList.add('services-active');
-    jumpTo('services');
+    if (productDetail) productDetail.style.display = 'none';
+    if (pageWrapper) pageWrapper.style.display = 'block';
+    if (mainHeader) mainHeader.classList.remove('detail-active');
+
+    document.querySelectorAll('.section').forEach((section) => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+    });
+
+    if (servicesSection) {
+        servicesSection.style.display = 'block';
+        setTimeout(() => servicesSection.classList.add('active'), 10);
+        window.scrollTo({ top: Math.max(0, servicesSection.offsetTop - 80), behavior: 'smooth' });
+    }
 }
 
 function escapeHtml(value) {
@@ -126,6 +149,30 @@ function escapeHtml(value) {
 
 function withFallbackImage(src) {
     return src || fallbackImage;
+}
+
+function formatPeso(value) {
+    return `PHP ${Number(value || 0).toFixed(2)}`;
+}
+
+function getOptionPricingSummary(option) {
+    const retail = Number(option?.retail_price || 0);
+    const bulk = Number(option?.bulk_price || 0);
+
+    if (retail > 0 || bulk > 0) {
+        if (bulk > 0 && bulk !== retail) {
+            return `Retail ${formatPeso(retail)} • Bulk ${formatPeso(bulk)}`;
+        }
+
+        return `Starts at ${formatPeso(retail || bulk)}`;
+    }
+
+    if (currentCategoryType === 'printing') return 'Retail from PHP 3.50';
+    if (currentCategoryType === 'xerox') return 'Retail from PHP 2.00';
+    if (currentCategoryType === 'id') return 'Retail from PHP 5.00';
+    if (currentCategoryType === 'largeformat') return 'Starts at PHP 100.00';
+
+    return 'View pricing in details';
 }
 
 // --- DATA DEFINITION ---
@@ -230,7 +277,11 @@ const idDetails = {
 // --- MODAL & DETAIL UI LOGIC ---
 function openModal(key) {
     const data = allData[key] || { name: "PRINTING SERVICE", categories: [] };
+    if (currentModalKey !== key) {
+        currentSelectedOptionIndex = -1;
+    }
     currentCategoryType = data.type;
+    currentModalKey = key;
 
     const modalTitle = document.getElementById('modalTitle');
     const track = document.getElementById('categoryTrack');
@@ -243,12 +294,14 @@ function openModal(key) {
             const previewImage = withFallbackImage(cat.imgs?.[0] || data.serviceImage);
             const imageCount = Array.isArray(cat.imgs) ? cat.imgs.length : 0;
             const optionMeta = imageCount > 1 ? `${imageCount} previews available` : 'Single preview available';
+            const pricingSummary = getOptionPricingSummary(cat);
             const specsSnippet = String(cat.specs || '')
                 .replace(/<br\s*\/?>/gi, ' ')
                 .replace(/\s+/g, ' ')
                 .trim();
+            const isSelected = currentSelectedOptionIndex === index;
             track.innerHTML += `
-                <div class="category-card" onclick="openDetail(${index})">
+                <div class="category-card ${isSelected ? 'is-selected' : ''}" onclick="openDetail(${index})">
                     <div class="category-card-media">
                         <img src="${escapeHtml(previewImage)}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
                     </div>
@@ -256,10 +309,11 @@ function openModal(key) {
                         <div class="category-label">Service option</div>
                         <h4>${escapeHtml(cat.name)}</h4>
                         <div class="category-subtitle">${escapeHtml(optionMeta)}</div>
+                        <div class="category-price">${escapeHtml(pricingSummary)}</div>
                         <div class="category-description">${escapeHtml(specsSnippet || 'Choose this option to view full specifications and pricing.')}</div>
                     </div>
                     <button type="button" class="select-type-btn">
-                        View Option
+                        ${isSelected ? 'Selected' : 'View Option'}
                     </button>
                 </div>`;
         });
@@ -302,6 +356,7 @@ function updateModalButtons() {
 function openDetail(index) {
     const cat = currentCategorySet[index];
     if (!cat) return;
+    currentSelectedOptionIndex = index;
 
     document.body.classList.add('services-active');
 
@@ -534,10 +589,16 @@ function toggleCart() {
 function addToCart() {
     const title = document.getElementById('detailTitleHeader').innerText;
     const size = document.getElementById('paperSize').value;
-    const qty = parseInt(document.getElementById('qtyInput').value);
+    const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value || '1', 10));
     const totalStr = document.getElementById('totalAmount').innerText.replace(/,/g, '');
     const firstImg = document.querySelector('#previewTrack img');
     const sId = document.getElementById('currentServiceId').innerText;
+    const total = parseFloat(totalStr);
+
+    if (!title || !sId || Number.isNaN(total) || total <= 0) {
+        alert('Please choose a service option first.');
+        return;
+    }
 
     let detailText = `ID: ${sId} | Size: ${size.toUpperCase()}`;
     if (currentCategoryType === "largeformat") detailText += ` | Finish: ${document.getElementById('printCategory').value}`;
@@ -547,13 +608,14 @@ function addToCart() {
         name: title,
         details: detailText,
         qty: qty,
-        price: parseFloat(totalStr),
+        price: total,
         img: firstImg ? firstImg.src : fallbackImage,
         checked: true
     });
     
     localStorage.setItem('printCart', JSON.stringify(cart));
     updateCartBadge();
+    renderCart();
     toggleCart();
 }
 
