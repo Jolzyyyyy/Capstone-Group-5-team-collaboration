@@ -962,6 +962,19 @@ body.user-logged-in #navCart {
     border-color: rgba(255, 106, 0, 0.34);
 }
 
+.category-card.is-selected {
+    border-color: rgba(255, 106, 0, 0.75);
+    box-shadow: 0 24px 52px rgba(255, 106, 0, 0.18);
+    background: linear-gradient(180deg, #fffdfb 0%, #fff4e8 100%);
+}
+
+.category-card.is-selected .category-card-media {
+    border-color: rgba(255, 106, 0, 0.28);
+    background:
+        radial-gradient(circle at top left, rgba(255, 106, 0, 0.18), transparent 40%),
+        linear-gradient(180deg, #fff8f0 0%, #f7f8fb 100%);
+}
+
 .category-card-media {
     height: 260px;
     border-radius: 18px;
@@ -1024,6 +1037,13 @@ body.user-logged-in #navCart {
     min-height: 62px;
 }
 
+.category-card .category-price {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
 .category-card .category-label {
     font-size: 10px;
     font-weight: 700;
@@ -1058,30 +1078,56 @@ body.user-logged-in #navCart {
     box-shadow: 0 18px 28px rgba(255, 122, 0, 0.30);
 }
 
+.category-card.is-selected .select-type-btn {
+    background: linear-gradient(135deg, #111827 0%, #374151 100%);
+    box-shadow: 0 14px 24px rgba(17, 24, 39, 0.22);
+}
+
 @media (max-width: 640px) {
     .product-modal-content {
-        width: calc(100vw - 24px);
+        width: calc(100vw - 16px);
         min-height: 0;
-        padding: 34px 18px 22px;
+        padding: 32px 14px 18px;
         border-radius: 22px;
     }
 
+    .close-modal {
+        top: 10px;
+        right: 16px;
+    }
+
+    .category-slider {
+        margin-top: 14px;
+    }
+
     .category-card {
-        padding: 14px;
-        gap: 14px;
+        padding: 12px;
+        gap: 12px;
+        border-radius: 20px;
     }
 
     .category-card-media {
-        height: 220px;
-        padding: 14px;
+        height: 190px;
+        padding: 12px;
     }
 
     .category-card h4 {
-        font-size: 18px;
+        font-size: 17px;
+    }
+
+    .category-card .category-price {
+        font-size: 13px;
     }
 
     .category-card .category-description {
         min-height: 0;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .category-card .select-type-btn {
+        padding: 12px 14px;
+        border-radius: 12px;
     }
 }
 /* CART DRAWER */
