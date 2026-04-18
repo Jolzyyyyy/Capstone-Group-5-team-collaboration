@@ -1357,6 +1357,20 @@ body.user-logged-in #navCart {
     padding: 18px;
 }
 
+.id-category-card {
+    gap: 12px;
+}
+
+.id-category-media {
+    height: 210px;
+    padding: 12px;
+    align-items: flex-start;
+}
+
+.id-category-media img {
+    object-position: center top;
+}
+
 .category-card img {
     width: 100%;
     max-width: 100%;
@@ -1480,6 +1494,11 @@ body.user-logged-in #navCart {
         padding: 12px;
     }
 
+    .id-category-media {
+        height: 170px;
+        padding: 10px;
+    }
+
     .category-card h4 {
         font-size: 17px;
     }
@@ -1544,6 +1563,19 @@ body.user-logged-in #navCart {
 }
 
 .cart-item-price { font-weight: 500; font-size: 15px; color: #FF0000; margin-top: 10px; }
+.cart-item-file {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cart-item-file.has-file {
+  color: #15803d;
+}
+
+.cart-item-file.missing-file {
+  color: #b45309;
+}
 
 /* VOUCHER & CHECKOUT */
 .cart-footer { padding: 20px 30px; border-top: 1px solid #eee; background: #fcfcfc; display: flex; flex-direction: column; align-items: center; }

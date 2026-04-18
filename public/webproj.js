@@ -381,8 +381,8 @@ function openModal(key) {
                 .trim();
             const isSelected = currentSelectedOptionIndex === index;
             track.innerHTML += `
-                <div class="category-card ${isSelected ? 'is-selected' : ''}" onclick="openDetail(${index})">
-                    <div class="category-card-media">
+                <div class="category-card ${isSelected ? 'is-selected' : ''} ${currentCategoryType === 'id' ? 'id-category-card' : ''}" onclick="openDetail(${index})">
+                    <div class="category-card-media ${currentCategoryType === 'id' ? 'id-category-media' : ''}">
                         <img src="${escapeHtml(previewImage)}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
                     </div>
                     <div class="category-card-body">
@@ -877,6 +877,20 @@ function setCartOpen(isOpen) {
     if (isOpen) renderCart();
 }
 
+function setCartMessage(message, tone = 'info') {
+    const voucherMsg = document.getElementById('voucherMsg');
+    if (!voucherMsg) return;
+
+    const toneMap = {
+        info: '#b45309',
+        success: '#15803d',
+        error: '#dc2626'
+    };
+
+    voucherMsg.textContent = message;
+    voucherMsg.style.color = toneMap[tone] || toneMap.info;
+}
+
 function toggleCart() {
     const drawer = document.getElementById('cartDrawer');
     const isOpen = drawer ? !drawer.classList.contains('active') : false;
@@ -893,6 +907,8 @@ function buildCurrentCartItem() {
     const firstImg = document.querySelector('#previewTrack img');
     const sId = document.getElementById('currentServiceId').innerText;
     const total = parseFloat(totalStr);
+    const fileInput = document.getElementById('fileUploadInput');
+    const attachedFile = fileInput?.files?.[0] || null;
 
     if (!title || !sId || Number.isNaN(total) || total <= 0) {
         alert('Please choose a service option first.');
@@ -909,7 +925,9 @@ function buildCurrentCartItem() {
         qty: qty,
         price: total,
         img: firstImg ? firstImg.src : fallbackImage,
-        checked: true
+        checked: true,
+        fileName: attachedFile ? attachedFile.name : '',
+        hasAttachment: Boolean(attachedFile)
     };
 }
 
@@ -920,6 +938,8 @@ function addOrUpdateCartItem(cartItem) {
         cart[existingIndex].qty += cartItem.qty;
         cart[existingIndex].price += cartItem.price;
         cart[existingIndex].checked = true;
+        cart[existingIndex].fileName = cartItem.fileName || cart[existingIndex].fileName || '';
+        cart[existingIndex].hasAttachment = Boolean(cart[existingIndex].fileName);
         return cart[existingIndex];
     }
 
@@ -936,6 +956,7 @@ function addToCart() {
     updateCartBadge();
     renderCart();
     setCartOpen(true);
+    setCartMessage('Item added to cart. Double-check your attached file before checkout.', cartItem.hasAttachment ? 'success' : 'info');
 }
 
 function updateCartBadge() {
@@ -980,6 +1001,9 @@ function renderCart() {
     cart.forEach((item, index) => {
         const cartImage = withFallbackImage(item.img);
         const safePrice = Number(item.price) || 0;
+        const fileStatus = item.hasAttachment
+            ? `File: ${item.fileName}`
+            : 'No file attached yet';
         list.innerHTML += `
             <div class="cart-item">
                 <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItemCheck(${index})">
@@ -987,6 +1011,7 @@ function renderCart() {
                 <div class="cart-item-info">
                     <h4>${escapeHtml(item.name)}</h4>
                     <p class="cart-item-details">${escapeHtml(item.details)}</p>
+                    <p class="cart-item-file ${item.hasAttachment ? 'has-file' : 'missing-file'}">${escapeHtml(fileStatus)}</p>
                     <p class="cart-item-price">Qty: ${item.qty} | PHP ${safePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})">Remove</button>
                 </div>
@@ -1043,6 +1068,14 @@ function checkoutSelected() {
         return;
     }
 
+    const itemsMissingAttachment = selectedItems.filter((item) => !item.hasAttachment);
+    if (itemsMissingAttachment.length) {
+        setCartMessage('Attach a file to every selected cart item before checkout.', 'error');
+        alert('Checkout blocked. One or more selected items do not have an attached file.');
+        return;
+    }
+
+    setCartMessage(`Checkout ready for ${selectedItems.length} item(s).`, 'success');
     alert(`Checkout ready for ${selectedItems.length} item(s).`);
 }
 
@@ -1061,6 +1094,7 @@ function placeOrderNow() {
     updateCartBadge();
     renderCart();
     setCartOpen(true);
+    setCartMessage('Order item added. Review your file and selected items before checkout.', 'success');
 }
 
 // --- FORMS & EXTERNAL APIS ---
