@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Printify & Co. - Core JavaScript
  * FULL UPDATED VERSION: 8.9 (STRICT COMPLETE VERSION)
  * FEATURES: Transparent Nav, Document ID Sync (TX, TWI, IM), Corrected Xerox ID Update & Auto-Slide Sync
@@ -22,8 +22,42 @@ const heroSlides = document.querySelectorAll('.hero-slide');
 const dots = document.querySelectorAll('.dot');
 let slideInterval = setInterval(nextHeroSlide, 8000);
 
+function normalizeCartItem(item, index) {
+    if (!item || typeof item !== 'object') return null;
+
+    const parsedQty = Math.max(1, parseInt(item.qty, 10) || 1);
+    const parsedPrice = Number(item.price);
+
+    return {
+        id: item.id || `cart-${Date.now()}-${index}`,
+        name: String(item.name || item.title || 'Service Item'),
+        details: String(item.details || item.description || 'Selected service option'),
+        qty: parsedQty,
+        price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+        img: item.img || item.image || fallbackImage,
+        checked: item.checked !== false
+    };
+}
+
+function loadCart() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('printCart')) || [];
+        if (!Array.isArray(stored)) return [];
+        return stored
+            .map((item, index) => normalizeCartItem(item, index))
+            .filter(Boolean);
+    } catch (error) {
+        localStorage.removeItem('printCart');
+        return [];
+    }
+}
+
+function persistCart() {
+    localStorage.setItem('printCart', JSON.stringify(cart));
+}
+
 // Initialize Cart from LocalStorage
-let cart = JSON.parse(localStorage.getItem('printCart')) || [];
+let cart = loadCart();
 
 // --- HERO SECTION FUNCTIONS ---
 function updateHero() {
@@ -161,7 +195,7 @@ function getOptionPricingSummary(option) {
 
     if (retail > 0 || bulk > 0) {
         if (bulk > 0 && bulk !== retail) {
-            return `Retail ${formatPeso(retail)} • Bulk ${formatPeso(bulk)}`;
+            return `Retail ${formatPeso(retail)} â€¢ Bulk ${formatPeso(bulk)}`;
         }
 
         return `Starts at ${formatPeso(retail || bulk)}`;
@@ -806,15 +840,21 @@ function changeQty(d) {
 }
 
 // --- CART SYSTEM ---
-function toggleCart() {
+function setCartOpen(isOpen) {
     const overlay = document.getElementById('cartOverlay');
     const drawer = document.getElementById('cartDrawer');
-    if (overlay) overlay.classList.toggle('active');
-    if (drawer) drawer.classList.toggle('active');
-    renderCart();
+    if (overlay) overlay.classList.toggle('active', isOpen);
+    if (drawer) drawer.classList.toggle('active', isOpen);
+    if (isOpen) renderCart();
 }
 
-function addToCart() {
+function toggleCart() {
+    const drawer = document.getElementById('cartDrawer');
+    const isOpen = drawer ? !drawer.classList.contains('active') : false;
+    setCartOpen(isOpen);
+}
+
+function buildCurrentCartItem() {
     const title = document.getElementById('detailTitleHeader').innerText;
     const size = document.getElementById('paperSize').value;
     const sizeLabel = document.getElementById('paperSize').selectedOptions[0]?.textContent || size;
@@ -827,13 +867,13 @@ function addToCart() {
 
     if (!title || !sId || Number.isNaN(total) || total <= 0) {
         alert('Please choose a service option first.');
-        return;
+        return null;
     }
 
     let detailText = `ID: ${sId} | Size: ${sizeLabel} | Option: ${serviceOption}`;
     if (currentCategoryType === "largeformat") detailText += ` | Finish: ${document.getElementById('printCategory').value}`;
 
-    cart.push({
+    return {
         id: Date.now(),
         name: title,
         details: detailText,
@@ -841,12 +881,30 @@ function addToCart() {
         price: total,
         img: firstImg ? firstImg.src : fallbackImage,
         checked: true
-    });
-    
-    localStorage.setItem('printCart', JSON.stringify(cart));
+    };
+}
+
+function addOrUpdateCartItem(cartItem) {
+    const existingIndex = cart.findIndex((item) => item.name === cartItem.name && item.details === cartItem.details);
+
+    if (existingIndex >= 0) {
+        cart[existingIndex].qty += cartItem.qty;
+        cart[existingIndex].price += cartItem.price;
+        cart[existingIndex].checked = true;
+        return cart[existingIndex];
+    }
+
+    cart.push(cartItem);
+    return cartItem;
+}
+
+function addToCart() {
+    const cartItem = buildCurrentCartItem();
+    if (!cartItem) return;
+
+    addOrUpdateCartItem(cartItem);
+    persistCart();
     updateCartBadge();
-    renderCart();
-    toggleCart();
 }
 
 function updateCartBadge() {
@@ -856,7 +914,7 @@ function updateCartBadge() {
 
 function removeFromCart(index) {
     cart.splice(index, 1);
-    localStorage.setItem('printCart', JSON.stringify(cart));
+    persistCart();
     updateCartBadge();
     renderCart();
 }
@@ -864,18 +922,40 @@ function removeFromCart(index) {
 function renderCart() {
     const list = document.getElementById('cartItemsList');
     if (!list) return;
+
+    const normalizedCart = cart
+        .map((item, index) => normalizeCartItem(item, index))
+        .filter(Boolean);
+
+    if (normalizedCart.length !== cart.length) {
+        cart = normalizedCart;
+        persistCart();
+        updateCartBadge();
+    }
+
+    if (!cart.length) {
+        list.innerHTML = `
+            <div class="cart-empty-state">
+                <h4>Your cart is empty</h4>
+                <p>Add a service from the detail page to see it here.</p>
+            </div>`;
+        calculateCartTotal();
+        return;
+    }
+
     list.innerHTML = '';
     cart.forEach((item, index) => {
         const cartImage = withFallbackImage(item.img);
+        const safePrice = Number(item.price) || 0;
         list.innerHTML += `
             <div class="cart-item">
                 <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItemCheck(${index})">
                 <img src="${escapeHtml(cartImage)}" alt="${escapeHtml(item.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
                 <div class="cart-item-info">
-                    <h4>${item.name}</h4>
-                    <p style="font-size:10px; color:#777;">${item.details}</p>
-                    <p class="cart-item-price">Qty: ${item.qty} | ₱${item.price.toLocaleString()}</p>
-                    <span onclick="removeFromCart(${index})" style="color:red; cursor:pointer; font-size:11px;">REMOVE</span>
+                    <h4>${escapeHtml(item.name)}</h4>
+                    <p class="cart-item-details">${escapeHtml(item.details)}</p>
+                    <p class="cart-item-price">Qty: ${item.qty} | PHP ${safePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})">Remove</button>
                 </div>
             </div>`;
     });
@@ -883,19 +963,71 @@ function renderCart() {
 }
 
 function toggleItemCheck(index) {
+    if (!cart[index]) return;
     cart[index].checked = !cart[index].checked;
-    localStorage.setItem('printCart', JSON.stringify(cart));
+    persistCart();
     calculateCartTotal();
 }
 
 function calculateCartTotal() {
     const drawerTotal = document.getElementById('drawerTotal');
-    let subtotal = cart.reduce((acc, item) => item.checked ? acc + item.price : acc, 0);
+    let subtotal = cart.reduce((acc, item) => item.checked ? acc + (Number(item.price) || 0) : acc, 0);
+    subtotal = Math.max(0, subtotal - voucherDiscount);
     if (drawerTotal) drawerTotal.innerText = subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
 }
 
+function applyVoucher() {
+    const voucherInput = document.getElementById('voucherCode');
+    const voucherMsg = document.getElementById('voucherMsg');
+    if (!voucherInput || !voucherMsg) return;
+
+    const code = voucherInput.value.trim().toUpperCase();
+    if (!code) {
+        voucherDiscount = 0;
+        voucherMsg.textContent = 'Enter a voucher code first.';
+        voucherMsg.style.color = '#b45309';
+        calculateCartTotal();
+        return;
+    }
+
+    if (code === 'PRINT10') {
+        voucherDiscount = 10;
+        voucherMsg.textContent = 'Voucher applied: PHP 10.00 off';
+        voucherMsg.style.color = '#15803d';
+    } else {
+        voucherDiscount = 0;
+        voucherMsg.textContent = 'Invalid voucher code.';
+        voucherMsg.style.color = '#dc2626';
+    }
+
+    calculateCartTotal();
+}
+
+function checkoutSelected() {
+    const selectedItems = cart.filter((item) => item.checked);
+    if (!selectedItems.length) {
+        alert('Select at least one cart item before checkout.');
+        return;
+    }
+
+    alert(`Checkout ready for ${selectedItems.length} item(s).`);
+}
+
 function placeOrderNow() {
-    addToCart();
+    const fileInput = document.getElementById('fileUploadInput');
+    if (!fileInput || !fileInput.files || !fileInput.files.length) {
+        alert('Attach a file before placing your order.');
+        return;
+    }
+
+    const cartItem = buildCurrentCartItem();
+    if (!cartItem) return;
+
+    addOrUpdateCartItem(cartItem);
+    persistCart();
+    updateCartBadge();
+    renderCart();
+    setCartOpen(true);
 }
 
 // --- FORMS & EXTERNAL APIS ---
@@ -952,3 +1084,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
 });
+
+
+
+
+
+
