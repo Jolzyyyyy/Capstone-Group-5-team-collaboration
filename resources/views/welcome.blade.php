@@ -258,11 +258,16 @@
         </div>
 
         <div class="detail-info-panel">
-            <p id="productSpecs" class="specs-box">Premium 80gsm paper, crisp ink quality.</p>
+            <div class="detail-meta-card">
+                <p id="serviceMaterial" class="service-material">Premium 80gsm Bond Paper</p>
+                <p id="serviceInclusions" class="service-inclusions">Select a variation to view inclusions and service details.</p>
+            </div>
+
+            <div class="detail-options-grid">
             
             <div class="custom-option-group">
                 <label>Printing Category</label>
-                <select class="custom-select" id="printCategory" onchange="updatePrice()">
+                <select class="custom-select" id="printCategory" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <optgroup label="TEXT ONLY">
                         <option value="DOC-TX-001">B&W — DOC-TX-001</option>
                         <option value="DOC-TX-002">Partially Colored — DOC-TX-002</option>
@@ -295,8 +300,8 @@
             </div>
 
             <div class="custom-option-group">
-                <label>Color Mode / Variation</label>
-                <select class="custom-select" id="colorMode" onchange="syncSlideWithDropdown()">
+                <label>Color Variation</label>
+                <select class="custom-select" id="colorMode" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <option value="0">Standard Quality</option>
                     <option value="1">High Definition</option>
                     <option value="2">Draft / Economy</option>
@@ -304,15 +309,15 @@
             </div>
 
             <div class="custom-option-group">
-                <label>Paper Size / Product Size</label>
-                <select class="custom-select" id="paperSize" onchange="updatePrice()">
+                <label>Paper Size</label>
+                <select class="custom-select" id="paperSize" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <option value="short">Short (8.5 x 11)</option>
                     <option value="a4">A4 (8.27 x 11.69)</option>
                     <option value="long">Long (8.5 x 13)</option>
                 </select>
             </div>
 
-            <div class="custom-option-group">
+            <div class="custom-option-group quantity-row">
                 <label>Quantity</label>
                 <div class="qty-container">
                     <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
@@ -320,13 +325,50 @@
                     <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
                 </div>
             </div>
+            </div>
 
-            <div class="custom-option-group" style="margin-top: 15px; margin-bottom: 15px;">
-                <label style="font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600;">Service Item ID:</label>
-                <div style="background: #fdf2e9; border: 1px solid #d35400; padding: 8px 15px; border-radius: 6px; display: inline-block; width: 100%;">
-                    <span id="currentServiceId" style="font-family: 'Courier New', Courier, monospace; font-weight: bold; color: #d35400; font-size: 16px;">DOC-TX-001</span>
+            <div class="detail-inline-note">
+                <span class="detail-inline-label">Reminder:</span>
+                <p>Please double-check your selected quantity, selected service option, and uploaded file before submitting your order.</p>
+            </div>
+
+            <div class="custom-option-group stacked-group">
+                <label>File Upload</label>
+                <input type="file" id="fileUploadInput" class="custom-file-input">
+            </div>
+
+            <div class="detail-options-grid detail-secondary-grid">
+                <div class="custom-option-group">
+                    <label>Service Option</label>
+                    <select class="custom-select" id="serviceOptionSelect">
+                        <option value="">Select Option</option>
+                    </select>
+                </div>
+
+                <div class="custom-option-group">
+                    <label>File Type</label>
+                    <select class="custom-select" id="fileTypeSelect">
+                        <option value="">Select File Type</option>
+                        <option value="jpg">JPG / JPEG</option>
+                        <option value="png">PNG</option>
+                        <option value="pdf">PDF</option>
+                        <option value="docx">DOCX</option>
+                        <option value="psd">PSD</option>
+                    </select>
                 </div>
             </div>
+
+            <div class="detail-inline-note detail-note-block">
+                <span class="detail-inline-label">Note:</span>
+                <p id="serviceNotes">Files that require editing, layout adjustments, or design enhancement may have additional charges depending on the type and complexity of the service needed. For best results, please upload high-resolution files.</p>
+            </div>
+
+            <div class="service-id-row">
+                <span class="service-id-label">SERVICE ID:</span>
+                <span id="currentServiceId" class="service-id-value">DOC-TX-001</span>
+            </div>
+
+            <p id="productSpecs" class="specs-box">Premium 80gsm paper, crisp ink quality.</p>
 
             <div class="price-summary">
                 <div class="price-row-flex">
