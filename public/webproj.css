@@ -508,7 +508,7 @@ body.user-logged-in #navCart {
 }
 
 .testimonial-quote::before{
-    content:"â€œ";
+    content:'"';
     color:#FF6A00;
     font-size:28px;
     margin-right:6px;
@@ -516,7 +516,7 @@ body.user-logged-in #navCart {
 }
 
 .testimonial-quote::after{
-    content:"â€";
+    content:'"';
     color:#FF6A00;
     font-size:28px;
     margin-left:6px;

@@ -196,7 +196,7 @@ function getOptionPricingSummary(option) {
 
     if (retail > 0 || bulk > 0) {
         if (bulk > 0 && bulk !== retail) {
-            return `Retail ${formatPeso(retail)} â€¢ Bulk ${formatPeso(bulk)}`;
+            return `Retail ${formatPeso(retail)} | Bulk ${formatPeso(bulk)}`;
         }
 
         return `Starts at ${formatPeso(retail || bulk)}`;
@@ -204,7 +204,12 @@ function getOptionPricingSummary(option) {
 
     if (currentCategoryType === 'printing') return 'Retail from PHP 3.50';
     if (currentCategoryType === 'xerox') return 'Retail from PHP 2.00';
-    if (currentCategoryType === 'id') return 'Retail from PHP 5.00';
+    if (currentCategoryType === 'id') {
+        if (option?.name && option.name !== 'SINGLE PHOTO') {
+            return `Package price ${formatPeso(idPricing['PACKAGE'][option.name] || 0)}`;
+        }
+        return 'Retail from PHP 5.00';
+    }
     if (currentCategoryType === 'largeformat') return 'Starts at PHP 100.00';
 
     return 'View pricing in details';
@@ -237,7 +242,12 @@ const allData = {
         type: "id",
         serviceImage: "images/Prdcts1.jpg",
         categories: [
-            { name: "PACKAGE", imgs: ["images/PCKGA.png", "images/PCKGB.png", "images/PCKGC.png", "images/PCKGD.png", "images/PCKGE.png", "images/PCKGF.png"], specs: "Best value bundles for applications and school." },
+            { name: "Package A", imgs: ["images/PCKGA.png"], specs: "Premium Photo Paper (260gsm). Best value bundle for mixed 1x1 and 2x2 requirements." },
+            { name: "Package B", imgs: ["images/PCKGB.png"], specs: "Premium Photo Paper (260gsm). Ideal for 1x1 photo requirements." },
+            { name: "Package C", imgs: ["images/PCKGC.png"], specs: "Premium Photo Paper (260gsm). Ideal for 2x2 photo requirements." },
+            { name: "Package D", imgs: ["images/PCKGD.png"], specs: "Premium Photo Paper (260gsm). Passport size photo package." },
+            { name: "Package E", imgs: ["images/PCKGE.png"], specs: "Premium Photo Paper (260gsm). 1.5 x 1.5 package for ID use." },
+            { name: "Package F", imgs: ["images/PCKGF.png"], specs: "Premium Photo Paper (260gsm). Wallet size package." },
             { name: "SINGLE PHOTO", imgs: ["images/SP (2-5).png", "images/SP (6-A4).png"], specs: "High-quality prints for frames and memories." }
         ]
     },
@@ -501,7 +511,7 @@ function updateServiceSelectors(categoryName) {
     } else if (currentCategoryType === 'xerox') {
         options = ['Walk-in Copy', 'Sorted Set', 'Stapled Set'];
     } else if (currentCategoryType === 'id') {
-        options = categoryName === 'PACKAGE'
+        options = categoryName !== 'SINGLE PHOTO'
             ? ['Basic Retouch', 'Soft Copy Included', 'Glossy Finish', 'Cut and Trim']
             : ['Glossy Finish', 'Matte Finish', 'Borderless Crop', 'Photo Correction'];
     } else if (currentCategoryType === 'largeformat') {
@@ -549,8 +559,8 @@ function refreshServicePanel() {
         notes = 'Photocopy output follows your selected paper size. Bring clean originals for sharper and more consistent duplication.';
     } else if (currentCategoryType === 'id') {
         material = 'Premium Photo Paper (260gsm)';
-        inclusions = category.name === 'PACKAGE'
-            ? (idDetails[paperSize?.value] || 'Choose a package to see inclusions.')
+        inclusions = category.name !== 'SINGLE PHOTO'
+            ? (idDetails[category.name] || 'Choose a package to see inclusions.')
             : `${selectedSize || '2R'} full-color photo print`;
         notes = 'For ID, passport, visa, and official document use. High-resolution uploads are recommended for the best facial detail and skin tone reproduction.';
     } else if (currentCategoryType === 'largeformat') {
@@ -664,10 +674,11 @@ function updateDropdownsForID(categoryName) {
     const colorMode = document.getElementById('colorMode');
     paperSize.innerHTML = '';
 
-    if (categoryName === "PACKAGE") {
-        ['Package A', 'Package B', 'Package C', 'Package D', 'Package E', 'Package F'].forEach(opt => {
-            let el = document.createElement('option'); el.value = opt; el.textContent = opt; paperSize.appendChild(el);
-        });
+    if (categoryName !== "SINGLE PHOTO") {
+        const el = document.createElement('option');
+        el.value = categoryName;
+        el.textContent = categoryName;
+        paperSize.appendChild(el);
     } else {
         const photoOptions = [
             {val: '2R', label: '2R (2.5x3.5)'}, {val: '3R', label: '3R (3.5x5.0)'}, {val: '4R', label: '4R (4.0x6.0)'},
@@ -729,18 +740,19 @@ function updatePrice() {
     } 
     // 2. ID PHOTO SERVICES
     else if (currentCategoryType === "id") {
-        if (categoryName === "PACKAGE") {
+        if (categoryName !== "SINGLE PHOTO") {
             const packageIdMap = {
                 'Package A': "IDP-PKG-001", 'Package B': "IDP-PKG-002", 'Package C': "IDP-PKG-003",
                 'Package D': "IDP-PKG-004", 'Package E': "IDP-PKG-005", 'Package F': "IDP-PKG-006"
             };
-            computedId = packageIdMap[size];
-            specsDisplay.innerHTML = `Premium Photo Paper (260gsm)<br><strong style="color:#e67e22;">${idDetails[size] || ""}</strong>`;
+            computedId = packageIdMap[categoryName];
+            specsDisplay.innerHTML = `Premium Photo Paper (260gsm)<br><strong style="color:#e67e22;">${idDetails[categoryName] || ""}</strong>`;
+            retail = idPricing['PACKAGE'][categoryName] || 0;
         } else {
             computedId = "IDP-SP-" + size;
             specsDisplay.innerHTML = `Premium Photo Paper (260gsm)`;
+            retail = idPricing[categoryName][size] || 0;
         }
-        retail = idPricing[categoryName][size] || 0;
         bulk = retail;
         document.getElementById('bulkAmount').innerText = "Fixed";
     }
@@ -922,6 +934,8 @@ function addToCart() {
     addOrUpdateCartItem(cartItem);
     persistCart();
     updateCartBadge();
+    renderCart();
+    setCartOpen(true);
 }
 
 function updateCartBadge() {
@@ -1103,6 +1117,3 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
 });
-
-
-
