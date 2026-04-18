@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -54,7 +54,7 @@
 @endphp
 
 <header class="top-nav-bar" id="mainHeader">
-    <div></div>
+    <div class="nav-spacer" aria-hidden="true"></div>
     <nav class="nav-horizontal">
     <a href="#home" onclick="jumpTo('home'); return false;">Home</a>
     <a href="#about" onclick="jumpTo('about'); return false;">About Us</a>
@@ -109,7 +109,7 @@
                     Crafting Your Vision into Reality
                 </p>
                 <p style="font-size: 13px; font-style: italic; color: #FF0000; margin-top: 20px; letter-spacing: 1px;">
-                    Premium Prints • Fast Delivery • Unlimited Possibilities
+                    Premium Prints â€¢ Fast Delivery â€¢ Unlimited Possibilities
                 </p>
             </div>
         </div>
@@ -241,16 +241,16 @@
             </div>
             
             <div class="preview-viewport">
-                <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">‹</button>
+                <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">â€¹</button>
                 <div class="preview-track" id="previewTrack">
                     </div>
-                <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">›</button>
+                <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">â€º</button>
             </div>
 
             <div class="reviews-yellow-box">
                 <div class="rev-header-inline">
                     <span>Customer Reviews</span>
-                    <span style="color: #f1c40f;">★★★★★ <small style="color:#333">(Verified)</small></span>
+                    <span style="color: #f1c40f;">â˜…â˜…â˜…â˜…â˜… <small style="color:#333">(Verified)</small></span>
                 </div>
                 <div class="reviews-horizontal-scroll" id="reviewsList">
                     </div>
@@ -269,32 +269,32 @@
                 <label>Printing Category</label>
                 <select class="custom-select" id="printCategory" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <optgroup label="TEXT ONLY">
-                        <option value="DOC-TX-001">B&W — DOC-TX-001</option>
-                        <option value="DOC-TX-002">Partially Colored — DOC-TX-002</option>
-                        <option value="DOC-TX-003">Full Colored — DOC-TX-003</option>
+                        <option value="DOC-TX-001">B&W â€” DOC-TX-001</option>
+                        <option value="DOC-TX-002">Partially Colored â€” DOC-TX-002</option>
+                        <option value="DOC-TX-003">Full Colored â€” DOC-TX-003</option>
                     </optgroup>
                     <optgroup label="TEXT WITH IMAGE (TWI)">
-                        <option value="DOC-TWI-004">B&W — DOC-TWI-004</option>
-                        <option value="DOC-TWI-005">Partially Colored — DOC-TWI-005</option>
-                        <option value="DOC-TWI-006">Full Colored — DOC-TWI-006</option>
+                        <option value="DOC-TWI-004">B&W â€” DOC-TWI-004</option>
+                        <option value="DOC-TWI-005">Partially Colored â€” DOC-TWI-005</option>
+                        <option value="DOC-TWI-006">Full Colored â€” DOC-TWI-006</option>
                     </optgroup>
                     <optgroup label="IMAGE ONLY (IM)">
-                        <option value="DOC-IM-007">B&W — DOC-IM-007</option>
-                        <option value="DOC-IM-008">Partially Colored — DOC-IM-008</option>
-                        <option value="DOC-IM-009">Full Colored — DOC-IM-009</option>
+                        <option value="DOC-IM-007">B&W â€” DOC-IM-007</option>
+                        <option value="DOC-IM-008">Partially Colored â€” DOC-IM-008</option>
+                        <option value="DOC-IM-009">Full Colored â€” DOC-IM-009</option>
                     </optgroup>
                     <optgroup label="PHOTOCOPY & SCANNING">
-                        <option value="DOC-PCPY-001">B&W Photocopy — DOC-PCPY-001</option>
-                        <option value="DOC-PCPY-002">Partial Color Copy — DOC-PCPY-002</option>
-                        <option value="DOC-PCPY-003">Full Color Copy — DOC-PCPY-003</option>
+                        <option value="DOC-PCPY-001">B&W Photocopy â€” DOC-PCPY-001</option>
+                        <option value="DOC-PCPY-002">Partial Color Copy â€” DOC-PCPY-002</option>
+                        <option value="DOC-PCPY-003">Full Color Copy â€” DOC-PCPY-003</option>
                     </optgroup>
                     <optgroup label="ID & PHOTO SERVICES">
-                        <option value="IDP-PKG-001">Package A (1x1 & 2x2 Mixed) — IDP-PKG-001</option>
-                        <option value="IDP-PKG-002">Package B (1x1 - 8pcs) — IDP-PKG-002</option>
-                        <option value="IDP-PKG-003">Package C (2x2 - 8pcs) — IDP-PKG-003</option>
-                        <option value="IDP-PKG-004">Package D (Passport Size - 5pcs) — IDP-PKG-004</option>
-                        <option value="IDP-PKG-005">Package E (1.5 x 1.5 - 6pcs) — IDP-PKG-005</option>
-                        <option value="IDP-PKG-006">Package F (Wallet Size - 5pcs) — IDP-PKG-006</option>
+                        <option value="IDP-PKG-001">Package A (1x1 & 2x2 Mixed) â€” IDP-PKG-001</option>
+                        <option value="IDP-PKG-002">Package B (1x1 - 8pcs) â€” IDP-PKG-002</option>
+                        <option value="IDP-PKG-003">Package C (2x2 - 8pcs) â€” IDP-PKG-003</option>
+                        <option value="IDP-PKG-004">Package D (Passport Size - 5pcs) â€” IDP-PKG-004</option>
+                        <option value="IDP-PKG-005">Package E (1.5 x 1.5 - 6pcs) â€” IDP-PKG-005</option>
+                        <option value="IDP-PKG-006">Package F (Wallet Size - 5pcs) â€” IDP-PKG-006</option>
                     </optgroup>
                 </select>
             </div>
@@ -376,22 +376,24 @@
                         <input type="radio" name="priceType" value="retail" checked onclick="updatePrice()">
                         <div class="price-item">
                             <p class="price-label">Retail</p>
-                            <div class="unit-price">₱<span id="retailAmount">0.00</span></div>
+                            <div class="unit-price">â‚±<span id="retailAmount">0.00</span></div>
                         </div>
                     </label>
                     <label class="price-option-wrapper">
                         <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
                         <div class="price-item">
                             <p class="price-label" style="color:#27ae60;">Bulk</p>
-                            <div class="unit-price" style="color:#27ae60;">₱<span id="bulkAmount">0.00</span></div>
+                            <div class="unit-price" style="color:#27ae60;">â‚±<span id="bulkAmount">0.00</span></div>
                         </div>
                     </label>
                 </div>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
                 <div class="total-price-box">
                     <span style="font-size: 13px; color: #666;">Total Amount:</span>
-                    <h3 class="total-price" style="color: #d35400;">₱<span id="totalAmount">0.00</span></h3>
+                    <h3 class="total-price" style="color: #d35400;">â‚±<span id="totalAmount">0.00</span></h3>
                 </div>
+                <p id="bulkThresholdNote" class="bulk-threshold-note">Bulk price available at 100+ pages.</p>
+                <p class="bulk-order-note">Bulk orders are recommended for 100 or more pages. Use a print-ready file and confirm your final page count before checkout.</p>
             </div>
 
             <div class="btn-row">
@@ -425,7 +427,7 @@
         </div>
         <div class="cart-total-row">
             <span>Total</span>
-            <span>₱<span id="drawerTotal">0.00</span></span>
+            <span>â‚±<span id="drawerTotal">0.00</span></span>
         </div>
         <button class="cart-btn-checkout" onclick="checkoutSelected()">Checkout Now</button>
     </div>
@@ -436,12 +438,12 @@
         <span class="close-modal" onclick="closeModal()">&times;</span>
         <h2 id="modalTitle">CHOOSE TYPE</h2>
         <div class="category-slider">
-            <button class="modal-btn" id="modalPrev" onclick="moveSlide(-1)">❮</button>
+            <button class="modal-btn" id="modalPrev" onclick="moveSlide(-1)">â®</button>
             <div class="slider-viewport">
                 <div class="category-track" id="categoryTrack">
                     </div>
             </div>
-            <button class="modal-btn" id="modalNext" onclick="moveSlide(1)">❯</button>
+            <button class="modal-btn" id="modalNext" onclick="moveSlide(1)">â¯</button>
         </div>
     </div>
 </div>
@@ -450,3 +452,4 @@
 
 </body>
 </html>
+

@@ -11,6 +11,7 @@ let currentCategorySet = [];
 let currentPreviewIndex = 0;
 let currentSlideIndex = 0;
 let voucherDiscount = 0;
+const BULK_MIN_PAGES = 100;
 const fallbackImage = 'images/Prdcts1.jpg';
 let currentModalKey = '';
 let currentSelectedOptionIndex = -1;
@@ -705,7 +706,9 @@ function updatePrice() {
     const qtyInput = document.getElementById('qtyInput');
     const qty = parseInt(qtyInput.value) || 1;
     const priceTypeInput = document.querySelector('input[name="priceType"]:checked');
-    const priceType = priceTypeInput ? priceTypeInput.value : 'retail';
+    const retailInput = document.querySelector('input[name="priceType"][value="retail"]');
+    const bulkInput = document.querySelector('input[name="priceType"][value="bulk"]');
+    const bulkThresholdNote = document.getElementById('bulkThresholdNote');
     const specsDisplay = document.getElementById('productSpecs');
     const serviceIdDisplay = document.getElementById('currentServiceId');
 
@@ -783,8 +786,22 @@ function updatePrice() {
         document.getElementById('bulkAmount').innerText = bulk.toFixed(2);
     }
 
+    const bulkEligible = qty >= BULK_MIN_PAGES;
+    if (bulkInput) {
+        bulkInput.disabled = !bulkEligible;
+        if (!bulkEligible && bulkInput.checked && retailInput) {
+            retailInput.checked = true;
+        }
+    }
+    if (bulkThresholdNote) {
+        bulkThresholdNote.textContent = bulkEligible
+            ? `Bulk price applied for ${qty} pages.`
+            : `Bulk price available at ${BULK_MIN_PAGES}+ pages.`;
+    }
+
     if (serviceIdDisplay) serviceIdDisplay.innerText = computedId;
     document.getElementById('retailAmount').innerText = retail.toFixed(2);
+    const priceType = bulkEligible && priceTypeInput && priceTypeInput.value === 'bulk' ? 'bulk' : 'retail';
     const unitPrice = (priceType === 'retail') ? retail : bulk;
     const total = unitPrice * qty;
     document.getElementById('totalAmount').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2});
@@ -909,7 +926,9 @@ function addToCart() {
 
 function updateCartBadge() {
     const badge = document.getElementById('cartBadge');
-    if (badge) badge.innerText = cart.length;
+    if (!badge) return;
+    const totalItems = cart.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 0), 0);
+    badge.innerText = totalItems;
 }
 
 function removeFromCart(index) {
@@ -1084,9 +1103,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
 });
-
-
-
 
 
 
