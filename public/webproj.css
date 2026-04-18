@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    GLOBAL
 ========================================================= */
 
@@ -385,7 +385,7 @@ body.user-logged-in #navCart {
 }
 
 .testimonial-quote::before{
-    content:"“";
+    content:"â€œ";
     color:#FF6A00;
     font-size:28px;
     margin-right:6px;
@@ -393,7 +393,7 @@ body.user-logged-in #navCart {
 }
 
 .testimonial-quote::after{
-    content:"”";
+    content:"â€";
     color:#FF6A00;
     font-size:28px;
     margin-left:6px;
@@ -768,7 +768,7 @@ body.user-logged-in #navCart {
 .detail-options-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px 18px;
+  gap: 14px 18px;
 }
 
 .detail-secondary-grid {
@@ -809,6 +809,25 @@ body.user-logged-in #navCart {
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.detail-options-grid .custom-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.detail-options-grid .custom-option-group label {
+  width: auto;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+}
+
+.detail-options-grid .custom-select {
+  width: 100%;
+  min-width: 0;
+}
+
 .custom-select:focus {
   border-color: #f59e0b;
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
@@ -820,6 +839,16 @@ body.user-logged-in #navCart {
 
 .quantity-row label {
   margin-top: 0;
+}
+
+.quantity-row .qty-container {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.quantity-row .qty-input-styled {
+  flex: 1;
+  min-width: 52px;
 }
 
 .price-summary {
@@ -946,10 +975,11 @@ body.user-logged-in #navCart {
 .qty-input-styled::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* BUTTONS & RETURN */
-.btn-row { display: flex; gap: 10px; margin-top: 15px; }
+.btn-row { display: flex; gap: 10px; margin-top: 15px; position: relative; z-index: 2; }
 .btn-row button { 
     flex: 1; padding: 15px; border: none; border-radius: 4px; font-weight: 600; 
     cursor: pointer; text-transform: uppercase; font-size: 13px; transition: 0.3s; 
+    position: relative; z-index: 2; pointer-events: auto;
 }
 .btn-cart { background: #FF0000; color: white; }
 .btn-buy { background: #222; color: white; }
@@ -1506,3 +1536,4 @@ body.user-logged-in #navCart {
         transform: translate(-50%, -50%);
     }
 }
+
