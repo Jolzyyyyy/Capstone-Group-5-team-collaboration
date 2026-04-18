@@ -19,14 +19,16 @@ body, html {
     top: 0; 
     left: 0; 
     right: 0;
-    display: flex; 
-    justify-content: space-between; 
+    display: grid; 
+    grid-template-columns: 120px minmax(0, 1fr) auto;
     align-items: center;
     height: 70px;              /* FIXED NAVBAR HEIGHT */
-    padding: 0 60px;           /* remove vertical padding */ 
+    gap: 24px;
+    padding: 0 32px;           /* remove vertical padding */ 
     z-index: 2000; 
     background: #222;
     border-bottom: 1px solid rgba(255,255,255,0.06);
+    box-sizing: border-box;
 }
 
 /* BRAND TEXT */
@@ -46,16 +48,27 @@ body.about-active .top-nav-bar,
 body.contact-active .top-nav-bar {
     background: #222;
     height: 70px;
-    padding: 1px 60px;
+    padding: 0 32px;
+}
+
+.nav-spacer {
+    width: 120px;
+    min-width: 120px;
 }
 
 .nav-horizontal { 
-    position: absolute; left: 55%; transform: translateX(-50%); 
-    display: flex; gap: 130px; 
+    position: static;
+    transform: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: clamp(18px, 4vw, 56px); 
 }
 .nav-horizontal a {
     text-decoration: none; font-size: 13px; color: white; font-weight: 500; 
     cursor: pointer; text-transform: uppercase; letter-spacing: 1.5px; transition: color 0.3s;
+    white-space: nowrap;
 }
 
 .nav-horizontal a:hover { color: #FF0000; }
@@ -66,8 +79,11 @@ body.contact-active .top-nav-bar {
   align-items: center;
   gap: 18px;
   flex-shrink: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   white-space: nowrap;
-  margin-right: 60px; /* increase if you want more right padding */
+  margin-right: 0;
+  min-width: 0;
 }
 
 /* make all auth items look the same (a, button, span) */
@@ -130,6 +146,113 @@ body.user-logged-in #navCart {
   padding: 2px 6px;
   border-radius: 50%;
   font-weight: bold;
+}
+
+@media (max-width: 1180px) {
+  .top-nav-bar,
+  .top-nav-bar.scrolled,
+  .top-nav-bar.detail-active,
+  body.services-active .top-nav-bar,
+  body.about-active .top-nav-bar,
+  body.contact-active .top-nav-bar {
+    grid-template-columns: 1fr auto;
+    height: auto;
+    min-height: 78px;
+    padding: 12px 20px;
+  }
+
+  .nav-spacer {
+    display: none;
+  }
+
+  .nav-horizontal {
+    grid-column: 1 / 2;
+    justify-content: flex-start;
+    gap: 18px 28px;
+  }
+
+  .hero-signin-container {
+    grid-column: 2 / 3;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .section {
+    padding-top: 132px;
+  }
+
+  .detail-section {
+    padding-top: 150px;
+  }
+}
+
+@media (max-width: 900px) {
+  .top-nav-bar,
+  .top-nav-bar.scrolled,
+  .top-nav-bar.detail-active,
+  body.services-active .top-nav-bar,
+  body.about-active .top-nav-bar,
+  body.contact-active .top-nav-bar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .nav-horizontal {
+    grid-column: 1;
+    justify-content: center;
+    gap: 12px 20px;
+  }
+
+  .hero-signin-container {
+    grid-column: 1;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .hero-signin-container .auth-btn,
+  .hero-signin-container a.auth-btn,
+  .hero-signin-container button.auth-btn,
+  .hero-signin-container span.auth-btn,
+  .nav-horizontal a {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .section {
+    padding-top: 158px;
+  }
+
+  .detail-section {
+    padding-top: 176px;
+  }
+}
+
+@media (max-width: 560px) {
+  .nav-horizontal {
+    gap: 10px 16px;
+  }
+
+  .hero-signin-container {
+    gap: 8px;
+  }
+
+  .auth-divider {
+    display: none;
+  }
+
+  .cart-badge {
+    top: -6px;
+    right: -8px;
+  }
+
+  .section {
+    padding-top: 172px;
+  }
+
+  .detail-section {
+    padding-top: 190px;
+  }
 }
 
 /* =========================================================
@@ -870,6 +993,18 @@ body.user-logged-in #navCart {
 .unit-price { color: #555; font-size: 16px; font-weight: 500; margin-bottom: 5px; }
 .total-price-box h3 { font-size: 20px; color: #000; font-weight: 600; margin: 0; }
 .total-price { margin: 0; color: #333; font-size: 28px; font-weight: 600; }
+.bulk-threshold-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+.bulk-order-note {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: #8b5e34;
+  line-height: 1.55;
+}
 
 /* QUANTITY BOX */
 .qty-container { 
@@ -1536,4 +1671,3 @@ body.user-logged-in #navCart {
         transform: translate(-50%, -50%);
     }
 }
-
