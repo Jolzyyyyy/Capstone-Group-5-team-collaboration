@@ -15,6 +15,7 @@ const BULK_MIN_PAGES = 100;
 const fallbackImage = 'images/Prdcts1.jpg';
 let currentModalKey = '';
 let currentSelectedOptionIndex = -1;
+let currentEditingCartId = null;
 
 // LOGIN SIMULATION
 let isLoggedIn = false; 
@@ -36,7 +37,17 @@ function normalizeCartItem(item, index) {
         qty: parsedQty,
         price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
         img: item.img || item.image || fallbackImage,
-        checked: item.checked !== false
+        checked: item.checked !== false,
+        fileName: String(item.fileName || ''),
+        hasAttachment: item.hasAttachment != null ? Boolean(item.hasAttachment) : Boolean(item.fileName),
+        categoryType: item.categoryType || '',
+        modalKey: item.modalKey || '',
+        selectedIndex: Number.isFinite(Number(item.selectedIndex)) ? Number(item.selectedIndex) : null,
+        printCategoryValue: item.printCategoryValue || '',
+        colorModeValue: item.colorModeValue || '',
+        paperSizeValue: item.paperSizeValue || '',
+        serviceOptionValue: item.serviceOptionValue || '',
+        fileTypeValue: item.fileTypeValue || ''
     };
 }
 
@@ -184,6 +195,47 @@ function escapeHtml(value) {
 
 function withFallbackImage(src) {
     return src || fallbackImage;
+}
+
+function getModalKeyForType(type) {
+    const entry = Object.entries(allData).find(([, value]) => value.type === type);
+    return entry ? entry[0] : '';
+}
+
+function resolveCartItemContext(item) {
+    if (!item) return { modalKey: '', selectedIndex: 0 };
+
+    const serviceIdMatch = String(item.details || '').match(/ID:\s*([A-Z-0-9]+)/i);
+    const serviceId = serviceIdMatch ? serviceIdMatch[1].toUpperCase() : '';
+
+    let modalKey = item.modalKey || '';
+    if (!modalKey) {
+        if (serviceId.startsWith('IDP-')) modalKey = 'id';
+        else if (serviceId.startsWith('DOC-PCPY-')) modalKey = 'photo';
+        else if (serviceId.startsWith('DOC-')) modalKey = 'doc';
+        else if (serviceId.startsWith('SINTRA-')) modalKey = 'largeformat';
+        else if (serviceId.startsWith('BND-')) modalKey = 'bind';
+        else if (serviceId.startsWith('CSP-')) modalKey = 'special';
+        else if (item.categoryType) modalKey = getModalKeyForType(item.categoryType);
+    }
+
+    const data = allData[modalKey];
+    if (!data) return { modalKey: '', selectedIndex: 0 };
+
+    let selectedIndex = Number.isFinite(Number(item.selectedIndex)) ? Number(item.selectedIndex) : -1;
+    if (selectedIndex < 0 || !data.categories[selectedIndex]) {
+        selectedIndex = data.categories.findIndex((category) => category.name === item.name);
+    }
+
+    return {
+        modalKey,
+        selectedIndex: selectedIndex >= 0 ? selectedIndex : 0
+    };
+}
+
+function isCartItemEditable(item) {
+    const { modalKey } = resolveCartItemContext(item);
+    return Boolean(modalKey && allData[modalKey]);
 }
 
 function formatPeso(value) {
@@ -381,8 +433,8 @@ function openModal(key) {
                 .trim();
             const isSelected = currentSelectedOptionIndex === index;
             track.innerHTML += `
-                <div class="category-card ${isSelected ? 'is-selected' : ''} ${currentCategoryType === 'id' ? 'id-category-card' : ''}" onclick="openDetail(${index})">
-                    <div class="category-card-media ${currentCategoryType === 'id' ? 'id-category-media' : ''}">
+                <div class="category-card ${isSelected ? 'is-selected' : ''} ${currentCategoryType === 'id' ? 'id-category-card' : ''} ${currentCategoryType === 'xerox' ? 'copy-category-card' : ''}" onclick="openDetail(${index})">
+                    <div class="category-card-media ${currentCategoryType === 'id' ? 'id-category-media' : ''} ${currentCategoryType === 'xerox' ? 'copy-category-media' : ''}">
                         <img src="${escapeHtml(previewImage)}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
                     </div>
                     <div class="category-card-body">
@@ -754,14 +806,14 @@ function updatePrice() {
             retail = idPricing[categoryName][size] || 0;
         }
         bulk = retail;
-        document.getElementById('bulkAmount').innerText = "Fixed";
+        document.getElementById('bulkAmount').innerText = bulk.toFixed(2);
     }
     // 3. LARGE FORMAT
     else if (currentCategoryType === "largeformat") {
         computedId = "SINTRA-001";
         retail = sintraPricing[categoryValue] || 0;
         bulk = retail;
-        document.getElementById('bulkAmount').innerText = "Fixed";
+        document.getElementById('bulkAmount').innerText = bulk.toFixed(2);
     }
     else if (currentCategoryType === "binding") {
         const bindingIdMap = { lamination: "BND-LAM-001", spiral_binding: "BND-SPR-002" };
@@ -909,6 +961,7 @@ function buildCurrentCartItem() {
     const total = parseFloat(totalStr);
     const fileInput = document.getElementById('fileUploadInput');
     const attachedFile = fileInput?.files?.[0] || null;
+    const existingItem = currentEditingCartId ? cart.find((item) => item.id === currentEditingCartId) : null;
 
     if (!title || !sId || Number.isNaN(total) || total <= 0) {
         alert('Please choose a service option first.');
@@ -926,12 +979,29 @@ function buildCurrentCartItem() {
         price: total,
         img: firstImg ? firstImg.src : fallbackImage,
         checked: true,
-        fileName: attachedFile ? attachedFile.name : '',
-        hasAttachment: Boolean(attachedFile)
+        fileName: attachedFile ? attachedFile.name : (existingItem?.fileName || ''),
+        hasAttachment: attachedFile ? true : Boolean(existingItem?.hasAttachment),
+        categoryType: currentCategoryType,
+        modalKey: currentModalKey || getModalKeyForType(currentCategoryType),
+        selectedIndex: currentSelectedOptionIndex,
+        printCategoryValue: document.getElementById('printCategory')?.value || '',
+        colorModeValue: document.getElementById('colorMode')?.value || '',
+        paperSizeValue: document.getElementById('paperSize')?.value || '',
+        serviceOptionValue: document.getElementById('serviceOptionSelect')?.value || '',
+        fileTypeValue: document.getElementById('fileTypeSelect')?.value || ''
     };
 }
 
 function addOrUpdateCartItem(cartItem) {
+    if (currentEditingCartId) {
+        const editingIndex = cart.findIndex((item) => item.id === currentEditingCartId);
+        if (editingIndex >= 0) {
+            cart[editingIndex] = { ...cart[editingIndex], ...cartItem, id: currentEditingCartId };
+            currentEditingCartId = null;
+            return cart[editingIndex];
+        }
+    }
+
     const existingIndex = cart.findIndex((item) => item.name === cartItem.name && item.details === cartItem.details);
 
     if (existingIndex >= 0) {
@@ -940,6 +1010,14 @@ function addOrUpdateCartItem(cartItem) {
         cart[existingIndex].checked = true;
         cart[existingIndex].fileName = cartItem.fileName || cart[existingIndex].fileName || '';
         cart[existingIndex].hasAttachment = Boolean(cart[existingIndex].fileName);
+        cart[existingIndex].categoryType = cartItem.categoryType;
+        cart[existingIndex].modalKey = cartItem.modalKey;
+        cart[existingIndex].selectedIndex = cartItem.selectedIndex;
+        cart[existingIndex].printCategoryValue = cartItem.printCategoryValue;
+        cart[existingIndex].colorModeValue = cartItem.colorModeValue;
+        cart[existingIndex].paperSizeValue = cartItem.paperSizeValue;
+        cart[existingIndex].serviceOptionValue = cartItem.serviceOptionValue;
+        cart[existingIndex].fileTypeValue = cartItem.fileTypeValue;
         return cart[existingIndex];
     }
 
@@ -947,16 +1025,63 @@ function addOrUpdateCartItem(cartItem) {
     return cartItem;
 }
 
+function editCartItem(index) {
+    const item = cart[index];
+    if (!item) return;
+
+    const { modalKey, selectedIndex } = resolveCartItemContext(item);
+    const data = allData[modalKey];
+    if (!data) {
+        alert('This cart item cannot be edited yet. Please remove it and add it again from the service page.');
+        return;
+    }
+
+    currentEditingCartId = item.id;
+    currentCategoryType = data.type;
+    currentModalKey = modalKey;
+    currentCategorySet = data.categories;
+
+    openDetail(selectedIndex);
+
+    const printCategory = document.getElementById('printCategory');
+    const colorMode = document.getElementById('colorMode');
+    const paperSize = document.getElementById('paperSize');
+    const serviceOption = document.getElementById('serviceOptionSelect');
+    const fileType = document.getElementById('fileTypeSelect');
+    const qtyInput = document.getElementById('qtyInput');
+
+    if (printCategory && item.printCategoryValue) printCategory.value = item.printCategoryValue;
+    if (colorMode && item.colorModeValue) colorMode.value = item.colorModeValue;
+    if (paperSize && item.paperSizeValue) paperSize.value = item.paperSizeValue;
+
+    syncPreviewFromDropdowns();
+
+    if (serviceOption && item.serviceOptionValue) serviceOption.value = item.serviceOptionValue;
+    if (fileType && item.fileTypeValue) fileType.value = item.fileTypeValue;
+    if (qtyInput && item.qty) qtyInput.value = item.qty;
+
+    updatePrice();
+    setCartOpen(false);
+    setCartMessage('Editing cart item. Reattach a file if you want to replace the current attachment.', item.hasAttachment ? 'info' : 'error');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function addToCart() {
     const cartItem = buildCurrentCartItem();
     if (!cartItem) return;
 
+    const wasEditing = Boolean(currentEditingCartId);
     addOrUpdateCartItem(cartItem);
     persistCart();
     updateCartBadge();
     renderCart();
     setCartOpen(true);
-    setCartMessage('Item added to cart. Double-check your attached file before checkout.', cartItem.hasAttachment ? 'success' : 'info');
+    setCartMessage(
+        wasEditing
+            ? 'Cart item updated. Double-check your attached file before checkout.'
+            : 'Item added to cart. Double-check your attached file before checkout.',
+        cartItem.hasAttachment ? 'success' : 'info'
+    );
 }
 
 function updateCartBadge() {
@@ -1001,9 +1126,14 @@ function renderCart() {
     cart.forEach((item, index) => {
         const cartImage = withFallbackImage(item.img);
         const safePrice = Number(item.price) || 0;
+        const editable = isCartItemEditable(item);
         const fileStatus = item.hasAttachment
             ? `File: ${item.fileName}`
             : 'No file attached yet';
+        const legacyWarning = editable
+            ? ''
+            : '<p class="cart-item-legacy-warning">Refresh item: this older cart entry needs to be removed and added again before it can be edited.</p>';
+        const editButtonLabel = editable ? 'Edit Item' : 'Refresh Item';
         list.innerHTML += `
             <div class="cart-item">
                 <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItemCheck(${index})">
@@ -1012,7 +1142,9 @@ function renderCart() {
                     <h4>${escapeHtml(item.name)}</h4>
                     <p class="cart-item-details">${escapeHtml(item.details)}</p>
                     <p class="cart-item-file ${item.hasAttachment ? 'has-file' : 'missing-file'}">${escapeHtml(fileStatus)}</p>
+                    ${legacyWarning}
                     <p class="cart-item-price">Qty: ${item.qty} | PHP ${safePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <button type="button" class="cart-item-edit ${editable ? '' : 'is-warning'}" onclick="editCartItem(${index})">${editButtonLabel}</button>
                     <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})">Remove</button>
                 </div>
             </div>`;
@@ -1089,12 +1221,18 @@ function placeOrderNow() {
     const cartItem = buildCurrentCartItem();
     if (!cartItem) return;
 
+    const wasEditing = Boolean(currentEditingCartId);
     addOrUpdateCartItem(cartItem);
     persistCart();
     updateCartBadge();
     renderCart();
     setCartOpen(true);
-    setCartMessage('Order item added. Review your file and selected items before checkout.', 'success');
+    setCartMessage(
+        wasEditing
+            ? 'Cart item updated. Review your file and selected items before checkout.'
+            : 'Order item added. Review your file and selected items before checkout.',
+        'success'
+    );
 }
 
 // --- FORMS & EXTERNAL APIS ---
