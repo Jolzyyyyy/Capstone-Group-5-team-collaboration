@@ -56,10 +56,10 @@
 <header class="top-nav-bar" id="mainHeader">
     <div class="nav-spacer" aria-hidden="true"></div>
     <nav class="nav-horizontal">
-    <a href="#home" onclick="jumpTo('home'); return false;">Home</a>
-    <a href="#about" onclick="jumpTo('about'); return false;">About Us</a>
-    <a href="#services" onclick="jumpTo('services'); return false;">Services</a>
-    <a href="#contact" onclick="jumpTo('contact'); return false;">Contact</a>
+    <a href="#home" data-section="home" class="nav-link is-active" onclick="jumpTo('home'); return false;">Home</a>
+    <a href="#about" data-section="about" class="nav-link" onclick="jumpTo('about'); return false;">About Us</a>
+    <a href="#services" data-section="services" class="nav-link" onclick="jumpTo('services'); return false;">Services</a>
+    <a href="#contact" data-section="contact" class="nav-link" onclick="jumpTo('contact'); return false;">Contact</a>
     </nav>
 
     <div class="hero-signin-container" id="authContainer">
@@ -105,10 +105,10 @@
 
             <div class="hero-text animate" id="homeText">
                 <h1>Printify & Co.</h1>
-                <p style="font-size: 18px; letter-spacing: 5px; text-transform: uppercase; font-weight: 300; margin-top: 10px;">
+                <p class="hero-tagline">
                     Crafting Your Vision into Reality
                 </p>
-                <p style="font-size: 13px; font-style: italic; color: #FF0000; margin-top: 20px; letter-spacing: 1px;">
+                <p class="hero-subtitle">
                     Premium Prints | Fast Delivery | Unlimited Possibilities
                 </p>
             </div>
@@ -116,7 +116,8 @@
     </section>
 
     <section id="services" class="section">
-        <h2 style="text-align: center; margin-top: 40px;">Our Services</h2>
+        <h2 class="services-section-title">What We Print</h2>
+        <p class="services-section-intro">Print solutions designed for school, business, events, and everyday document needs.</p>
         <div class="services-container">
             @foreach ($serviceCards as $service)
                 <div class="service-item" onclick="openModal('{{ $service['key'] }}')">
@@ -134,89 +135,98 @@
     </section>
 
     <section id="about" class="section">
-        <h2 style="text-align: center; margin-top: 40px;">About Us</h2>
-        <div class="about-grid-container" style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-            <div class="about-intro" style="text-align: center; margin-bottom: 40px;">
-                <p style="font-size: 1.1rem; line-height: 1.8; color: #555;">At Printify & Co., we are a leading provider of high-quality printing solutions, dedicated to helping businesses and individuals bring their ideas to life with precision and care.</p>
+        <h2 class="about-section-title">Who We Are</h2>
+        <div class="about-grid-container">
+            <div class="about-intro">
+                <p>A trusted print partner focused on quality output, fast turnaround, and dependable service.</p>
             </div>
 
-            <div class="about-main-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; text-align: left;">
+            <div class="about-main-content">
                 <div class="about-col">
                     <div class="info-block">
-                        <h3 style="color: #d35400;"><i class="fa-solid fa-bullseye"></i> Mission & Vision</h3>
+                        <h3><i class="fa-solid fa-bullseye"></i> Mission &amp; Vision</h3>
                         <p>Clearly presenting our long-term goals to help users understand our business direction and service commitment to excellence.</p>
                     </div>
-                    <div class="info-block" style="margin-top: 20px;">
-                        <h3 style="color: #d35400;"><i class="fa-solid fa-star"></i> Core Values</h3>
+                    <div class="info-block">
+                        <h3><i class="fa-solid fa-star"></i> Core Values</h3>
                         <p>Quality, reliability, customer satisfaction, and timely delivery. We reinforce trust through professional craftsmanship.</p>
                     </div>
-                    <div class="info-block" style="margin-top: 20px;">
-                        <h3 style="color: #d35400;"><i class="fa-solid fa-clock-rotate-left"></i> Company History</h3>
+                    <div class="info-block">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Company History</h3>
                         <p>Established with a passion for printing, showing growth and experience through major achievements in the industry.</p>
                     </div>
                 </div>
 
                 <div class="about-col">
                     <div class="info-block">
-                        <h3 style="color: #d35400;"><i class="fa-solid fa-microchip"></i> Technology & Equipment</h3>
+                        <h3><i class="fa-solid fa-microchip"></i> Technology &amp; Equipment</h3>
                         <p>We showcase modern printing machines and software to emphasize quality, efficiency, and modern production standards.</p>
                     </div>
-                    <div class="info-block" style="margin-top: 20px;">
-                        <h3 style="color: #d35400;"><i class="fa-solid fa-users"></i> Meet the Team</h3>
+                    <div class="info-block">
+                        <h3><i class="fa-solid fa-users"></i> Meet the Team</h3>
                         <p>Our key staff and management work together to humanize the business and build lasting customer trust.</p>
                     </div>
-                    <div class="info-block" style="margin-top: 20px;">
-                        <h3 style="color: #d35400;"><i class="fa-solid fa-certificate"></i> Why Choose Us</h3>
+                    <div class="info-block">
+                        <h3><i class="fa-solid fa-certificate"></i> Why Choose Us</h3>
                         <p>Competitive advantages including affordable pricing, fast turnaround time, and high-end quality assurance.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="testimonials-preview" style="margin-top: 40px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
-                <h3 style="text-align: center;">Customer Testimonials</h3>
-                <p style="font-style: italic; text-align: center;">"The best printing service in the city! Fast and very reliable." - Satisfied Client</p>
+            <div class="testimonials-preview">
+                <h3>Customer Testimonials</h3>
+                <p>"The best printing service in the city! Fast and very reliable." - Satisfied Client</p>
             </div>
         </div>
     </section>
 
     <section id="contact" class="section">
-        <h2 style="text-align: center; margin-top: 40px;">Contact Us</h2>
-        <div class="contact-wrapper" style="max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 20px;">
-            <div class="contact-info-side" style="text-align: left;">
-                <h3 style="margin-bottom: 20px;">Get in Touch</h3>
-                <p><i class="fa-solid fa-location-dot" style="color: #d35400;"></i> 123 Printing St., Metro Manila</p>
-                <p><i class="fa-solid fa-phone" style="color: #d35400;"></i> +63 912 345 6789</p>
-                <p><i class="fa-solid fa-envelope" style="color: #d35400;"></i> hello@printify.co</p>
-                <p><i class="fa-solid fa-clock" style="color: #d35400;"></i> Operating Hours: Mon - Sat, 8:00 AM - 6:00 PM</p>
-                
-                <div class="social-channels" style="margin-top: 20px;">
-                    <p><strong>Follow Us:</strong></p>
-                    <i class="fa-brands fa-facebook fa-2x" style="margin-right: 15px; color: #3b5998;"></i>
-                    <i class="fa-brands fa-instagram fa-2x" style="margin-right: 15px; color: #e1306c;"></i>
-                    <i class="fa-brands fa-viber fa-2x" style="color: #7360f2;"></i>
-                </div>
+        <h2 class="contact-section-title">Let's Connect</h2>
+        <p class="contact-section-intro">Send us your inquiry, request a quote, or ask for guidance on the best print option for your project.</p>
+        <div class="contact-wrapper">
+            <div class="contact-info-side">
+                <div class="contact-info-card">
+                    <h3 class="contact-panel-title">Get in Touch</h3>
+                    <div class="contact-detail-list">
+                        <p><i class="fa-solid fa-location-dot"></i> 123 Printing St., Metro Manila</p>
+                        <p><i class="fa-solid fa-phone"></i> +63 912 345 6789</p>
+                        <p><i class="fa-solid fa-envelope"></i> hello@printify.co</p>
+                        <p><i class="fa-solid fa-clock"></i> Operating Hours: Mon - Sat, 8:00 AM - 6:00 PM</p>
+                    </div>
 
-                <div class="map-placeholder" style="margin-top: 30px; background: #eee; height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                    <span><i class="fa-solid fa-map-location-dot"></i> Embedded Google Map Here</span>
+                    <div class="social-channels">
+                        <p><strong>Follow Us</strong></p>
+                        <div class="social-links-row">
+                            <a href="#" class="social-link social-facebook" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                            <a href="#" class="social-link social-instagram" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="#" class="social-link social-viber" aria-label="Viber"><i class="fa-brands fa-viber"></i></a>
+                        </div>
+                    </div>
+
+                    <div class="map-placeholder">
+                        <span><i class="fa-solid fa-map-location-dot"></i> Embedded Google Map Here</span>
+                    </div>
                 </div>
             </div>
 
             <div class="contact-form-side">
-                <form id="contactForm" style="display: flex; flex-direction: column; gap: 15px;">
-                    <input type="text" placeholder="Your Name" style="padding: 12px; border: 1px solid #ccc; border-radius: 5px;">
-                    <input type="email" placeholder="Email Address" style="padding: 12px; border: 1px solid #ccc; border-radius: 5px;">
-                    <select style="padding: 12px; border: 1px solid #ccc; border-radius: 5px;">
+                <div class="contact-form-card">
+                    <h3 class="contact-panel-title">Send a Message</h3>
+                    <p class="contact-form-intro">Tell us what you need and our team will get back to you with the right printing guidance.</p>
+                    <form id="contactForm" class="contact-form">
+                        <input type="text" placeholder="Your Name">
+                        <input type="email" placeholder="Email Address">
+                        <select>
                         <option value="">Inquiry Category</option>
                         <option value="general">General Inquiry</option>
                         <option value="quotation">Request a Quotation</option>
                         <option value="service">Service Support</option>
-                    </select>
-                    <textarea placeholder="Your Message" rows="5" style="padding: 12px; border: 1px solid #ccc; border-radius: 5px;"></textarea>
-                    <button type="button" style="padding: 15px; background: #d35400; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                        SEND MESSAGE
-                    </button>
-                    <p style="font-size: 12px; color: #888; text-align: center;">An auto-response confirmation will be sent to your email.</p>
-                </form>
+                        </select>
+                        <textarea placeholder="Your Message" rows="5"></textarea>
+                        <button type="button" class="contact-submit-btn">Send Message</button>
+                        <p class="contact-form-note">An auto-response confirmation will be sent to your email.</p>
+                    </form>
+                </div>
             </div>
         </div>
     </section>
@@ -233,6 +243,7 @@
 
         <div class="detail-images-slider">
             <div class="product-title-header">
+                <p id="detailCategoryHeader" class="detail-category-header">DOCUMENT PRINTING</p>
                 <h2 id="detailTitleHeader">DOCUMENT PRINTING</h2>
                 <div class="stock-indicator">
                     <div class="stock-dot-glow"></div>
@@ -257,16 +268,16 @@
             </div>
         </div>
 
-        <div class="detail-info-panel">
+        <div class="detail-info-panel" id="detailInfoPanel">
             <div class="detail-meta-card">
                 <p id="serviceMaterial" class="service-material">Premium 80gsm Bond Paper</p>
-                <p id="serviceInclusions" class="service-inclusions">Select a variation to view inclusions and service details.</p>
+                <div id="serviceInclusions" class="service-inclusions">Select a variation to view inclusions and service details.</div>
             </div>
 
-            <div class="detail-options-grid">
+            <div class="detail-options-grid" id="primaryOptionsGrid">
             
-            <div class="custom-option-group">
-                <label>Printing Category</label>
+            <div class="custom-option-group" id="printCategoryGroup">
+                <label id="printCategoryLabel">Printing Category</label>
                 <select class="custom-select" id="printCategory" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <optgroup label="TEXT ONLY">
                         <option value="DOC-TX-001">B&W - DOC-TX-001</option>
@@ -299,8 +310,15 @@
                 </select>
             </div>
 
-            <div class="custom-option-group">
-                <label>Color Variation</label>
+            <div class="custom-option-group" id="contentTypeGroup" style="display:none;">
+                <label id="contentTypeLabel">Content Type</label>
+                <select class="custom-select" id="contentTypeSelect" onchange="syncPreviewFromDropdowns(); updatePrice()">
+                    <option value="">Select Content Type</option>
+                </select>
+            </div>
+
+            <div class="custom-option-group" id="colorVariationGroup">
+                <label id="colorModeLabel">Color Variation</label>
                 <select class="custom-select" id="colorMode" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <option value="0">Standard Quality</option>
                     <option value="1">High Definition</option>
@@ -308,8 +326,8 @@
                 </select>
             </div>
 
-            <div class="custom-option-group">
-                <label>Paper Size</label>
+            <div class="custom-option-group" id="paperSizeGroup">
+                <label id="paperSizeLabel">Paper Size</label>
                 <select class="custom-select" id="paperSize" onchange="syncPreviewFromDropdowns(); updatePrice()">
                     <option value="short">Short (8.5 x 11)</option>
                     <option value="a4">A4 (8.27 x 11.69)</option>
@@ -317,7 +335,7 @@
                 </select>
             </div>
 
-            <div class="custom-option-group quantity-row">
+            <div class="custom-option-group quantity-row" id="quantityGroup">
                 <label>Quantity</label>
                 <div class="qty-container">
                     <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
@@ -332,20 +350,20 @@
                 <p>Please double-check your selected quantity, selected service option, and uploaded file before submitting your order.</p>
             </div>
 
-            <div class="custom-option-group stacked-group">
+            <div class="custom-option-group stacked-group" id="fileUploadGroup">
                 <label>File Upload</label>
                 <input type="file" id="fileUploadInput" class="custom-file-input">
             </div>
 
             <div class="detail-options-grid detail-secondary-grid">
-                <div class="custom-option-group">
-                    <label>Service Option</label>
-                    <select class="custom-select" id="serviceOptionSelect">
+                <div class="custom-option-group" id="serviceOptionGroup">
+                    <label id="serviceOptionLabel">Service Option</label>
+                    <select class="custom-select" id="serviceOptionSelect" onchange="syncPreviewFromDropdowns(); updatePrice()">
                         <option value="">Select Option</option>
                     </select>
                 </div>
 
-                <div class="custom-option-group">
+                <div class="custom-option-group" id="fileTypeGroup">
                     <label>File Type</label>
                     <select class="custom-select" id="fileTypeSelect">
                         <option value="">Select File Type</option>
@@ -372,14 +390,14 @@
 
             <div class="price-summary">
                 <div class="price-row-flex">
-                    <label class="price-option-wrapper">
+                    <label class="price-option-wrapper" id="retailPriceOption">
                         <input type="radio" name="priceType" value="retail" checked onclick="updatePrice()">
                         <div class="price-item">
                             <p class="price-label">Retail</p>
                             <div class="unit-price">PHP <span id="retailAmount">0.00</span></div>
                         </div>
                     </label>
-                    <label class="price-option-wrapper">
+                    <label class="price-option-wrapper" id="bulkPriceOption">
                         <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
                         <div class="price-item">
                             <p class="price-label" style="color:#27ae60;">Bulk</p>
@@ -392,8 +410,7 @@
                     <span style="font-size: 13px; color: #666;">Total Amount:</span>
                     <h3 class="total-price" style="color: #d35400;">PHP <span id="totalAmount">0.00</span></h3>
                 </div>
-                <p id="bulkThresholdNote" class="bulk-threshold-note">Bulk price available at 100+ pages.</p>
-                <p class="bulk-order-note">Bulk orders are recommended for 100 or more pages. Use a print-ready file and confirm your final page count before checkout.</p>
+                <p id="bulkThresholdNote" class="bulk-threshold-note">Bulk pricing is available for 100+ pages. Upload a print-ready file and confirm the final page count before checkout.</p>
             </div>
 
             <div class="btn-row">
