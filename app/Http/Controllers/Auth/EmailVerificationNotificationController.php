@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,10 +37,10 @@ class EmailVerificationNotificationController extends Controller
         // 3. Generate new 6-digit OTP
         $otp = sprintf("%06d", mt_rand(0, 999999));
 
-        // I-update ang record sa database kasama ang bagong expiry (10 minutes)
+        // I-update ang record sa database kasama ang bagong expiry
         $user->update([
             'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
+            'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
         // 4. Send OTP email using your custom Notification class

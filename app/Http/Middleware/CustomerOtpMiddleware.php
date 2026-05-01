@@ -21,8 +21,8 @@ class CustomerOtpMiddleware
 
         $user = Auth::user();
 
-        // 2. ROLE CHECK: Payagan ang admins na mag-bypass
-        if ($user->role === 'admin') { 
+        // 2. ROLE CHECK: Payagan ang staff portal users na mag-bypass
+        if ($user->canAccessAdminPortal()) { 
             return $next($request);
         }
 

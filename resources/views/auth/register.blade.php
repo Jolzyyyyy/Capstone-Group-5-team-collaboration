@@ -1,17 +1,45 @@
-<x-guest-layout>
-    {{-- Header: Ginaya ang Admin tracking at font style --}}
-    <div class="mb-4 text-center">
-        <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest">{{ __('Create Account') }}</h2>
+<x-guest-layout :showcase="[
+    'kicker' => __('New Account'),
+    'title_intro' => __('Create your profile'),
+    'title_focus' => __('and start printing with confidence.'),
+    'text' => __('Set up your customer account once, verify your email securely, and unlock a smoother path to browsing services and placing orders.'),
+    'chips' => [
+        __('Simple account creation for new customers'),
+        __('Secure email verification before protected access'),
+        __('Ready for service browsing, checkout, and order tracking'),
+    ],
+    'metric_value' => __('Register'),
+    'metric_text' => __('Best for first-time users who want a smooth start and verified access to the platform.'),
+]">
+    <div class="mb-7 text-center">
+        <p class="auth-eyebrow">{{ __('New Customer') }}</p>
+        <h2 class="auth-title">{{ __('Create Your Account') }}</h2>
+        <p class="auth-subtitle">{{ __('Register once to browse services, place orders, and manage your account through secure email verification.') }}</p>
     </div>
+
+    @if ($errors->any())
+        <div class="auth-note auth-note--danger mb-6">
+            <strong>{{ __('Please review your registration details.') }}</strong>
+            <span>{{ __('If the page returned here instead of moving to OTP verification, one or more fields still need correction below.') }}</span>
+        </div>
+    @endif
 
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        {{-- Name Field --}}
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        {{-- First and Last Name Fields --}}
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <x-input-label for="first_name" :value="__('First Name')" />
+                <x-text-input id="first_name" class="block mt-1 w-full" type="text" name="first_name" :value="old('first_name')" required autofocus autocomplete="given-name" />
+                <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="last_name" :value="__('Last Name')" />
+                <x-text-input id="last_name" class="block mt-1 w-full" type="text" name="last_name" :value="old('last_name')" required autocomplete="family-name" />
+                <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
+            </div>
         </div>
 
         {{-- Email Field --}}
@@ -83,14 +111,18 @@
 
         {{-- Footer Buttons --}}
         <div class="flex items-center justify-end mt-6">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 auth-link" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 
-            <x-primary-button class="ms-4">
+            <x-primary-button class="ms-4 primary-cta">
                 {{ __('Register') }}
             </x-primary-button>
         </div>
+
+        <p class="auth-action-hint">
+            {{ __('Use the same email you can access right now because your OTP verification code will be sent there after registration.') }}
+        </p>
     </form>
 
     {{-- Script: Identical to Admin for consistent SVG behavior --}}

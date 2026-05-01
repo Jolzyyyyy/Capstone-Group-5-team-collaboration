@@ -79,7 +79,7 @@
             <div class="sidebar-header">
                 <h2 class="text-xl font-black text-gray-900 tracking-tighter italic uppercase">PRINTIFY & CO.</h2>
                 <div class="h-0.5 w-8 bg-blue-600 mx-auto mt-2"></div>
-                <p class="text-[9px] text-gray-400 uppercase tracking-[0.3em] font-bold mt-2">Admin Portal</p>
+                <p class="text-[9px] text-gray-400 uppercase tracking-[0.3em] font-bold mt-2">Staff Portal</p>
             </div>
             
             <nav class="flex-1 mt-4 overflow-y-auto">
@@ -94,6 +94,13 @@
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     Dashboard
                 </a>
+
+                @if (Auth::user()->isDeveloper())
+                    <a href="{{ route('developer.admin-clients.index') }}" class="sidebar-link {{ request()->routeIs('developer.admin-clients.*') ? 'active' : '' }}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m16-10a2 2 0 100-4 2 2 0 000 4zM7 10a2 2 0 100-4 2 2 0 000 4m5 1a3 3 0 110-6 3 3 0 010 6z"/></svg>
+                        Admin Clients
+                    </a>
+                @endif
 
                 <a href="#" class="sidebar-link">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 118 0m-9.87 1.57l1.51-1.5a1.13 1.13 0 011.59 0l3.01 3a1.13 1.13 0 010 1.6l-3.01 3.01a1.13 1.13 0 01-1.59 0l-1.51-1.51"/></svg>
@@ -127,7 +134,7 @@
             </nav>
 
             <div class="p-6 border-t border-gray-100 mt-auto">
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <button type="submit" class="w-full sidebar-link text-red-500 hover:bg-red-50 transition-colors uppercase border-none bg-transparent cursor-pointer text-left">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -158,7 +165,7 @@
                 @endif
 
                 <div class="mb-4">
-                    <h3 class="text-5xl font-black text-gray-900 tracking-tighter italic">Hello, Administrator {{ Auth::user()->name }}! 🛡️</h3>
+                    <h3 class="text-5xl font-black text-gray-900 tracking-tighter italic">Hello, {{ Auth::user()->isDeveloper() ? 'Developer' : 'Admin Client' }} {{ Auth::user()->name }}! 🛡️</h3>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-blue-600">

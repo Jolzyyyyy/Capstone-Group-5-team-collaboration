@@ -24,8 +24,15 @@ class EnsureCustomerOtpIsVerified
 
         $user = Auth::user();
 
-        // 2. ROLE BYPASS: Payagan ang admins na dumaan nang walang OTP challenge.
-        if ($user->role === 'admin') { 
+        // 2. ROLE BYPASS: Payagan ang staff portal users na dumaan nang walang customer OTP challenge.
+        if ($user->canAccessAdminPortal()) { 
+            return $next($request);
+        }
+
+        if ($user->isCustomer() && !is_null($user->email_verified_at)) {
+            $request->session()->put('customer_otp_passed', true);
+            $request->session()->forget('otp_email');
+
             return $next($request);
         }
 
@@ -45,7 +52,7 @@ class EnsureCustomerOtpIsVerified
              * I-redirect sila sa OTP verification page.
              * Nagdagdag tayo ng error message para alam ng user kung bakit sila na-redirect.
              */
-            return redirect()->route('customer.otp.verify')
+            return redirect()->route('otp.verify')
                              ->withErrors([
                                  'otp' => 'Security verification required. Please enter the 6-digit code sent to your email.'
                              ]);

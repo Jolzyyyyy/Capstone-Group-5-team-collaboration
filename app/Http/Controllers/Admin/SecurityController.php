@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use PragmaRX\Google2FA\Google2FA;
@@ -18,8 +22,8 @@ class SecurityController extends Controller
         $google2fa = new Google2FA();
 
         // --- 1. SECURITY GUARD: Role & Stage Check ---
-        // Dapat Admin lang ang nandito.
-        if (!$user || !$user->isAdmin()) {
+        // Dapat approved staff or developer lang ang nandito.
+        if (!$user || !$user->canAccessAdminPortal()) {
             Auth::logout();
             return redirect()->route('admin.login')->withErrors(['email' => 'Unauthorized access.']);
         }
@@ -57,7 +61,14 @@ class SecurityController extends Controller
             $currentSecret
         );
 
-        $renderUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($qrCodeUrl);
+        $renderer = new ImageRenderer(
+            new RendererStyle(220, 4),
+            new SvgImageBackEnd()
+        );
+
+        $writer = new Writer($renderer);
+        $qrSvg = $writer->writeString($qrCodeUrl);
+        $renderUrl = 'data:image/svg+xml;base64,' . base64_encode($qrSvg);
 
         // I-render ang view
         return view('Admin.security.setup', [

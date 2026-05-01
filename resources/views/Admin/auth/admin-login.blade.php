@@ -2,14 +2,14 @@
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <div class="mb-4 text-center">
-        <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest">Admin Access Portal</h2>
+        <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest">Staff & Developer Portal</h2>
     </div>
 
     <form method="POST" action="{{ route('admin.login.submit') }}">
         @csrf
 
         <div>
-            <x-input-label for="email" :value="__('Admin Email')" />
+            <x-input-label for="email" :value="__('Portal Email')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
@@ -52,7 +52,7 @@
 
         <div class="flex items-center justify-end mt-4">
             <x-primary-button class="ms-3">
-                {{ __('Admin Log in') }}
+                {{ __('Portal Log in') }}
             </x-primary-button>
         </div>
     </form>
