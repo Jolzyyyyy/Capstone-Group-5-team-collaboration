@@ -11,6 +11,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Notifications\SendOTP;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class PasswordResetLinkController extends Controller
 {
@@ -56,7 +58,7 @@ class PasswordResetLinkController extends Controller
         // 5. Save OTP to Database
         $user->forceFill([
             'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
+            'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ])->save();
 
         // 6. Send OTP email notification
@@ -65,6 +67,7 @@ class PasswordResetLinkController extends Controller
              * walang 'implements ShouldQueue' para mag-send agad.
              */
             $user->notify(new SendOTP($otp));
+            RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
             
         } catch (\Exception $e) {
             Log::error('Forgot Password OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
@@ -89,9 +92,16 @@ class PasswordResetLinkController extends Controller
 
         /**
          * 8. Redirect to OTP verification page
-         * Siguraduhin na ang route name ay 'customer.otp.verify' base sa web.php mo.
          */
-        return redirect()->route('customer.otp.verify')
+        return redirect()->route('otp.verify', [
+                'email' => $user->email,
+                'flow' => 'forgot_password',
+            ])
             ->with('status', 'A 6-digit verification code has been sent to your email.');
+    }
+
+    private function customerOtpResendThrottleKey(string $email, string $ip): string
+    {
+        return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
     }
 }

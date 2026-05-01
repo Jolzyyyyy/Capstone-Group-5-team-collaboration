@@ -59,13 +59,10 @@ class LoginRequest extends FormRequest
 
         event(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $minutes = (int) ceil(RateLimiter::availableIn($this->throttleKey()) / 60);
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => "Too many login attempts. Please wait {$minutes} minute" . ($minutes === 1 ? '' : 's') . ' before trying again.',
         ]);
     }
 

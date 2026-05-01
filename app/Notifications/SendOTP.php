@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 // use Illuminate\Contracts\Queue\ShouldQueue; // Naka-comment muna para instant send
 use Illuminate\Notifications\Messages\MailMessage;
@@ -45,7 +46,7 @@ class SendOTP extends Notification
              */
             ->line('# **' . $this->otp . '**') 
             
-            ->line('This code will expire in 10 minutes.')
+            ->line('This code will expire in '.User::EMAIL_OTP_TTL_MINUTES.' minutes.')
             ->line('If you did not request this, please ignore this email to keep your account safe.')
             ->salutation('Thank you, ' . config('app.name') . ' Team');
     }

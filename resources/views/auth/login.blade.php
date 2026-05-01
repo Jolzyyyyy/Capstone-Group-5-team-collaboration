@@ -1,9 +1,22 @@
-<x-guest-layout>
+<x-guest-layout :showcase="[
+    'kicker' => __('Secure Access'),
+    'title_intro' => __('Sign in and'),
+    'title_focus' => __('pick up where you left off.'),
+    'text' => __('Return to your dashboard, check order progress, and continue managing print requests with a fast and trusted sign-in flow.'),
+    'chips' => [
+        __('Protected customer access with OTP verification'),
+        __('Quick route back to pending orders and service requests'),
+        __('Smooth login experience built for repeat customers'),
+    ],
+    'metric_value' => __('Login'),
+    'metric_text' => __('Designed for returning customers who need fast, secure access to their account.'),
+]">
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    {{-- Header Section: Admin Style --}}
-    <div class="mb-4 text-center">
-        <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest">{{ __('LOG IN') }}</h2>
+    <div class="mb-7 text-center">
+        <p class="auth-eyebrow">{{ __('Secure Access') }}</p>
+        <h2 class="auth-title">{{ __('Welcome Back') }}</h2>
+        <p class="auth-subtitle">{{ __('Sign in to continue your print requests, track orders, and securely verify your account when needed.') }}</p>
     </div>
 
     <form method="POST" action="{{ route('login') }}">
@@ -13,8 +26,7 @@
         <div>
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            
-            
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
         {{-- PASSWORD FIELD --}}
@@ -45,35 +57,20 @@
                 </button>
             </div>
 
-            @if ($errors->has('password') || ($errors->has('email') && \App\Models\User::where('email', old('email'))->exists()))
-                <p class="mt-1 text-[9px] text-red-600 font-bold tracking-tight">
-                    {{ __('The password you entered is incorrect. Please try again.') }}
-                </p>
-            @endif@if ($errors->has('email'))
-                @php
-                    $emailValue = old('email');
-                    $userExists = \App\Models\User::where('email', $emailValue)->exists();
-                @endphp
-
-                @if (!$userExists || !filter_var($emailValue, FILTER_VALIDATE_EMAIL))
-                    <p class="mt-1 text-[9px] text-red-600 font-bold tracking-tight">
-                        {{ __('Invalid email address.') }}
-                    </p>
-                @endif
-            @endif
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
         {{-- Remember Me & Forgot Password Section --}}
         <div class="flex items-center justify-between mt-4">
             {{-- Remember Me: Nasa LEFT side --}}
-            <label for="remember_me" class="inline-flex items-center">
+            <label for="remember_me" class="remember-wrap">
                 <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
                 <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
             </label>
 
             {{-- Forgot Password: Nasa RIGHT side --}}
             @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none" href="{{ route('password.request') }}">
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none auth-link" href="{{ route('password.request') }}">
                     {{ __('Forgot password?') }}
                 </a>
             @endif
@@ -83,17 +80,16 @@
         {{-- Naka-justify-end para sa kanan lumabas ang button --}}
         <div class="flex items-center justify-end mt-4">
             {{-- Tinanggal ang 'w-full' at 'py-3', ginawang katulad ng Admin size --}}
-            <x-primary-button class="ms-3">
+            <x-primary-button class="ms-3 primary-cta">
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
 
-        {{-- Footer Section: Still centered at the very bottom --}}
-        <div class="mt-6 text-center">
-            <p class="text-sm text-gray-600">
-                {{ __("Don't have an account?") }} 
-                <a href="{{ route('register') }}" class="text-indigo-600 font-bold hover:underline">
-                    {{ __('Register here') }}
+        <div class="auth-inline-switch">
+            <p>
+                {{ __("Don't have an account yet?") }}
+                <a href="{{ route('register') }}" class="auth-link hover:underline">
+                    {{ __('Create one here') }}
                 </a>
             </p>
         </div>

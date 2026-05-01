@@ -9,6 +9,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use Carbon\Carbon;
@@ -31,7 +33,8 @@ class RegisteredUserController extends Controller
     {
         // 1. Strict Validation: Letters, Mixed Case, Numbers, at Symbols para sa security.
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
             'email' => [
                 'required',
                 'string',
@@ -56,12 +59,13 @@ class RegisteredUserController extends Controller
 
         // 3. Create user record with default 'customer' role
         $user = User::create([
-            'name' => $request->name,
+            'first_name' => trim($request->first_name),
+            'last_name' => trim($request->last_name),
             'email' => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
             'role' => 'customer', 
             'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
+            'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
         // 4. Send the OTP Notification immediately
@@ -71,6 +75,7 @@ class RegisteredUserController extends Controller
              * kung wala kang running queue worker.
              */
             $user->notify(new SendOTP($otp));
+            RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
             
         } catch (\Exception $e) {
             Log::error('Registration OTP failed for ' . $user->email . ': ' . $e->getMessage());
@@ -87,6 +92,16 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         // ✅ After registration go to homepage
-        return redirect('/');
+        $request->session()->forget('customer_otp_passed');
+        $request->session()->put('otp_email', $user->email);
+
+        return redirect()->route('otp.verify', [
+            'email' => $user->email,
+        ])->with('status', 'A 6-digit verification code has been sent to your email.');
+    }
+
+    private function customerOtpResendThrottleKey(string $email, string $ip): string
+    {
+        return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
     }
 }

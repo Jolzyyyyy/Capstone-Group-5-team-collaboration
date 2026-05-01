@@ -3,26 +3,33 @@
 namespace App\Http\Controllers\Admin\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OTPVerificationMail;
+use App\Models\User;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Hash;
-use App\Models\User; 
-use App\Mail\OTPVerificationMail;
-use Illuminate\Validation\Rules\Password;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AdminAuthController extends Controller
 {
+    private const STAFF_LOGIN_MAX_ATTEMPTS = 5;
+    private const STAFF_OTP_MAX_ATTEMPTS = 5;
+    private const STAFF_OTP_RESEND_MAX_ATTEMPTS = 1;
+
     /**
-     * 1. ADMIN LOGIN SECTION (2-STAGE: Password -> QR)
+     * Staff login page.
      */
     public function showLoginForm()
     {
-        if (Auth::check() && Auth::user()->isAdmin() && session('2fa_passed')) {
+        if (Auth::check() && Auth::user()->canAccessAdminPortal() && session('2fa_passed')) {
             return redirect()->route('admin.dashboard');
         }
-        return view('Admin.auth.admin-login'); 
+
+        return view('Admin.auth.admin-login');
     }
 
     public function login(Request $request)
@@ -32,157 +39,274 @@ class AdminAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        // --- 🛡️ PRE-LOGIN ROLE CHECK ---
-        // Hinahanap muna ang user sa database bago mag-attempt ng Auth
-        $user = User::where('email', $request->email)->first();
+        $this->ensureRateLimit(
+            $this->staffLoginThrottleKey($request),
+            self::STAFF_LOGIN_MAX_ATTEMPTS,
+            'email'
+        );
 
-        // Kung walang user o kung hindi siya Admin, reject agad
-        if (!$user || !$user->isAdmin()) {
+        $user = User::where('email', trim((string) $request->email))->first();
+
+        if (!$user || !$user->canAccessAdminPortal()) {
+            RateLimiter::hit($this->staffLoginThrottleKey($request));
+
             return back()->withErrors([
-                'email' => 'Access denied. This portal is for authorized admins only.',
+                'email' => 'Access denied. This portal is for approved staff and developers only.',
             ])->onlyInput('email');
         }
 
-        // Kung Admin, i-verify na ang credentials
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            
-            $request->session()->regenerate();
+        if ($user->isAdminClient() && !$user->isApprovedAdminClient()) {
+            RateLimiter::hit($this->staffLoginThrottleKey($request));
 
-            // INITIAL MARKERS
-            session([
-                'admin_auth_passed' => true,
-                'admin_email' => $user->email,
-                'needs_email_otp' => false // FEATURE: Skip Email OTP for Login flow
-            ]);
-
-            // Siguraduhing malinis ang verification flags
-            session()->forget(['admin_verified', '2fa_passed']);
-
-            // Proceed sa QR Authentication (Phase 2)
-            return redirect()->route('admin.security.2fa');
+            return back()->withErrors([
+                'email' => 'This staff account is still awaiting developer approval.',
+            ])->onlyInput('email');
         }
 
-        // Kung Admin pero mali ang password
-        return back()->withErrors([
-            'email' => 'These credentials do not match our records.',
-        ])->onlyInput('email');
-    }
+        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::hit($this->staffLoginThrottleKey($request));
 
-    /**
-     * 2. ADMIN REGISTER SECTION (3-STAGE: Password -> Email OTP -> QR)
-     */
-    public function showRegisterForm()
-    {
-        return view('Admin.auth.admin-register');
-    }
+            return back()->withErrors([
+                'email' => 'These credentials do not match our records.',
+            ])->onlyInput('email');
+        }
 
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => [
-                'required', 
-                'confirmed', 
-                Password::min(8)->letters()->mixedCase()->numbers()->symbols()
-            ],
+        $request->session()->regenerate();
+        RateLimiter::clear($this->staffLoginThrottleKey($request));
+
+        $request->session()->forget([
+            'admin_auth_passed',
+            'admin_email',
+            'needs_email_otp',
+            'admin_verified',
+            '2fa_passed',
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin', 
-        ]);
-
-        Auth::login($user);
+        $needsEmailOtp = is_null($user->email_verified_at);
 
         session([
             'admin_auth_passed' => true,
             'admin_email' => $user->email,
-            'needs_email_otp' => true // FEATURE: Require Email OTP for Registration
+            'needs_email_otp' => $needsEmailOtp,
         ]);
 
         session()->forget(['admin_verified', '2fa_passed']);
 
-        // Generate OTP for Registration Verification
-        $otp = sprintf("%06d", mt_rand(100000, 999999));
-        $user->otp_code = $otp;
-        $user->otp_expires_at = now()->addMinutes(10);
-        $user->save();
+        if ($needsEmailOtp) {
+            $otp = sprintf('%06d', mt_rand(100000, 999999));
+            $user->otp_code = $otp;
+            $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
+            $user->save();
 
-        Mail::to($user->email)->send(new OTPVerificationMail($otp));
+            try {
+                Mail::to($user->email)->send(new OTPVerificationMail($otp));
+                RateLimiter::hit($this->staffOtpResendThrottleKeyFromContext($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+            } catch (\Throwable $e) {
+                Log::error('Staff OTP send failed for ' . $user->email . ': ' . $e->getMessage());
 
-        return redirect()->route('admin.otp.verify')
-                         ->with('status', 'Admin account created! Verify your email to proceed.');
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('admin.login')->withErrors([
+                    'email' => 'Unable to send the staff verification code right now. Please try again in a moment.',
+                ])->onlyInput('email');
+            }
+
+            return redirect()->route('admin.otp.verify')
+                ->with('status', 'A verification code has been sent to your email before portal access can continue.');
+        }
+
+        return redirect()->route('admin.security.2fa');
     }
 
     /**
-     * 3. STAGE 1: EMAIL OTP VERIFICATION (Register Only)
+     * Public admin registration is disabled. Staff accounts are created by developers.
+     */
+    public function showRegisterForm()
+    {
+        abort(404);
+    }
+
+    public function register(Request $request)
+    {
+        abort(404);
+    }
+
+    /**
+     * Staff email OTP screen.
      */
     public function showOtpForm()
     {
-        // Security: If login only (no otp needed), redirect to QR
         if (session('needs_email_otp') === false) {
             return redirect()->route('admin.security.2fa');
         }
 
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->canAccessAdminPortal()) {
             return redirect()->route('admin.login');
         }
 
-        return view('Admin.auth.admin-otp-verify');
+        $email = (string) optional(Auth::user())->email;
+        $otpThrottleKey = $this->staffOtpThrottleKeyFromContext($email, request()->ip());
+        $resendThrottleKey = $this->staffOtpResendThrottleKeyFromContext($email, request()->ip());
+
+        return view('Admin.auth.admin-otp-verify', [
+            'otpLockoutSeconds' => RateLimiter::tooManyAttempts($otpThrottleKey, self::STAFF_OTP_MAX_ATTEMPTS)
+                ? RateLimiter::availableIn($otpThrottleKey)
+                : 0,
+            'resendCooldownSeconds' => RateLimiter::tooManyAttempts($resendThrottleKey, self::STAFF_OTP_RESEND_MAX_ATTEMPTS)
+                ? RateLimiter::availableIn($resendThrottleKey)
+                : 0,
+        ]);
     }
 
     public function verifyOtp(Request $request)
     {
-        $request->validate(['otp' => ['required', 'string']]);
+        $request->validate([
+            'otp' => ['required', 'string'],
+        ]);
+
+        $otpThrottleKey = $this->staffOtpThrottleKey($request);
+
+        $this->ensureRateLimit(
+            $otpThrottleKey,
+            self::STAFF_OTP_MAX_ATTEMPTS,
+            'otp'
+        );
 
         $user = Auth::user();
 
-        if ($user && $user->otp_code === trim($request->otp)) {
-            
-            if ($user->otp_expires_at && now()->gt($user->otp_expires_at)) {
-                return back()->withErrors(['otp' => 'Expired na ang code. Mag-resend ng bago.']);
-            }
+        if (!$user || trim((string) $user->otp_code) !== trim((string) $request->otp)) {
+            RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
-            $user->otp_code = null;
-            $user->otp_expires_at = null;
-            $user->email_verified_at = now();
-            $user->save();
-
-            session(['admin_verified' => true]);
-
-            return redirect()->route('admin.security.2fa')
-                             ->with('status', 'Email verified! Setup your QR Authentication.');
+            return back()->withErrors([
+                'otp' => 'The verification code is incorrect. Please check your email and try again.',
+            ]);
         }
 
-        return back()->withErrors(['otp' => 'Mali ang code. Pakicheck ulit ang email mo.']);
+        if ($user->otp_expires_at && now()->gt($user->otp_expires_at)) {
+            RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
+
+            return back()->withErrors([
+                'otp' => 'This verification code has expired. Please request a new one.',
+            ]);
+        }
+
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->email_verified_at = now();
+        $user->save();
+
+        session(['admin_verified' => true]);
+        $request->session()->regenerate();
+        RateLimiter::clear($otpThrottleKey);
+
+        return redirect()->route('admin.security.2fa')
+            ->with('status', 'Email verified. Continue with your authenticator setup.');
     }
 
-    public function resendOtp()
+    public function resendOtp(Request $request)
     {
-        $user = Auth::user();
-        if ($user && $user->isAdmin()) {
-            $otp = sprintf("%06d", mt_rand(100000, 999999));
-            $user->otp_code = $otp;
-            $user->otp_expires_at = now()->addMinutes(10);
-            $user->save();
+        $otpThrottleKey = $this->staffOtpThrottleKey($request);
 
-            Mail::to($user->email)->send(new OTPVerificationMail($otp));
-            return back()->with('status', 'A new code has been sent to your email.');
+        $this->ensureRateLimit(
+            $otpThrottleKey,
+            self::STAFF_OTP_MAX_ATTEMPTS,
+            'otp'
+        );
+
+        $this->ensureRateLimit(
+            $this->staffOtpResendThrottleKey($request),
+            self::STAFF_OTP_RESEND_MAX_ATTEMPTS,
+            'otp'
+        );
+
+        $user = Auth::user();
+
+        if (!$user || !$user->canAccessAdminPortal()) {
+            return redirect()->route('admin.login');
         }
-        return redirect()->route('admin.login');
+
+        $otp = sprintf('%06d', mt_rand(100000, 999999));
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
+        $user->save();
+
+        try {
+            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+        } catch (\Throwable $e) {
+            Log::error('Staff OTP resend failed for ' . $user->email . ': ' . $e->getMessage());
+            RateLimiter::hit($this->staffOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+
+            return back()->withErrors([
+                'otp' => 'Unable to resend the verification code right now. Please try again later.',
+            ]);
+        }
+
+        RateLimiter::hit($this->staffOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+
+        return back()->with('status', 'A new verification code has been sent to your email.');
     }
 
     /**
-     * 4. LOGOUT
+     * Staff logout.
      */
     public function logout(Request $request)
     {
+        $request->session()->forget([
+            'admin_auth_passed',
+            'admin_email',
+            'needs_email_otp',
+            'admin_verified',
+            '2fa_passed',
+        ]);
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('admin.login');
+    }
+
+    private function ensureRateLimit(string $key, int $maxAttempts, string $bag): void
+    {
+        if (!RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            return;
+        }
+
+        event(new Lockout(request()));
+        $seconds = RateLimiter::availableIn($key);
+
+        throw ValidationException::withMessages([
+            $bag => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => (int) ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    private function staffLoginThrottleKey(Request $request): string
+    {
+        return 'staff-login:' . Str::transliterate(Str::lower($request->input('email', '')) . '|' . $request->ip());
+    }
+
+    private function staffOtpThrottleKey(Request $request): string
+    {
+        return $this->staffOtpThrottleKeyFromContext((string) optional(Auth::user())->email, $request->ip());
+    }
+
+    private function staffOtpResendThrottleKey(Request $request): string
+    {
+        return $this->staffOtpResendThrottleKeyFromContext((string) optional(Auth::user())->email, $request->ip());
+    }
+
+    private function staffOtpThrottleKeyFromContext(?string $email, string $ip): string
+    {
+        return 'staff-otp:' . Str::transliterate(Str::lower((string) $email) . '|' . $ip);
+    }
+
+    private function staffOtpResendThrottleKeyFromContext(?string $email, string $ip): string
+    {
+        return 'staff-otp-resend:' . Str::transliterate(Str::lower((string) $email) . '|' . $ip);
     }
 }

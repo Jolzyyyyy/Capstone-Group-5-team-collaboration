@@ -16,7 +16,7 @@ class AdminMiddleware
     {
         // 1. --- 🛡️ THE WALL: Check kung logged in at kung ADMIN talaga ---
         // Nanatiling intact: Kung hindi admin, logout at balik sa admin login.
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (!Auth::check() || !Auth::user()->canAccessAdminPortal()) {
             if (Auth::check()) {
                 Auth::logout();
                 $request->session()->invalidate();
@@ -24,7 +24,7 @@ class AdminMiddleware
             }
             
             return redirect()->route('admin.login')->withErrors([
-                'email' => 'Unauthorized access. This area is for Admins only.'
+                'email' => 'Unauthorized access. This area is for approved staff and developers only.'
             ]);
         }
 

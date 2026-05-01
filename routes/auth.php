@@ -12,11 +12,11 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
 /**
  * 🛠️ ADMIN AUTH CONTROLLERS
  */
-use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,10 +24,6 @@ use App\Http\Controllers\Admin\Auth\AdminAuthController;
 |--------------------------------------------------------------------------
 */
 Route::middleware('guest')->group(function () {
-    // Admin Register (Secret)
-    Route::get('p-co-2026/register-7b5e93-adm-key', [AdminAuthController::class, 'showRegisterForm'])->name('admin.register');
-    Route::post('p-co-2026/register-7b5e93-adm-key', [AdminAuthController::class, 'register'])->name('admin.register.submit');
-
     // Customer Register & Login
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('register', [RegisteredUserController::class, 'store']);
@@ -52,6 +48,22 @@ Route::middleware('guest')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Shared OTP Flow (Customer Verification + Forgot Password)
+|--------------------------------------------------------------------------
+|
+| This must stay accessible to both authenticated customers and guests
+| who are in the password recovery flow. The controller itself decides
+| whether the session/email context is valid.
+|
+*/
+Route::prefix('verify-account')->name('otp.')->group(function () {
+    Route::get('/', [VerifyOtpController::class, 'show'])->name('verify');
+    Route::post('/', [VerifyOtpController::class, 'verify'])->name('submit');
+    Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend');
+});
+
+/*
+|--------------------------------------------------------------------------
 | 2. AUTHENTICATED AREA (Users already logged in)
 |--------------------------------------------------------------------------
 */
@@ -60,8 +72,15 @@ Route::middleware('auth')->group(function () {
     // THE REDIRECTOR (PRINTIFY & CO. Logic)
     Route::get('/dashboard-redirect', function () {
         $user = auth()->user();
-        if ($user->isAdmin()) {
+        if ($user->canAccessAdminPortal()) {
             return redirect()->route('admin.otp.verify');
+        }
+
+        if ($user->isCustomer() && !is_null($user->email_verified_at)) {
+            session(['customer_otp_passed' => true]);
+            session()->forget('otp_email');
+
+            return redirect()->route('dashboard');
         }
         
         // Check kung nakapasa na sa OTP ang customer
@@ -70,15 +89,8 @@ Route::middleware('auth')->group(function () {
             : redirect()->route('otp.verify');
     })->name('dashboard.redirect');
 
-    // --- OTP Flow ---
-    Route::prefix('verify-account')->name('otp.')->group(function () {
-        Route::get('/', [VerifyOtpController::class, 'show'])->name('verify');   
-        Route::post('/', [VerifyOtpController::class, 'verify'])->name('submit'); 
-        Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend'); 
-    });
-
     // --- Admin OTP Flow ---
-    Route::prefix('admin-auth')->name('admin.otp.')->group(function () {
+    Route::prefix('admin-auth')->name('admin.auth.otp.')->group(function () {
         Route::get('/verify', [AdminAuthController::class, 'showOtpForm'])->name('verify');
         Route::post('/verify', [AdminAuthController::class, 'verifyOtp'])->name('submit');
         Route::post('/resend', [AdminAuthController::class, 'resendOtp'])->name('resend');

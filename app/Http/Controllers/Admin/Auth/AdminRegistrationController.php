@@ -56,7 +56,7 @@ class AdminRegistrationController extends Controller
         // 2. Generate OTP Code (6 Digits)
         $otp = sprintf("%06d", mt_rand(100000, 999999));
         $user->otp_code = $otp;
-        $user->otp_expires_at = now()->addMinutes(10);
+        $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
         $user->save();
 
         // 3. Ipadala ang Email (Tiyaking gumagana ang OTPVerificationMail class mo)

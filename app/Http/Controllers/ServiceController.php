@@ -13,7 +13,7 @@ class ServiceController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin,developer'])->except(['index', 'show']);
+        $this->middleware(['auth', 'role:admin_client,developer,admin'])->except(['index', 'show']);
     }
 
     /**

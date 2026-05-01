@@ -20,19 +20,29 @@ class User extends Authenticatable implements MustVerifyEmail
     |--------------------------------------------------------------------------
     */
     const ROLE_ADMIN = 'admin';
+    const ROLE_ADMIN_CLIENT = 'admin_client';
     const ROLE_CUSTOMER = 'customer';
+    const ROLE_DEVELOPER = 'developer';
+    const EMAIL_OTP_TTL_MINUTES = 5;
+    const EMAIL_OTP_RESEND_COOLDOWN_SECONDS = 60;
+    const EMAIL_OTP_LOCKOUT_SECONDS = 900;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
         'role',
         'otp_code',
         'otp_expires_at',
         'email_verified_at',
+        'preregistered_by',
+        'approved_at',
+        'approved_by',
         'google2fa_secret',
         'google2fa_enabled',
         'recovery_codes',
@@ -54,6 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'otp_expires_at'    => 'datetime',
+        'approved_at'       => 'datetime',
         'password'          => 'hashed',
         'google2fa_enabled' => 'boolean',
         'recovery_codes'    => 'json',
@@ -67,12 +78,32 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->canAccessAdminPortal();
+    }
+
+    public function isAdminClient(): bool
+    {
+        return $this->role === self::ROLE_ADMIN_CLIENT;
     }
 
     public function isCustomer(): bool
     {
         return $this->role === self::ROLE_CUSTOMER;
+    }
+
+    public function isDeveloper(): bool
+    {
+        return in_array($this->role, [self::ROLE_DEVELOPER, self::ROLE_ADMIN], true);
+    }
+
+    public function canAccessAdminPortal(): bool
+    {
+        return $this->isAdminClient() || $this->isDeveloper();
+    }
+
+    public function isApprovedAdminClient(): bool
+    {
+        return $this->isAdminClient() && $this->approved_at !== null;
     }
 
     /*
@@ -143,5 +174,36 @@ class User extends Authenticatable implements MustVerifyEmail
                 $user->role = self::ROLE_CUSTOMER;
             }
         });
+
+        static::saving(function ($user) {
+            $user->syncNameParts();
+        });
+    }
+
+    public function syncNameParts(): void
+    {
+        $firstName = trim((string) ($this->first_name ?? ''));
+        $lastName = trim((string) ($this->last_name ?? ''));
+
+        if ($firstName !== '' || $lastName !== '') {
+            $this->first_name = $firstName !== '' ? $firstName : null;
+            $this->last_name = $lastName !== '' ? $lastName : null;
+            $this->name = trim(implode(' ', array_filter([$firstName, $lastName])));
+            return;
+        }
+
+        $fullName = trim((string) ($this->name ?? ''));
+
+        if ($fullName === '') {
+            $this->first_name = null;
+            $this->last_name = null;
+            $this->name = null;
+            return;
+        }
+
+        $parts = preg_split('/\s+/', $fullName, 2);
+        $this->first_name = $parts[0] ?? null;
+        $this->last_name = $parts[1] ?? null;
+        $this->name = trim(implode(' ', array_filter([$this->first_name, $this->last_name])));
     }
 }

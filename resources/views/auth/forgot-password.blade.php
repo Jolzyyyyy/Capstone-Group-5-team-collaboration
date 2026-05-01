@@ -1,17 +1,34 @@
-<x-guest-layout>
-    {{-- Header Section: Pantay ang font size at tracking sa Admin Login --}}
-    <div class="mb-4 text-center">
-        <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest">
-            {{ __('Reset Your Password') }}
-        </h2>
+<x-guest-layout :showcase="[
+    'kicker' => __('Reset Access'),
+    'title_intro' => __('Recover your account'),
+    'title_focus' => __('without losing momentum.'),
+    'text' => __('Request a secure verification code, confirm your identity, and move directly into a guided password reset flow.'),
+    'chips' => [
+        __('Password recovery with time-limited OTP protection'),
+        __('Clear next-step guidance from email to reset form'),
+        __('Built to get customers back into their account safely'),
+    ],
+    'metric_value' => __('Recover'),
+    'metric_text' => __('Made for users who need a safe path back into their account after forgetting their password.'),
+]">
+    <div class="mb-7 text-center">
+        <p class="auth-eyebrow">{{ __('Reset Access') }}</p>
+        <h2 class="auth-title">{{ __('Forgot Password?') }}</h2>
+        <p class="auth-subtitle">{{ __('Enter your registered email and we will send a verification code so you can securely reset your password.') }}</p>
     </div>
 
-    {{-- Instruction Text: Centered at malinis ang font --}}
-    <div class="mb-6 text-sm text-gray-600 text-center leading-relaxed">
-        {{ __('Enter your email account and we will send a 6-digit verification code to reset your password.') }}
+    <div class="auth-note">
+        {{ __('For security, the code is time-limited and can only be used once. If the first code expires, request a new one from the verification page.') }}
     </div>
 
     <x-auth-session-status class="mb-4" :status="session('status')" />
+
+    @if ($errors->has('email'))
+        <div class="auth-feedback auth-feedback--error mb-5" role="alert">
+            <strong>{{ __('We could not continue to verification.') }}</strong>
+            <span>{{ __('Make sure you enter the same email address that was used when the account was registered.') }}</span>
+        </div>
+    @endif
 
     <form method="POST" action="{{ route('password.email') }}">
         @csrf
@@ -33,14 +50,14 @@
 
         {{-- Button Section: Justify-end para sa kanan din ang button katulad sa Admin --}}
         <div class="flex items-center justify-end mt-4">
-            <x-primary-button class="ms-3">
+            <x-primary-button class="ms-3 primary-cta">
                 {{ __('Send Verification Code') }}
             </x-primary-button>
         </div>
 
         {{-- Back to Login Link --}}
         <div class="mt-8 text-center">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none" href="{{ route('login') }}">
+            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none auth-link" href="{{ route('login') }}">
                 {{ __('Back to Login') }}
             </a>
         </div>

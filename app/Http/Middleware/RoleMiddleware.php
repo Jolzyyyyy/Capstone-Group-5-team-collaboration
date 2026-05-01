@@ -44,6 +44,16 @@ class RoleMiddleware
             abort(403, 'Unauthorized access for ' . ($user->role ?? 'unknown role'));
         }
 
+        if ($user->isAdminClient() && !$user->isApprovedAdminClient()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('admin.login')->withErrors([
+                'email' => 'This staff account is not yet approved for portal access.',
+            ]);
+        }
+
         // 3. Allow access kung match ang role
         return $next($request);
     }
