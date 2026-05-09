@@ -36,7 +36,7 @@ class CustomerOtpMiddleware
             'otp.resend',    // Resend OTP action
             'logout',        // Allow logout
             'password.reset', // Payagan ang reset password form
-            'password.update'
+            'password.store'
         ];
 
         if ($request->routeIs($allowedRoutes)) {

@@ -92,8 +92,15 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         // ✅ After registration go to homepage
-        $request->session()->forget('customer_otp_passed');
+        $request->session()->forget([
+            'customer_otp_passed',
+            'password_reset_email',
+            'password_reset_token',
+            'is_forgot_password',
+            'otp_passed',
+        ]);
         $request->session()->put('otp_email', $user->email);
+        $request->session()->put('auth_type', 'account_verification');
 
         return redirect()->route('otp.verify', [
             'email' => $user->email,

@@ -11,11 +11,6 @@ use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['auth', 'role:admin_client,developer,admin'])->except(['index', 'show']);
-    }
-
     /**
      * Display a listing of services (customer-facing).
      * Optional filter: ?category=Photocopy
@@ -37,6 +32,16 @@ class ServiceController extends Controller
         $services = $query->paginate(12)->withQueryString();
 
         return view('welcome', compact('services'));
+    }
+
+    public function adminIndex()
+    {
+        $services = Service::query()
+            ->withCount(['variations', 'activeVariations'])
+            ->orderByDesc('updated_at')
+            ->paginate(15);
+
+        return view('services.admin_index', compact('services'));
     }
 
     /**
@@ -133,7 +138,7 @@ class ServiceController extends Controller
             }
         });
 
-        return redirect()->route('services.index')
+        return redirect()->route('admin.services.index')
             ->with('success', 'Service created successfully.');
     }
 
@@ -228,7 +233,7 @@ class ServiceController extends Controller
             }
         });
 
-        return redirect()->route('services.index')
+        return redirect()->route('admin.services.index')
             ->with('success', 'Service updated successfully.');
     }
 
@@ -243,7 +248,7 @@ class ServiceController extends Controller
 
         $service->delete();
 
-        return redirect()->route('services.index')
+        return redirect()->route('admin.services.index')
             ->with('success', 'Service deleted successfully.');
     }
 

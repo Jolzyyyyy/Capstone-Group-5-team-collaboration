@@ -9,6 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use App\Notifications\SendOTP;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -37,12 +40,16 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'admin_client_id',
         'otp_code',
         'otp_expires_at',
         'email_verified_at',
         'preregistered_by',
         'approved_at',
         'approved_by',
+        'invite_token',
+        'invite_expires_at',
+        'invitation_accepted_at',
         'google2fa_secret',
         'google2fa_enabled',
         'recovery_codes',
@@ -54,6 +61,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'invite_token',
         'google2fa_secret',
         'otp_code',
     ];
@@ -65,6 +73,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'otp_expires_at'    => 'datetime',
         'approved_at'       => 'datetime',
+        'invite_expires_at'  => 'datetime',
+        'invitation_accepted_at' => 'datetime',
         'password'          => 'hashed',
         'google2fa_enabled' => 'boolean',
         'recovery_codes'    => 'json',
@@ -96,6 +106,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return in_array($this->role, [self::ROLE_DEVELOPER, self::ROLE_ADMIN], true);
     }
 
+    public function canManageAdminClients(): bool
+    {
+        return $this->isDeveloper();
+    }
+
     public function canAccessAdminPortal(): bool
     {
         return $this->isAdminClient() || $this->isDeveloper();
@@ -104,6 +119,56 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isApprovedAdminClient(): bool
     {
         return $this->isAdminClient() && $this->approved_at !== null;
+    }
+
+    public function hasAcceptedInvitation(): bool
+    {
+        return $this->invitation_accepted_at !== null;
+    }
+
+    public function hasCompletedAdminClientProfile(): bool
+    {
+        if (!$this->isAdminClient()) {
+            return true;
+        }
+
+        return $this->adminClientProfile?->isComplete() ?? false;
+    }
+
+    public function adminClientProfile(): HasOne
+    {
+        return $this->hasOne(AdminClientProfile::class);
+    }
+
+    public function assignedAdminClient(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'admin_client_id');
+    }
+
+    public function assignedCustomers(): HasMany
+    {
+        return $this->hasMany(self::class, 'admin_client_id')
+            ->where('role', self::ROLE_CUSTOMER);
+    }
+
+    public function managedOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'admin_client_id');
+    }
+
+    public function auditLogsAsActor(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'actor_id');
+    }
+
+    public function auditLogsAsTarget(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'target_user_id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     /*

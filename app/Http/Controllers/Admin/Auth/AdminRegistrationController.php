@@ -74,6 +74,7 @@ class AdminRegistrationController extends Controller
         // Siguraduhing malinis ang verification flags bago mag-OTP
         session()->forget('admin_verified');
         session()->forget('2fa_passed');
+        session()->forget('staff_otp_passed');
 
         event(new Registered($user));
 

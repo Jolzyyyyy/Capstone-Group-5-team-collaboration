@@ -44,7 +44,7 @@
             {{ __('A strong password should include letters, numbers, and a symbol for better account protection.') }}
         </div>
 
-        <form method="POST" action="{{ route('password.update') }}" x-ref="resetForm" id="resetForm" autocomplete="off">
+        <form method="POST" action="{{ route('password.store') }}" x-ref="resetForm" id="resetForm" autocomplete="off">
             @csrf
             <input type="hidden" name="token" value="{{ $token ?? (request()->route('token') ?? session('password_reset_token')) }}">
             <input type="hidden" name="action_type" :value="actionType">
@@ -59,7 +59,7 @@
 
                 <div class="mb-4 text-left">
                     <x-input-label for="email" :value="__('Account Email')" />
-                    <x-text-input id="email" class="block mt-1 w-full border-gray-300 text-sm" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" autocapitalize="none" spellcheck="false" />
+                    <x-text-input id="email" class="block mt-1 w-full border-gray-300 text-sm" type="email" name="email" :value="old('email', $email ?? session('password_reset_email'))" required autofocus autocomplete="username" autocapitalize="none" spellcheck="false" />
                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                 </div>
 

@@ -5,11 +5,11 @@
 
 <x-guest-layout>
     <div class="mb-4 text-center">
-        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">Security Verification</h2>
+        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">Staff Email Verification</h2>
     </div>
 
     <div class="mb-6 text-sm text-gray-600 text-center px-4">
-        {{ __('Pakisulat ang 6-digit security code na ipinadala namin sa iyong Gmail') }}
+        {{ __('Enter the 6-digit security code sent to your staff email address.') }}
     </div>
 
     @if (session('status'))

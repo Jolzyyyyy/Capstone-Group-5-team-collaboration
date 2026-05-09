@@ -1,208 +1,296 @@
 <x-app-layout>
-    <style>
-        :root {
-            --sidebar-width: 250px;
-            --bg-light: #F9FAFB;
-            --primary-blue: #1D4ED8;
-            --success-green: #10B981;
+    @php
+        $user = Auth::user();
+        $isDeveloper = $user->isDeveloper();
+        $isAdminClient = $user->isAdminClient();
+        $profile = $profile ?? ($isAdminClient ? $user->adminClientProfile : null);
+        $stats = $stats ?? [];
+        $money = fn ($value) => 'PHP ' . number_format((float) $value, 2);
+        $heroImage = $isDeveloper ? asset('images/Homesld2.jpg') : asset('images/Homesld3.jpg');
+
+        $primaryStats = [
+            ['label' => 'Sales', 'value' => $money($stats['sales_total'] ?? 0), 'note' => 'Total recorded order value'],
+            ['label' => 'This Month', 'value' => $money($stats['sales_this_month'] ?? 0), 'note' => ($stats['orders_this_month'] ?? 0) . ' orders this month'],
+            ['label' => 'Active Orders', 'value' => $stats['active_orders'] ?? 0, 'note' => 'Pending through ready'],
+            ['label' => $isDeveloper ? 'Customer Accounts' : 'Assigned Customers', 'value' => $stats['customers'] ?? 0, 'note' => $isDeveloper ? 'All registered customers' : 'Customers assigned to this account'],
+            ['label' => 'Service Catalog', 'value' => $stats['active_services'] ?? 0, 'note' => ($stats['inactive_services'] ?? 0) . ' inactive records'],
+        ];
+
+        if ($isDeveloper) {
+            $primaryStats[] = [
+                'label' => 'Admin Clients',
+                'value' => $stats['approved_admin_clients'] ?? 0,
+                'note' => ($stats['pending_admin_clients'] ?? 0) . ' pending approval',
+            ];
         }
 
-        /* Fixed Sidebar */
-        .fixed-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: var(--sidebar-width);
-            background: #FFFFFF;
-            border-right: 1px solid #E5E7EB;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-        }
+        $scopeRows = $isDeveloper
+            ? [
+                ['label' => 'Developer', 'value' => 'Full system oversight'],
+                ['label' => 'Admin-client accounts', 'value' => 'Invite, approve, suspend, and audit'],
+                ['label' => 'Customer data', 'value' => 'All customer accounts and all orders'],
+                ['label' => 'Unassigned intake', 'value' => ($stats['unassigned_orders'] ?? 0) . ' orders and ' . ($stats['unassigned_customers'] ?? 0) . ' customers need assignment'],
+            ]
+            : [
+                ['label' => 'Admin-client', 'value' => 'Assigned operational records only'],
+                ['label' => 'Customer data', 'value' => 'Assigned customers and their orders'],
+                ['label' => 'Service catalog', 'value' => 'Shared service records for order handling'],
+                ['label' => 'Developer controls', 'value' => 'Hidden from this role'],
+            ];
+    @endphp
 
-        .sidebar-header {
-            padding: 3.5rem 1.5rem 2.5rem 1.5rem;
-            text-align: center;
-        }
-
-        /* Main Content Spacing */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            background-color: var(--bg-light);
-            min-height: 100vh;
-            padding: 4rem 4.5rem; 
-        }
-
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            padding: 0.8rem 1.25rem;
-            margin: 0.3rem 1rem;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6B7280;
-            transition: all 0.2s ease;
-            text-decoration: none;
-        }
-
-        .sidebar-link:hover {
-            background-color: #F3F4F6;
-            color: #111827;
-        }
-
-        .sidebar-link.active {
-            background-color: #EFF6FF;
-            color: var(--primary-blue);
-        }
-
-        .status-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .online-dot {
-            height: 8px;
-            width: 8px;
-            background-color: var(--success-green);
-            border-radius: 50%;
-            display: inline-block;
-            margin-left: 8px;
-        }
-    </style>
-
-    <div class="flex overflow-hidden">
-        <aside class="fixed-sidebar shadow-sm">
-            <div class="sidebar-header">
-                <h2 class="text-xl font-black text-gray-900 tracking-tighter italic uppercase">PRINTIFY & CO.</h2>
-                <div class="h-0.5 w-8 bg-blue-600 mx-auto mt-2"></div>
-                <p class="text-[9px] text-gray-400 uppercase tracking-[0.3em] font-bold mt-2">Staff Portal</p>
+    <div class="min-h-screen bg-[#f7f4ef]" style="font-family: 'Poppins', sans-serif;">
+        <section class="relative overflow-hidden bg-[#1f1d1c]">
+            <div class="absolute inset-0">
+                <img src="{{ $heroImage }}" alt="" class="h-full w-full object-cover opacity-30">
+                <div class="absolute inset-0 bg-gradient-to-r from-[#1f1d1c] via-[#1f1d1c]/92 to-[#1f1d1c]/58"></div>
             </div>
-            
-            <nav class="flex-1 mt-4 overflow-y-auto">
-                <a href="{{ route('home') }}" class="sidebar-link hover:bg-blue-50 hover:text-blue-700 border border-transparent hover:border-blue-100">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    Go to Home
-                </a>
 
-                <div class="my-4 border-t border-gray-100 mx-4"></div>
-
-                <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                    Dashboard
-                </a>
-
-                @if (Auth::user()->isDeveloper())
-                    <a href="{{ route('developer.admin-clients.index') }}" class="sidebar-link {{ request()->routeIs('developer.admin-clients.*') ? 'active' : '' }}">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m16-10a2 2 0 100-4 2 2 0 000 4zM7 10a2 2 0 100-4 2 2 0 000 4m5 1a3 3 0 110-6 3 3 0 010 6z"/></svg>
-                        Admin Clients
-                    </a>
-                @endif
-
-                <a href="#" class="sidebar-link">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 118 0m-9.87 1.57l1.51-1.5a1.13 1.13 0 011.59 0l3.01 3a1.13 1.13 0 010 1.6l-3.01 3.01a1.13 1.13 0 01-1.59 0l-1.51-1.51"/></svg>
-                    Orders
-                </a>
-
-                <a href="#" class="sidebar-link">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                    Products
-                </a>
-
-                <a href="#" class="sidebar-link">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zM17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/></svg>
-                    Rates
-                </a>
-
-                <a href="#" class="sidebar-link">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    Customer Records
-                </a>
-
-                <a href="#" class="sidebar-link">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Reports
-                </a>
-
-                <a href="#" class="sidebar-link">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Settings
-                </a>
-            </nav>
-
-            <div class="p-6 border-t border-gray-100 mt-auto">
-                <form method="POST" action="{{ route('admin.logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full sidebar-link text-red-500 hover:bg-red-50 transition-colors uppercase border-none bg-transparent cursor-pointer text-left">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                        Logout Session
-                    </button>
-                </form>
-            </div>
-        </aside>
-
-        <main class="main-content flex-1">
-            <div class="max-w-6xl mx-auto space-y-10">
-                
-                @if(session('success'))
-                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-xl shadow-sm">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm font-bold text-green-800 uppercase tracking-tighter italic">
-                                    {{ session('success') }}
-                                </p>
-                            </div>
-                        </div>
+            <div class="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+                @if (session('success'))
+                    <div class="mb-6 max-w-3xl rounded-lg border border-emerald-300/40 bg-emerald-50/95 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm">
+                        {{ session('success') }}
                     </div>
                 @endif
 
-                <div class="mb-4">
-                    <h3 class="text-5xl font-black text-gray-900 tracking-tighter italic">Hello, {{ Auth::user()->isDeveloper() ? 'Developer' : 'Admin Client' }} {{ Auth::user()->name }}! 🛡️</h3>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm border-l-4 border-l-blue-600">
-                    <div class="status-container mb-1">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                            System Status: <span class="text-green-500 normal-case ml-1 font-black uppercase italic">Online & Secured</span><span class="online-dot"></span>
+                <div class="grid gap-8 lg:grid-cols-[1fr,auto] lg:items-end">
+                    <div>
+                        <p class="text-xs font-black uppercase text-[#ffb970]">
+                            {{ $isDeveloper ? 'Staff & Developer Portal' : 'Admin Client Portal' }}
+                        </p>
+                        <h1 class="mt-3 max-w-3xl text-4xl font-black text-white sm:text-5xl">
+                            {{ $isDeveloper ? 'Developer Dashboard' : 'Admin Client Dashboard' }}
+                        </h1>
+                        <p class="mt-4 max-w-3xl text-sm leading-7 text-white/78">
+                            {{ $isDeveloper
+                                ? 'Monitor sales, orders, delivery readiness, customer accounts, admin-client access, services, and audit activity from one secured workspace.'
+                                : 'Monitor assigned customer orders, sales activity, delivery readiness, service records, and your required reference profile.' }}
                         </p>
                     </div>
-                    <p class="text-lg font-black text-blue-600 uppercase tracking-tighter mt-1">Verified System Controller</p>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Daily Revenue</p>
-                        <p class="text-4xl font-black text-gray-900 tracking-tighter italic">₱ 0.00</p>
-                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        @if ($isDeveloper)
+                            <a href="{{ route('developer.admin-clients.index') }}" class="inline-flex items-center justify-center rounded-lg bg-[#ff8d2a] px-4 py-3 text-sm font-black uppercase text-white shadow-lg shadow-orange-950/25 transition hover:bg-[#ff6a00]">
+                                Manage Admin Clients
+                            </a>
+                        @endif
 
-                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Active Orders</p>
-                        <p class="text-4xl font-black text-gray-900 tracking-tighter italic">0</p>
-                    </div>
+                        @if ($isAdminClient)
+                            <a href="{{ route('admin.admin-client-profile.edit') }}" class="inline-flex items-center justify-center rounded-lg bg-[#ff8d2a] px-4 py-3 text-sm font-black uppercase text-white shadow-lg shadow-orange-950/25 transition hover:bg-[#ff6a00]">
+                                Reference Profile
+                            </a>
+                        @endif
 
-                    <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Total Customers</p>
-                        <p class="text-4xl font-black text-gray-900 tracking-tighter italic">0</p>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div class="p-8 border-b border-gray-50 bg-gray-50/30">
-                        <h4 class="text-[10px] font-bold text-gray-900 uppercase tracking-[0.3em]">Recent Business Transactions</h4>
-                    </div>
-                    <div class="px-8 py-20 text-center">
-                        <p class="text-[10px] font-bold text-gray-300 uppercase tracking-[0.4em] italic">No business records to display.</p>
+                        <a href="{{ route('admin.orders.index') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
+                            Orders
+                        </a>
+                        <a href="{{ route('admin.services.index') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
+                            Services
+                        </a>
                     </div>
                 </div>
+            </div>
+        </section>
 
+        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <div class="grid gap-4 sm:grid-cols-2 {{ $isDeveloper ? 'xl:grid-cols-6' : 'xl:grid-cols-5' }}">
+                @foreach ($primaryStats as $stat)
+                    <div class="rounded-lg border border-[#eadfd2] bg-white p-5 shadow-sm">
+                        <p class="text-xs font-black uppercase text-[#8a6d52]">{{ $stat['label'] }}</p>
+                        <p class="mt-3 break-words text-2xl font-black text-[#22201f]">{{ $stat['value'] }}</p>
+                        <p class="mt-2 text-sm text-[#6f675f]">{{ $stat['note'] }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-8 grid gap-6 lg:grid-cols-[1.25fr,0.75fr]">
+                <section class="rounded-lg border border-[#eadfd2] bg-white p-5 shadow-sm">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-black uppercase text-[#ff8d2a]">Order And Delivery Monitoring</p>
+                            <h2 class="mt-1 text-lg font-black text-[#22201f]">Operations Pipeline</h2>
+                        </div>
+                        <a href="{{ route('admin.orders.index') }}" class="text-sm font-bold text-[#b45309] underline">View orders</a>
+                    </div>
+
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        @foreach ($pipeline as $stage)
+                            <div class="rounded-lg border border-[#f0e5d8] bg-[#fffaf4] p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-sm font-black text-[#22201f]">{{ $stage['label'] }}</p>
+                                        <p class="mt-1 text-xs text-[#6f675f]">{{ $stage['note'] }}</p>
+                                    </div>
+                                    <span class="rounded-lg bg-white px-3 py-2 text-lg font-black text-[#b45309] shadow-sm">{{ $stage['count'] }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section class="rounded-lg border border-[#eadfd2] bg-white p-5 shadow-sm">
+                    <p class="text-xs font-black uppercase text-[#ff8d2a]">Role Scope</p>
+                    <h2 class="mt-1 text-lg font-black text-[#22201f]">Access Boundaries</h2>
+
+                    <div class="mt-5 space-y-3">
+                        @foreach ($scopeRows as $row)
+                            <div class="rounded-lg border border-[#f0e5d8] px-4 py-3">
+                                <p class="text-xs font-black uppercase text-[#8a6d52]">{{ $row['label'] }}</p>
+                                <p class="mt-1 text-sm font-semibold text-[#22201f]">{{ $row['value'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            </div>
+
+            <div class="mt-8 grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
+                <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
+                    <div class="flex items-center justify-between border-b border-[#f0e5d8] px-5 py-4">
+                        <div>
+                            <p class="text-xs font-black uppercase text-[#ff8d2a]">Sales And Orders</p>
+                            <h2 class="mt-1 text-lg font-black text-[#22201f]">Recent Orders</h2>
+                        </div>
+                        <a href="{{ route('admin.orders.index') }}" class="text-sm font-bold text-[#b45309] underline">Open order database</a>
+                    </div>
+
+                    <div class="divide-y divide-[#f0e5d8]">
+                        @forelse ($recentOrders as $order)
+                            <a href="{{ route('admin.orders.show', $order) }}" class="block px-5 py-4 transition hover:bg-[#fff8ef]">
+                                <div class="grid gap-3 sm:grid-cols-[1fr,auto] sm:items-center">
+                                    <div class="min-w-0">
+                                        <p class="font-black text-[#22201f]">Order #{{ $order->id }} - {{ $order->customer_name }}</p>
+                                        <p class="truncate text-sm text-[#6f675f]">{{ $order->customer_email ?? $order->user?->email ?? 'No email recorded' }}</p>
+                                        @if ($isDeveloper)
+                                            <p class="mt-1 text-xs font-semibold text-[#8a6d52]">
+                                                Admin client: {{ $order->adminClient?->name ?? 'Unassigned' }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                    <div class="text-left sm:text-right">
+                                        <p class="text-xs font-black uppercase text-[#8a6d52]">{{ $order->status }}</p>
+                                        <p class="text-sm font-black text-[#22201f]">{{ $money($order->total_price) }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="px-5 py-12 text-center text-sm font-semibold text-[#6f675f]">
+                                No orders are available for this role scope yet.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+
+                @if ($isDeveloper)
+                    <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
+                        <div class="flex items-center justify-between border-b border-[#f0e5d8] px-5 py-4">
+                            <div>
+                                <p class="text-xs font-black uppercase text-[#ff8d2a]">Admin-Client Database</p>
+                                <h2 class="mt-1 text-lg font-black text-[#22201f]">Account Coverage</h2>
+                            </div>
+                            <a href="{{ route('developer.admin-clients.index') }}" class="text-sm font-bold text-[#b45309] underline">Manage</a>
+                        </div>
+
+                        <div class="divide-y divide-[#f0e5d8]">
+                            @forelse ($recentAdminClients as $adminClient)
+                                <div class="px-5 py-4">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div class="min-w-0">
+                                            <p class="font-black text-[#22201f]">{{ $adminClient->name }}</p>
+                                            <p class="truncate text-sm text-[#6f675f]">{{ $adminClient->email }}</p>
+                                            <p class="mt-1 text-xs text-[#8a6d52]">{{ $adminClient->adminClientProfile?->business_name ?? 'No reference profile name' }}</p>
+                                        </div>
+                                        <div class="text-right text-xs font-black uppercase text-[#8a6d52]">
+                                            <p>{{ $adminClient->assigned_customers_count }} customers</p>
+                                            <p>{{ $adminClient->managed_orders_count }} orders</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="px-5 py-12 text-center text-sm font-semibold text-[#6f675f]">
+                                    No admin-client accounts yet.
+                                </div>
+                            @endforelse
+                        </div>
+                    </section>
+                @else
+                    <section class="rounded-lg border border-[#eadfd2] bg-white p-5 shadow-sm">
+                        <p class="text-xs font-black uppercase text-[#ff8d2a]">Admin-Client Profile</p>
+                        <h2 class="mt-1 text-lg font-black text-[#22201f]">Access Checklist</h2>
+
+                        <div class="mt-5 space-y-3 text-sm">
+                            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 font-bold text-emerald-800">
+                                Developer approval completed
+                            </div>
+                            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 font-bold text-emerald-800">
+                                Staff portal email OTP verified
+                            </div>
+                            <a href="{{ route('admin.admin-client-profile.edit') }}" class="block rounded-lg border border-[#eadfd2] px-4 py-3 font-black text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
+                                Review reference profile
+                            </a>
+                        </div>
+
+                        @if ($profile)
+                            <div class="mt-5 rounded-lg bg-[#f7f4ef] p-4 text-sm text-[#6f675f]">
+                                <p class="font-black text-[#22201f]">{{ $profile->business_name }}</p>
+                                <p class="mt-1">{{ $profile->contact_person }}</p>
+                                <p class="mt-1">{{ $profile->contact_number }}</p>
+                                <p class="mt-1">{{ $profile->business_address }}</p>
+                            </div>
+                        @endif
+                    </section>
+                @endif
+            </div>
+
+            <div class="mt-8 grid gap-6 lg:grid-cols-2">
+                <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
+                    <div class="border-b border-[#f0e5d8] px-5 py-4">
+                        <p class="text-xs font-black uppercase text-[#ff8d2a]">Client Accounts</p>
+                        <h2 class="mt-1 text-lg font-black text-[#22201f]">{{ $isDeveloper ? 'Recent Customer Accounts' : 'Assigned Customer Accounts' }}</h2>
+                    </div>
+
+                    <div class="divide-y divide-[#f0e5d8]">
+                        @forelse ($recentCustomers as $customer)
+                            <div class="px-5 py-4">
+                                <p class="font-black text-[#22201f]">{{ $customer->name }}</p>
+                                <p class="text-sm text-[#6f675f]">{{ $customer->email }}</p>
+                                @if ($isDeveloper)
+                                    <p class="mt-1 text-xs font-semibold text-[#8a6d52]">
+                                        Admin client: {{ $customer->assignedAdminClient?->name ?? 'Unassigned' }}
+                                    </p>
+                                @endif
+                            </div>
+                        @empty
+                            <div class="px-5 py-12 text-center text-sm font-semibold text-[#6f675f]">
+                                No customer accounts are available for this role scope yet.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
+                    <div class="border-b border-[#f0e5d8] px-5 py-4">
+                        <p class="text-xs font-black uppercase text-[#ff8d2a]">Audit Trail</p>
+                        <h2 class="mt-1 text-lg font-black text-[#22201f]">Recent Audit Activity</h2>
+                    </div>
+
+                    <div class="divide-y divide-[#f0e5d8]">
+                        @forelse ($recentAuditLogs as $log)
+                            <div class="px-5 py-4">
+                                <p class="font-black text-[#22201f]">{{ str_replace('_', ' ', ucfirst($log->action)) }}</p>
+                                <p class="mt-1 text-sm text-[#6f675f]">
+                                    Actor: {{ optional($log->actor)->email ?? 'System / invite link' }}
+                                </p>
+                                @if ($log->targetUser)
+                                    <p class="text-sm text-[#6f675f]">Target: {{ $log->targetUser->email }}</p>
+                                @endif
+                            </div>
+                        @empty
+                            <div class="px-5 py-12 text-center text-sm font-semibold text-[#6f675f]">
+                                No audit activity yet.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
             </div>
         </main>
     </div>

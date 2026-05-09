@@ -52,6 +52,23 @@ function Wait-ForPort {
     return $false
 }
 
+function Start-HiddenExecutable {
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments,
+        [string]$WorkingDirectory
+    )
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $FilePath
+    $startInfo.Arguments = ($Arguments -join ' ')
+    $startInfo.WorkingDirectory = $WorkingDirectory
+    $startInfo.UseShellExecute = $true
+    $startInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+
+    return [System.Diagnostics.Process]::Start($startInfo)
+}
+
 if (-not (Test-Path $storageLogs)) {
     New-Item -ItemType Directory -Path $storageLogs -Force | Out-Null
 }
@@ -75,6 +92,7 @@ if (-not $laravelRunning) {
         -RedirectStandardOutput $laravelLog `
         -RedirectStandardError $laravelErrorLog `
         -WindowStyle Hidden `
+        -UseNewEnvironment `
         -PassThru
 
     if (-not (Wait-ForPort -Address '127.0.0.1' -Port 8000)) {
@@ -83,13 +101,10 @@ if (-not $laravelRunning) {
 }
 
 if (-not ($mailpitUiRunning -and $mailpitSmtpRunning)) {
-    $mailpitProcess = Start-Process -FilePath $mailpitExe `
-        -ArgumentList @('--smtp', '127.0.0.1:1025', '--listen', '127.0.0.1:8025') `
-        -WorkingDirectory $projectRoot `
-        -RedirectStandardOutput $mailpitLog `
-        -RedirectStandardError $mailpitErrorLog `
-        -WindowStyle Hidden `
-        -PassThru
+    $mailpitProcess = Start-HiddenExecutable `
+        -FilePath $mailpitExe `
+        -Arguments @('--smtp', '127.0.0.1:1025', '--listen', '127.0.0.1:8025') `
+        -WorkingDirectory $projectRoot
 
     if (-not (Wait-ForPort -Address '127.0.0.1' -Port 8025)) {
         throw 'Mailpit UI failed to start on 127.0.0.1:8025'

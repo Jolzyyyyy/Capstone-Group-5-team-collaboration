@@ -90,6 +90,9 @@ class NewPasswordController extends Controller
             'password_reset_token',
             'password_reset_email',
             'otp_email',
+            'is_forgot_password',
+            'auth_type',
+            'otp_passed',
         ]);
 
         /**

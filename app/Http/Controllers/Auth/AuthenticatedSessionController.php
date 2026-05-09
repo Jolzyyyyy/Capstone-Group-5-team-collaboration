@@ -45,6 +45,13 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->forget([
+            'password_reset_email',
+            'password_reset_token',
+            'is_forgot_password',
+            'auth_type',
+            'otp_passed',
+        ]);
 
         if ($user->isCustomer() && !is_null($user->email_verified_at)) {
             $request->session()->put('customer_otp_passed', true);
@@ -80,6 +87,7 @@ class AuthenticatedSessionController extends Controller
             }
 
             $request->session()->put('otp_email', $user->email);
+            $request->session()->put('auth_type', 'account_verification');
             $request->session()->forget('customer_otp_passed');
 
             return redirect()->route('otp.verify', [

@@ -3,8 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\SendOTP;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -25,49 +26,73 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $response = $this->post('/forgot-password', ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, SendOTP::class);
+        $this->assertNotNull($user->fresh()->otp_code);
+        $response
+            ->assertSessionHas('password_reset_token')
+            ->assertRedirect(route('otp.verify', [
+                'email' => $user->email,
+                'flow' => 'forgot_password',
+            ], false));
+    }
+
+    public function test_password_reset_request_does_not_reveal_unknown_email(): void
+    {
+        Notification::fake();
+
+        $response = $this->post('/forgot-password', [
+            'email' => 'missing@example.com',
+        ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'If that email belongs to an account, a verification code has been sent.');
+
+        Notification::assertNothingSent();
     }
 
     public function test_reset_password_screen_can_be_rendered(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
+        $token = 'test-reset-token';
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $response = $this
+            ->withSession([
+                'password_reset_token' => $token,
+                'password_reset_email' => $user->email,
+            ])
+            ->get(route('password.reset', [
+                'token' => $token,
+                'email' => $user->email,
+            ], false));
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
-            $response = $this->get('/reset-password/'.$notification->token);
-
-            $response->assertStatus(200);
-
-            return true;
-        });
+        $response->assertStatus(200);
     }
 
-    public function test_password_can_be_reset_with_valid_token(): void
+    public function test_password_can_be_reset_after_otp_context_is_verified(): void
     {
-        Notification::fake();
-
         $user = User::factory()->create();
+        $token = 'test-reset-token';
 
-        $this->post('/forgot-password', ['email' => $user->email]);
-
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
+        $response = $this
+            ->withSession([
+                'password_reset_token' => $token,
+                'password_reset_email' => $user->email,
+            ])
+            ->post(route('password.store', absolute: false), [
+                'token' => $token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'new-secure-password',
+                'password_confirmation' => 'new-secure-password',
+                'action_type' => 'manual_login',
             ]);
 
-            $response
-                ->assertSessionHasNoErrors()
-                ->assertRedirect(route('login'));
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('login', absolute: false));
 
-            return true;
-        });
+        $this->assertTrue(Hash::check('new-secure-password', $user->fresh()->password));
     }
 }
