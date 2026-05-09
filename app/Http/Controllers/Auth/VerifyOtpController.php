@@ -30,7 +30,7 @@ class VerifyOtpController extends Controller
                  ?? $request->email 
                  ?? (Auth::check() ? Auth::user()->email : null);
 
-        $verificationFlow = session('is_forgot_password') === true || $request->query('flow') === 'forgot_password'
+        $verificationFlow = $this->isForgotPasswordFlow($request)
             ? 'forgot_password'
             : 'account_verification';
 
@@ -128,7 +128,7 @@ class VerifyOtpController extends Controller
         RateLimiter::clear($otpThrottleKey);
 
         // --- FLOW: FORGOT PASSWORD ---
-        if (session('is_forgot_password') === true || $request->input('verification_flow') === 'forgot_password') {
+        if ($this->isForgotPasswordFlow($request)) {
             $token = session('password_reset_token');
             $emailForReset = $user->email;
 
@@ -136,7 +136,7 @@ class VerifyOtpController extends Controller
             $request->session()->put('customer_otp_passed', true);
             
             // Linisin ang temporary flags pero itira ang kailangan para sa reset form
-            $request->session()->forget(['is_forgot_password', 'otp_email']);
+            $request->session()->forget(['is_forgot_password', 'otp_email', 'auth_type']);
             
             // IMPORTANT: HUWAG MAG-AUTH::LOGIN DITO. 
             // I-redirect sa Reset Password Section.
@@ -157,6 +157,8 @@ class VerifyOtpController extends Controller
         $request->session()->forget([
             'otp_email',
             'password_reset_email',
+            'password_reset_token',
+            'is_forgot_password',
             'auth_type',
             'otp_passed',
         ]);
@@ -234,6 +236,21 @@ class VerifyOtpController extends Controller
     private function customerOtpThrottleKey(Request $request): string
     {
         return $this->customerOtpThrottleKeyFromContext($request->input('email', ''), $request->ip());
+    }
+
+    private function isForgotPasswordFlow(Request $request): bool
+    {
+        if (Auth::check()) {
+            return false;
+        }
+
+        if (session('auth_type') === 'forgot_password') {
+            return true;
+        }
+
+        return session('is_forgot_password') === true
+            || $request->query('flow') === 'forgot_password'
+            || $request->input('verification_flow') === 'forgot_password';
     }
 
     private function customerOtpResendThrottleKey(Request $request): string

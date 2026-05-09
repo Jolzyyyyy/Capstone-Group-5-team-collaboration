@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
@@ -28,31 +27,36 @@ class EmailVerificationTest extends TestCase
 
         Event::fake();
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1($user->email)]
-        );
+        $user->forceFill([
+            'otp_code' => '123456',
+            'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
+        ])->save();
 
-        $response = $this->actingAs($user)->get($verificationUrl);
+        $response = $this->actingAs($user)->post(route('verification.verify'), [
+            'otp' => '123456',
+        ]);
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
-    public function test_email_is_not_verified_with_invalid_hash(): void
+    public function test_email_is_not_verified_with_invalid_otp(): void
     {
         $user = User::factory()->unverified()->create();
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1('wrong-email')]
-        );
+        $user->forceFill([
+            'otp_code' => '123456',
+            'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
+        ])->save();
 
-        $this->actingAs($user)->get($verificationUrl);
+        $response = $this->actingAs($user)->from('/verify-email')->post(route('verification.verify'), [
+            'otp' => '654321',
+        ]);
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
+        $response
+            ->assertSessionHasErrors('otp')
+            ->assertRedirect('/verify-email');
     }
 }

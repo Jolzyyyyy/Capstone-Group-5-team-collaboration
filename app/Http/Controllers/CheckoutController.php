@@ -74,9 +74,11 @@ class CheckoutController extends Controller
         ]);
 
         return DB::transaction(function () use ($request, $rawCart) {
+            $customer = $request->user();
 
             $order = Order::create([
                 'user_id'        => auth()->id(),
+                'admin_client_id' => $customer?->admin_client_id,
                 'customer_name'  => $request->customer_name,
                 'customer_email' => $request->customer_email,
                 'status'         => 'Pending',

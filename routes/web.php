@@ -11,6 +11,9 @@ use App\Http\Controllers\ProfileController;
 
 // --- ADMIN CONTROLLERS ---
 use App\Http\Controllers\Admin\Auth\AdminAuthController;
+use App\Http\Controllers\Admin\AdminClientInvitationController;
+use App\Http\Controllers\Admin\AdminClientProfileController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DeveloperAdminClientController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Models\Service;
@@ -46,27 +49,34 @@ Route::prefix('cart')->name('cart.')->group(function () {
 Route::middleware('guest')->prefix('p-co-2026')->group(function () {
     Route::get('/login-7b5e93-adm-key', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login-7b5e93-adm-key', [AdminAuthController::class, 'login'])->name('admin.login.submit');
+    Route::get('/admin-client-invite/{token}', [AdminClientInvitationController::class, 'show'])->name('admin-client-invitations.show');
+    Route::post('/admin-client-invite/{token}', [AdminClientInvitationController::class, 'store'])->name('admin-client-invitations.store');
 });
 
 Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
     Route::get('/verify-access', [AdminAuthController::class, 'showOtpForm'])->name('admin.otp.verify');
+    Route::post('/verify-access', [AdminAuthController::class, 'verifyOtp'])->name('admin.otp.submit');
+    Route::post('/verify-access/resend', [AdminAuthController::class, 'resendOtp'])->name('admin.otp.resend');
     
-    Route::middleware(['role:admin_client,developer,admin', 'admin'])->group(function () {
-        Route::get('/dashboard', function () {
-            return view('Admin.dashboard');
-        })->name('admin.dashboard');
+    Route::middleware(['role:admin_client,developer,admin', 'admin', 'admin.client.profile'])->group(function () {
+        Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
 
         Route::get('/security/2fa', [SecurityController::class, 'show2faForm'])->name('admin.security.2fa');
         Route::post('/security/2fa/activate', [SecurityController::class, 'activate2fa'])->name('admin.security.2fa.activate');
 
+        Route::get('/reference-profile', [AdminClientProfileController::class, 'edit'])->name('admin.admin-client-profile.edit');
+        Route::put('/reference-profile', [AdminClientProfileController::class, 'update'])->name('admin.admin-client-profile.update');
+
         // Admin services
         Route::get('/services', [ServiceController::class, 'adminIndex'])->name('admin.services.index');
-        Route::get('/services/create', [ServiceController::class, 'create'])->name('admin.services.create');
-        Route::post('/services', [ServiceController::class, 'store'])->name('admin.services.store');
-        Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('admin.services.edit');
-        Route::put('/services/{service}', [ServiceController::class, 'update'])->name('admin.services.update');
-        Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('admin.services.destroy');
-        Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('admin.services.toggle');
+        Route::middleware('role:developer,admin')->group(function () {
+            Route::get('/services/create', [ServiceController::class, 'create'])->name('admin.services.create');
+            Route::post('/services', [ServiceController::class, 'store'])->name('admin.services.store');
+            Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('admin.services.edit');
+            Route::put('/services/{service}', [ServiceController::class, 'update'])->name('admin.services.update');
+            Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('admin.services.destroy');
+            Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('admin.services.toggle');
+        });
 
         // Admin orders
         Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
@@ -84,6 +94,7 @@ Route::middleware(['auth', 'role:developer,admin', 'admin'])->prefix('p-co-2026/
     Route::post('/admin-clients', [DeveloperAdminClientController::class, 'store'])->name('admin-clients.store');
     Route::patch('/admin-clients/{user}/approve', [DeveloperAdminClientController::class, 'approve'])->name('admin-clients.approve');
     Route::patch('/admin-clients/{user}/suspend', [DeveloperAdminClientController::class, 'suspend'])->name('admin-clients.suspend');
+    Route::patch('/admin-clients/{user}/assign-customer', [DeveloperAdminClientController::class, 'assignCustomer'])->name('admin-clients.assign-customer');
 });
 
 /*
@@ -94,7 +105,18 @@ Route::middleware(['auth', 'role:developer,admin', 'admin'])->prefix('p-co-2026/
 Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () {
 
     Route::get('/dashboard', function () {
-        return view('dashboard');
+        $user = request()->user();
+        $orderQuery = $user->orders();
+
+        return view('dashboard', [
+            'recentOrders' => (clone $orderQuery)->latest()->limit(5)->get(),
+            'assignedAdminClient' => $user->assignedAdminClient,
+            'availableServices' => Service::where('is_active', true)->count(),
+            'orderCount' => (clone $orderQuery)->count(),
+            'activeOrderCount' => (clone $orderQuery)->whereIn('status', ['Pending', 'For Verification', 'Processing', 'Ready'])->count(),
+            'completedOrderCount' => (clone $orderQuery)->where('status', 'Completed')->count(),
+            'totalSpent' => (float) (clone $orderQuery)->sum('total_price'),
+        ]);
     })->name('dashboard');
 
     Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
@@ -108,6 +130,10 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
     // Customer: My Orders pages
     Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
     Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 /*

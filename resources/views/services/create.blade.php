@@ -24,7 +24,7 @@
     </div>
 @endif
 
-<form action="{{ route('services.store') }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('admin.services.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
 
     {{-- Category --}}
@@ -163,7 +163,7 @@
 </form>
 
 <p>
-    <a href="{{ route('services.admin.index') }}">Back to Admin Services</a>
+    <a href="{{ route('admin.services.index') }}">Back to Admin Services</a>
 </p>
 
 <script>

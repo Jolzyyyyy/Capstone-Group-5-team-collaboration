@@ -36,15 +36,13 @@ class PasswordResetLinkController extends Controller
         ]);
 
         // 2. Find user by email
-        $user = User::where('email', trim($request->email))->first();
+        $email = strtolower(trim((string) $request->email));
+        $user = User::where('email', $email)->first();
 
-        // Security Note: Generic error message para sa privacy ng users
         if (!$user) {
             return back()
                 ->withInput($request->only('email'))
-                ->withErrors([
-                    'email' => __("We can't find a user with that email address."),
-                ]);
+                ->with('status', 'If that email belongs to an account, a verification code has been sent.');
         }
 
         // 3. Generate 6-digit OTP

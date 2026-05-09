@@ -25,7 +25,7 @@ class AdminAuthController extends Controller
      */
     public function showLoginForm()
     {
-        if (Auth::check() && Auth::user()->canAccessAdminPortal() && session('2fa_passed')) {
+        if (Auth::check() && Auth::user()->canAccessAdminPortal() && session('staff_otp_passed')) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -80,44 +80,37 @@ class AdminAuthController extends Controller
             'needs_email_otp',
             'admin_verified',
             '2fa_passed',
+            'staff_otp_passed',
         ]);
-
-        $needsEmailOtp = is_null($user->email_verified_at);
 
         session([
             'admin_auth_passed' => true,
             'admin_email' => $user->email,
-            'needs_email_otp' => $needsEmailOtp,
+            'needs_email_otp' => true,
         ]);
 
-        session()->forget(['admin_verified', '2fa_passed']);
+        $otp = sprintf('%06d', mt_rand(100000, 999999));
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
+        $user->save();
 
-        if ($needsEmailOtp) {
-            $otp = sprintf('%06d', mt_rand(100000, 999999));
-            $user->otp_code = $otp;
-            $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
-            $user->save();
+        try {
+            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+            RateLimiter::hit($this->staffOtpResendThrottleKeyFromContext($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+        } catch (\Throwable $e) {
+            Log::error('Staff OTP send failed for ' . $user->email . ': ' . $e->getMessage());
 
-            try {
-                Mail::to($user->email)->send(new OTPVerificationMail($otp));
-                RateLimiter::hit($this->staffOtpResendThrottleKeyFromContext($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
-            } catch (\Throwable $e) {
-                Log::error('Staff OTP send failed for ' . $user->email . ': ' . $e->getMessage());
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return redirect()->route('admin.login')->withErrors([
-                    'email' => 'Unable to send the staff verification code right now. Please try again in a moment.',
-                ])->onlyInput('email');
-            }
-
-            return redirect()->route('admin.otp.verify')
-                ->with('status', 'A verification code has been sent to your email before portal access can continue.');
+            return redirect()->route('admin.login')->withErrors([
+                'email' => 'Unable to send the staff verification code right now. Please try again in a moment.',
+            ])->onlyInput('email');
         }
 
-        return redirect()->route('admin.security.2fa');
+        return redirect()->route('admin.otp.verify')
+            ->with('status', 'A verification code has been sent to your email before portal access can continue.');
     }
 
     /**
@@ -138,8 +131,8 @@ class AdminAuthController extends Controller
      */
     public function showOtpForm()
     {
-        if (session('needs_email_otp') === false) {
-            return redirect()->route('admin.security.2fa');
+        if (session('staff_otp_passed')) {
+            return redirect()->route('admin.dashboard');
         }
 
         if (!Auth::check() || !Auth::user()->canAccessAdminPortal()) {
@@ -163,8 +156,20 @@ class AdminAuthController extends Controller
     public function verifyOtp(Request $request)
     {
         $request->validate([
-            'otp' => ['required', 'string'],
+            'otp' => ['required', 'string', 'size:6'],
         ]);
+
+        $user = Auth::user();
+
+        if (!$user || !$user->canAccessAdminPortal()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('admin.login')->withErrors([
+                'email' => 'Unauthorized access.',
+            ]);
+        }
 
         $otpThrottleKey = $this->staffOtpThrottleKey($request);
 
@@ -173,8 +178,6 @@ class AdminAuthController extends Controller
             self::STAFF_OTP_MAX_ATTEMPTS,
             'otp'
         );
-
-        $user = Auth::user();
 
         if (!$user || trim((string) $user->otp_code) !== trim((string) $request->otp)) {
             RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
@@ -194,15 +197,21 @@ class AdminAuthController extends Controller
 
         $user->otp_code = null;
         $user->otp_expires_at = null;
-        $user->email_verified_at = now();
+        $user->email_verified_at = $user->email_verified_at ?? now();
         $user->save();
 
-        session(['admin_verified' => true]);
         $request->session()->regenerate();
+        $request->session()->put('staff_otp_passed', true);
+        $request->session()->forget([
+            'admin_auth_passed',
+            'needs_email_otp',
+            'admin_verified',
+            '2fa_passed',
+        ]);
         RateLimiter::clear($otpThrottleKey);
 
-        return redirect()->route('admin.security.2fa')
-            ->with('status', 'Email verified. Continue with your authenticator setup.');
+        return redirect()->route('admin.dashboard')
+            ->with('success', 'Email verification complete. Welcome to the staff portal.');
     }
 
     public function resendOtp(Request $request)
@@ -259,6 +268,7 @@ class AdminAuthController extends Controller
             'needs_email_otp',
             'admin_verified',
             '2fa_passed',
+            'staff_otp_passed',
         ]);
 
         Auth::logout();

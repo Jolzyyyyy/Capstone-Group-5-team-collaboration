@@ -6,13 +6,15 @@ use Illuminate\Support\Facades\Route;
  * 🛠️ AUTH CONTROLLERS (App\Http\Controllers\Auth)
  */
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyOtpController; 
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
 /**
  * 🛠️ ADMIN AUTH CONTROLLERS
@@ -38,12 +40,7 @@ Route::middleware('guest')->group(function () {
     // Reset Password Form (Dito papasok ang user galing sa Email Link)
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     
-    /**
-     * DITO ANG UPDATE: 
-     * In-align natin ang POST request sa PasswordController@update 
-     * para gumana ang 'password.update' name na gusto mo sa Blade.
-     */
-    Route::post('reset-password', [PasswordController::class, 'update'])->name('password.update');
+    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
 /*
@@ -73,7 +70,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard-redirect', function () {
         $user = auth()->user();
         if ($user->canAccessAdminPortal()) {
-            return redirect()->route('admin.otp.verify');
+            return session('staff_otp_passed') === true
+                ? redirect()->route('admin.dashboard')
+                : redirect()->route('admin.otp.verify');
         }
 
         if ($user->isCustomer() && !is_null($user->email_verified_at)) {
@@ -89,23 +88,15 @@ Route::middleware('auth')->group(function () {
             : redirect()->route('otp.verify');
     })->name('dashboard.redirect');
 
-    // --- Admin OTP Flow ---
-    Route::prefix('admin-auth')->name('admin.auth.otp.')->group(function () {
-        Route::get('/verify', [AdminAuthController::class, 'showOtpForm'])->name('verify');
-        Route::post('/verify', [AdminAuthController::class, 'verifyOtp'])->name('submit');
-        Route::post('/resend', [AdminAuthController::class, 'resendOtp'])->name('resend');
-    });
-
     // Security & Password Management inside Profile
+    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
+    Route::post('verify-email', [VerifyEmailController::class, 'verifyOtp'])->name('verification.verify');
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])->name('verification.send');
+
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
     
-    /**
-     * ALIGNMENT:
-     * Para kahit sa loob ng settings (Authenticated) o sa Reset form (Guest),
-     * iisang logic lang ang gagamitin ni PasswordController.
-     */
-    Route::put('password-change', [PasswordController::class, 'update'])->name('password.change');
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
     
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

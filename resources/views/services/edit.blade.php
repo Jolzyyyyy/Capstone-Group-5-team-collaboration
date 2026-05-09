@@ -22,7 +22,7 @@
     </div>
 @endif
 
-<form action="{{ route('services.update', $service) }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('admin.services.update', $service) }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
 
@@ -283,7 +283,7 @@
 </form>
 
 <p>
-    <a href="{{ route('services.admin.index') }}">Back to Admin Services</a>
+    <a href="{{ route('admin.services.index') }}">Back to Admin Services</a>
 </p>
 
 <script>

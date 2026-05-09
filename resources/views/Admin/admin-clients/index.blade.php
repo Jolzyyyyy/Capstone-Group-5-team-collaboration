@@ -2,8 +2,8 @@
     <div class="max-w-6xl mx-auto py-10 px-6 space-y-8">
         <div>
             <p class="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Developer Access</p>
-            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Admin Client Pre-registration</h1>
-            <p class="mt-2 text-sm text-slate-600">Create staff accounts here, then approve them before they can access the protected portal.</p>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Admin Client Management</h1>
+            <p class="mt-2 text-sm text-slate-600">Invite admin clients, review their reference profile, approve access, and keep an audit trail.</p>
         </div>
 
         @if (session('success'))
@@ -12,10 +12,29 @@
             </div>
         @endif
 
+        @if (session('warning'))
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                {{ session('warning') }}
+            </div>
+        @endif
+
+        @if (session('invite_url'))
+            <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <p class="font-bold">Latest invite setup link</p>
+                <a href="{{ session('invite_url') }}" class="mt-1 block break-all underline">{{ session('invite_url') }}</a>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+                {{ $errors->first() }}
+            </div>
+        @endif
+
         <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr),minmax(0,1.25fr)]">
             <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="text-lg font-black text-slate-900">Create Admin Client</h2>
-                <p class="mt-1 text-sm text-slate-500">This account will stay blocked until a developer approves it.</p>
+                <h2 class="text-lg font-black text-slate-900">Invite Admin Client</h2>
+                <p class="mt-1 text-sm text-slate-500">The client sets their own password and reference profile before developer approval.</p>
 
                 <form method="POST" action="{{ route('developer.admin-clients.store') }}" class="mt-6 space-y-4">
                     @csrf
@@ -32,20 +51,8 @@
                         <x-input-error :messages="$errors->get('email')" class="mt-2" />
                     </div>
 
-                    <div>
-                        <x-input-label for="password" :value="__('Temporary Password')" />
-                        <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required />
-                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                    </div>
-
-                    <div>
-                        <x-input-label for="password_confirmation" :value="__('Confirm Temporary Password')" />
-                        <x-text-input id="password_confirmation" class="mt-1 block w-full" type="password" name="password_confirmation" required />
-                        <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-                    </div>
-
                     <x-primary-button>
-                        {{ __('Create Pre-registration') }}
+                        {{ __('Send Invite') }}
                     </x-primary-button>
                 </form>
             </section>
@@ -55,17 +62,36 @@
                     <h2 class="text-lg font-black text-slate-900">Pending Approval</h2>
                     <div class="mt-4 space-y-4">
                         @forelse ($pendingAdminClients as $pendingUser)
+                            @php
+                                $profile = $pendingUser->adminClientProfile;
+                                $isLegacyPending = !$pendingUser->hasAcceptedInvitation() && blank($pendingUser->invite_token);
+                                $readyForApproval = $isLegacyPending || ($pendingUser->hasAcceptedInvitation() && $pendingUser->hasCompletedAdminClientProfile());
+                            @endphp
                             <div class="rounded-xl border border-amber-200 bg-white px-4 py-4">
                                 <div class="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p class="font-bold text-slate-900">{{ $pendingUser->name }}</p>
-                                        <p class="text-sm text-slate-600">{{ $pendingUser->email }}</p>
-                                        <p class="mt-1 text-xs uppercase tracking-[0.2em] text-amber-700">Waiting for developer approval</p>
+                                    <div class="space-y-2">
+                                        <div>
+                                            <p class="font-bold text-slate-900">{{ $pendingUser->name }}</p>
+                                            <p class="text-sm text-slate-600">{{ $pendingUser->email }}</p>
+                                        </div>
+                                        <p class="text-xs uppercase tracking-[0.2em] {{ $readyForApproval ? 'text-emerald-700' : 'text-amber-700' }}">
+                                            {{ $readyForApproval ? ($isLegacyPending ? 'Legacy account - profile required after login' : 'Ready for approval') : ($pendingUser->hasAcceptedInvitation() ? 'Profile incomplete' : 'Waiting for invite acceptance') }}
+                                        </p>
+                                        @if ($profile)
+                                            <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                                                <p><span class="font-bold">Business:</span> {{ $profile->business_name }}</p>
+                                                <p><span class="font-bold">Contact:</span> {{ $profile->contact_person }} / {{ $profile->contact_number }}</p>
+                                                <p><span class="font-bold">Address:</span> {{ $profile->business_address }}</p>
+                                                @if ($profile->reference_notes)
+                                                    <p><span class="font-bold">Notes:</span> {{ $profile->reference_notes }}</p>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                     <form method="POST" action="{{ route('developer.admin-clients.approve', $pendingUser) }}">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700">
+                                        <button type="submit" @disabled(!$readyForApproval) class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">
                                             Approve
                                         </button>
                                     </form>
@@ -87,8 +113,29 @@
                                         <p class="font-bold text-slate-900">{{ $approvedUser->name }}</p>
                                         <p class="text-sm text-slate-600">{{ $approvedUser->email }}</p>
                                         <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
-                                            Approved {{ optional($approvedUser->approved_at)->format('M d, Y h:i A') ?? 'legacy account' }}
+                                            Approved {{ optional($approvedUser->approved_at)->format('M d, Y h:i A') }}
                                         </p>
+                                        @if ($approvedUser->adminClientProfile)
+                                            <p class="mt-2 text-xs text-slate-500">{{ $approvedUser->adminClientProfile->business_name }}</p>
+                                        @endif
+                                        <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
+                                            <span class="rounded-lg bg-white px-3 py-2">{{ $approvedUser->assigned_customers_count }} assigned customers</span>
+                                            <span class="rounded-lg bg-white px-3 py-2">{{ $approvedUser->managed_orders_count }} assigned orders</span>
+                                        </div>
+                                        <form method="POST" action="{{ route('developer.admin-clients.assign-customer', $approvedUser) }}" class="mt-3 flex flex-col gap-2 sm:flex-row">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input
+                                                type="email"
+                                                name="customer_email"
+                                                placeholder="customer@example.com"
+                                                class="min-w-0 flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-orange-400 focus:ring-orange-400"
+                                                required
+                                            >
+                                            <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700">
+                                                Assign Customer
+                                            </button>
+                                        </form>
                                     </div>
                                     <form method="POST" action="{{ route('developer.admin-clients.suspend', $approvedUser) }}">
                                         @csrf
@@ -106,5 +153,25 @@
                 </div>
             </section>
         </div>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 class="text-lg font-black text-slate-900">Recent Audit Activity</h2>
+            <div class="mt-4 divide-y divide-slate-100">
+                @forelse ($recentAuditLogs as $log)
+                    <div class="py-3 text-sm text-slate-600">
+                        <p class="font-bold text-slate-900">{{ str_replace('_', ' ', ucfirst($log->action)) }}</p>
+                        <p>
+                            Actor: {{ optional($log->actor)->email ?? 'System / invite link' }}
+                            @if ($log->targetUser)
+                                | Target: {{ $log->targetUser->email }}
+                            @endif
+                            | {{ $log->created_at->format('M d, Y h:i A') }}
+                        </p>
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">No audit activity yet.</p>
+                @endforelse
+            </div>
+        </section>
     </div>
 </x-app-layout>

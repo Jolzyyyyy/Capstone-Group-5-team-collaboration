@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,20 +39,24 @@ class VerifyEmailController extends Controller
     {
         $user = Auth::user();
 
-        // Validate OTP (6 digits)
         $request->validate([
-            'otp_code' => ['required', 'string', 'size:6'],
+            'otp' => ['required', 'string', 'size:6'],
         ]);
 
-        // Check OTP match
-        if (trim((string)$user->otp_code) === trim((string)$request->otp_code)) {
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        if (trim((string) $user->otp_code) === trim((string) $request->otp)) {
 
             // Check expiration
             if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->isPast()) {
                 return back()->withErrors([
-                    'otp_code' => 'The code has expired. Please request a new one.'
+                    'otp' => 'The code has expired. Please request a new one.',
                 ]);
             }
+
+            $wasUnverified = !$user->hasVerifiedEmail();
 
             // Update DB: mark as verified
             $user->forceFill([
@@ -59,6 +64,10 @@ class VerifyEmailController extends Controller
                 'otp_code' => null,
                 'otp_expires_at' => null,
             ])->save();
+
+            if ($wasUnverified) {
+                event(new Verified($user));
+            }
 
             // Unlock session for dashboard access
             $request->session()->put('customer_otp_passed', true);
@@ -68,7 +77,7 @@ class VerifyEmailController extends Controller
         }
 
         return back()->withErrors([
-            'otp_code' => 'The verification code is incorrect.'
+            'otp' => 'The verification code is incorrect.',
         ]);
     }
 

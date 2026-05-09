@@ -3,7 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Notifications\SendOTP;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -40,6 +42,38 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_normal_login_clears_stale_password_reset_session(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create();
+
+        $response = $this
+            ->withSession([
+                'password_reset_email' => $user->email,
+                'password_reset_token' => 'stale-token',
+                'is_forgot_password' => true,
+                'auth_type' => 'forgot_password',
+            ])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+        $this->assertAuthenticatedAs($user);
+        Notification::assertSentTo($user, SendOTP::class);
+
+        $response
+            ->assertRedirect(route('otp.verify', [
+                'email' => $user->email,
+            ], false))
+            ->assertSessionHas('otp_email', $user->email)
+            ->assertSessionHas('auth_type', 'account_verification')
+            ->assertSessionMissing('password_reset_email')
+            ->assertSessionMissing('password_reset_token')
+            ->assertSessionMissing('is_forgot_password');
     }
 
     public function test_users_can_logout(): void

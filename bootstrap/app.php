@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'          => \App\Http\Middleware\RoleMiddleware::class,
             'admin'         => \App\Http\Middleware\AdminMiddleware::class,
+            'admin.client.profile' => \App\Http\Middleware\EnsureAdminClientProfileIsComplete::class,
             'customer_otp'  => \App\Http\Middleware\CustomerOtpMiddleware::class, 
             'otp.verified'  => \App\Http\Middleware\EnsureCustomerOtpIsVerified::class,
         ]);
