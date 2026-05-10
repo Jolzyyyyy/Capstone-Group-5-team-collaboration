@@ -87,6 +87,12 @@
                         <a href="{{ route('admin.services.index') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
                             Services
                         </a>
+                        <a href="{{ route('admin.customers.index') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
+                            Customers
+                        </a>
+                        <a href="{{ route('admin.reports.index') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
+                            Reports
+                        </a>
                     </div>
                 </div>
             </div>

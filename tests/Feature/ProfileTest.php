@@ -63,6 +63,41 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
+    public function test_backup_email_can_be_updated(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile/backup-email', [
+                'backup_email' => 'backup@example.com',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $this->assertSame('backup@example.com', $user->refresh()->backup_email);
+    }
+
+    public function test_backup_email_cannot_match_primary_email(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'primary@example.com',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile/backup-email', [
+                'backup_email' => 'primary@example.com',
+            ]);
+
+        $response
+            ->assertSessionHasErrorsIn('backupEmail', 'backup_email')
+            ->assertRedirect('/profile');
+    }
+
     public function test_user_can_delete_their_account(): void
     {
         $user = User::factory()->create();

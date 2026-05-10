@@ -63,6 +63,7 @@ class RegisteredUserController extends Controller
             'last_name' => trim($request->last_name),
             'email' => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
+            'has_set_password' => true,
             'role' => 'customer', 
             'otp_code' => $otp,
             'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
