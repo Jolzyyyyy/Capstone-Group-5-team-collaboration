@@ -38,9 +38,13 @@ class User extends Authenticatable implements MustVerifyEmail
         'first_name',
         'last_name',
         'email',
+        'backup_email',
         'password',
+        'has_set_password',
         'role',
         'admin_client_id',
+        'google_id',
+        'google_token',
         'otp_code',
         'otp_expires_at',
         'email_verified_at',
@@ -61,6 +65,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'google_token',
         'invite_token',
         'google2fa_secret',
         'otp_code',
@@ -76,6 +81,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'invite_expires_at'  => 'datetime',
         'invitation_accepted_at' => 'datetime',
         'password'          => 'hashed',
+        'has_set_password'  => 'boolean',
         'google2fa_enabled' => 'boolean',
         'recovery_codes'    => 'json',
     ];
@@ -99,6 +105,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isCustomer(): bool
     {
         return $this->role === self::ROLE_CUSTOMER;
+    }
+
+    public function hasGoogleLogin(): bool
+    {
+        return filled($this->google_id);
+    }
+
+    public function needsPasswordSetup(): bool
+    {
+        return $this->hasGoogleLogin() && !$this->has_set_password;
     }
 
     public function isDeveloper(): bool

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymongoCheckoutController;
 use App\Http\Controllers\ProfileController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\AdminClientProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DeveloperAdminClientController;
 use App\Http\Controllers\Admin\SecurityController;
+use App\Http\Controllers\Admin\SectionController as AdminSectionController;
 use App\Models\Service;
 
 /*
@@ -85,6 +87,12 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
         Route::put('/orders/{order}', [OrderController::class, 'update'])->name('admin.orders.update');
         Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('admin.orders.destroy');
 
+        Route::get('/customers', [AdminSectionController::class, 'customers'])->name('admin.customers.index');
+        Route::get('/analytics', [AdminSectionController::class, 'analytics'])->name('admin.analytics.index');
+        Route::get('/reports', [AdminSectionController::class, 'reports'])->name('admin.reports.index');
+        Route::get('/settings', [AdminSectionController::class, 'settings'])->name('admin.settings.index');
+        Route::get('/help-center', [AdminSectionController::class, 'help'])->name('admin.help.index');
+
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     });
 });
@@ -131,8 +139,14 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
     Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
     Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
 
+    Route::get('/notifications', [CustomerPortalController::class, 'notifications'])->name('customer.notifications');
+    Route::get('/security', [CustomerPortalController::class, 'security'])->name('customer.security');
+    Route::get('/settings', [CustomerPortalController::class, 'settings'])->name('customer.settings');
+    Route::get('/help-center', [CustomerPortalController::class, 'help'])->name('customer.help');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/backup-email', [ProfileController::class, 'updateBackupEmail'])->name('profile.backup-email.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

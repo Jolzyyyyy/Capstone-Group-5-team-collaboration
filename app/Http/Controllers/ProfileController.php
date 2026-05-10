@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -35,6 +38,32 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    public function updateBackupEmail(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validateWithBag('backupEmail', [
+            'backup_email' => [
+                'nullable',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::notIn([Str::lower((string) $user->email)]),
+                Rule::unique(User::class, 'email')->ignore($user->id),
+                Rule::unique(User::class, 'backup_email')->ignore($user->id),
+            ],
+        ]);
+
+        $user->forceFill([
+            'backup_email' => filled($validated['backup_email'] ?? null)
+                ? Str::lower(trim((string) $validated['backup_email']))
+                : null,
+        ])->save();
+
+        return Redirect::route('profile.edit')->with('status', 'backup-email-updated');
     }
 
     /**

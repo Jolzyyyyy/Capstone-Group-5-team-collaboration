@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 
 /**
  * 🛠️ ADMIN AUTH CONTROLLERS
@@ -32,6 +33,9 @@ Route::middleware('guest')->group(function () {
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('google.login');
+    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 
     // Password Recovery (Forgot Password Flow)
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');

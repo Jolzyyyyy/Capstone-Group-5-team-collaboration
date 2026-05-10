@@ -12,13 +12,18 @@
         ? [
             ['label' => __('Dashboard'), 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard')],
             ['label' => __('Orders'), 'href' => route('admin.orders.index'), 'active' => request()->routeIs('admin.orders.*')],
+            ['label' => __('Customers'), 'href' => route('admin.customers.index'), 'active' => request()->routeIs('admin.customers.*')],
             ['label' => __('Services'), 'href' => route('admin.services.index'), 'active' => request()->routeIs('admin.services.*')],
+            ['label' => __('Reports'), 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*')],
+            ['label' => __('Help'), 'href' => route('admin.help.index'), 'active' => request()->routeIs('admin.help.*')],
         ]
         : [
             ['label' => __('Dashboard'), 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
             ['label' => __('Services'), 'href' => route('services.index'), 'active' => request()->routeIs('services.*')],
             ['label' => __('My Orders'), 'href' => route('orders.my.index'), 'active' => request()->routeIs('orders.my.*')],
             ['label' => __('Cart'), 'href' => route('cart.index'), 'active' => request()->routeIs('cart.*')],
+            ['label' => __('Updates'), 'href' => route('customer.notifications'), 'active' => request()->routeIs('customer.notifications')],
+            ['label' => __('Help'), 'href' => route('customer.help'), 'active' => request()->routeIs('customer.help')],
         ];
 
     if ($currentUser && $currentUser->canManageAdminClients()) {

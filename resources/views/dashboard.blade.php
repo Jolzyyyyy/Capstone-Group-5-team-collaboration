@@ -47,6 +47,9 @@
                         <a href="{{ route('orders.my.index') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
                             My Orders
                         </a>
+                        <a href="{{ route('customer.notifications') }}" class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-sm font-black uppercase text-white backdrop-blur transition hover:bg-white/18">
+                            Updates
+                        </a>
                     </div>
                 </div>
             </div>
@@ -113,6 +116,12 @@
                         </a>
                         <a href="{{ route('profile.edit') }}" class="block rounded-lg border border-[#eadfd2] px-4 py-3 text-sm font-black text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
                             Update profile
+                        </a>
+                        <a href="{{ route('customer.security') }}" class="block rounded-lg border border-[#eadfd2] px-4 py-3 text-sm font-black text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
+                            Review security
+                        </a>
+                        <a href="{{ route('customer.help') }}" class="block rounded-lg border border-[#eadfd2] px-4 py-3 text-sm font-black text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
+                            Help center
                         </a>
                     </div>
 

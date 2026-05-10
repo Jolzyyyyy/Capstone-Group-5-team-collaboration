@@ -192,6 +192,14 @@ class DashboardAccessTest extends TestCase
         $this
             ->actingAs($adminClient)
             ->withSession(['staff_otp_passed' => true])
+            ->get(route('admin.customers.index', absolute: false))
+            ->assertOk()
+            ->assertSee('Assigned Customer')
+            ->assertDontSee('Other Customer');
+
+        $this
+            ->actingAs($adminClient)
+            ->withSession(['staff_otp_passed' => true])
             ->get(route('admin.orders.show', $otherOrder, false))
             ->assertForbidden();
 
