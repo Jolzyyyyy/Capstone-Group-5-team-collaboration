@@ -15,7 +15,7 @@ class AdminClientAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_developer_can_preregister_admin_client_with_hashed_invite_token(): void
+    public function test_developer_can_preregister_admin_with_hashed_invite_token(): void
     {
         Notification::fake();
 
@@ -38,7 +38,7 @@ class AdminClientAccessTest extends TestCase
             ->assertRedirect(route('developer.admin-clients.index', absolute: false))
             ->assertSessionHas('invite_url');
 
-        $this->assertSame(User::ROLE_ADMIN_CLIENT, $adminClient->role);
+        $this->assertSame(User::ROLE_ADMIN, $adminClient->role);
         $this->assertSame($developer->id, $adminClient->preregistered_by);
         $this->assertNull($adminClient->approved_at);
         $this->assertNotNull($adminClient->invite_token);
@@ -128,6 +128,44 @@ class AdminClientAccessTest extends TestCase
         $this->assertAuthenticatedAs($adminClient);
         $this->assertNotNull($adminClient->fresh()->otp_code);
         Mail::assertSent(OTPVerificationMail::class);
+    }
+
+    public function test_developer_approval_converts_legacy_admin_client_invite_to_admin_account(): void
+    {
+        $developer = User::factory()->create([
+            'role' => User::ROLE_DEVELOPER,
+            'email_verified_at' => now(),
+        ]);
+
+        $pendingAdmin = User::factory()->create([
+            'role' => User::ROLE_ADMIN_CLIENT,
+            'email' => 'pending-admin@example.com',
+            'password' => Hash::make('Password1!'),
+            'email_verified_at' => null,
+            'approved_at' => null,
+            'approved_by' => null,
+            'invitation_accepted_at' => now(),
+        ]);
+
+        $pendingAdmin->adminClientProfile()->create([
+            'business_name' => 'Admin Studio',
+            'contact_person' => 'Pending Admin',
+            'contact_number' => '09173333333',
+            'business_address' => 'Admin Street',
+            'profile_completed_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($developer)
+            ->withSession(['staff_otp_passed' => true])
+            ->patch(route('developer.admin-clients.approve', $pendingAdmin, false));
+
+        $pendingAdmin->refresh();
+
+        $response->assertRedirect(route('developer.admin-clients.index', absolute: false));
+        $this->assertSame(User::ROLE_ADMIN, $pendingAdmin->role);
+        $this->assertNotNull($pendingAdmin->approved_at);
+        $this->assertSame($developer->id, $pendingAdmin->approved_by);
     }
 
     public function test_verified_developer_login_still_requires_email_otp_each_session(): void

@@ -16,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         
         /**
          * 1. GUEST REDIRECT:
-         * Kung ang user ay HINDI logged in at sinubukang pumasok sa restricted page,
-         * dito sila itatapon.
+         * Kapag HINDI logged in ang user, dito sila ibabato.
+         * Naka-isolate ang Admin route (p-co-2026) para sa security.
          */
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('p-co-2026/*') || $request->is('p-co-2026')) {
@@ -28,23 +28,28 @@ return Application::configure(basePath: dirname(__DIR__))
 
         /**
          * 2. AUTHENTICATED REDIRECT:
-         * Dito nagkakatalo. Gagamit tayo ng 'redirectUsersTo'.
-         * Ito ay para LAMANG sa mga users na NAKA-LOGIN na.
-         * Hindi nito gagalawin ang mga "Forgot Password" users.
+         * Ito ang modernong kapalit ng RedirectIfAuthenticated.
+         * Kapag naka-login na ang user pero pinuntahan ang /login or /register,
+         * itatapon sila sa 'dashboard.redirect' controller/route natin.
          */
         $middleware->redirectUsersTo(fn (Request $request) => route('dashboard.redirect'));
 
         /**
          * 3. MIDDLEWARE ALIASES:
+         * FIX: In-align natin ang 'customer_otp' sa EnsureCustomerOtpIsVerified
+         * para mag-match sa logic na inayos natin sa web.php.
          */
         $middleware->alias([
-            'role'          => \App\Http\Middleware\RoleMiddleware::class,
-            'admin'         => \App\Http\Middleware\AdminMiddleware::class,
+            'role'         => \App\Http\Middleware\RoleMiddleware::class,
+            'admin'        => \App\Http\Middleware\AdminMiddleware::class,
             'admin.client.profile' => \App\Http\Middleware\EnsureAdminClientProfileIsComplete::class,
-            'customer_otp'  => \App\Http\Middleware\CustomerOtpMiddleware::class, 
-            'otp.verified'  => \App\Http\Middleware\EnsureCustomerOtpIsVerified::class,
+            
+            // Ang 'customer_otp' alias na ngayon ang hahawak sa OTP Verification Logic
+            'customer_otp' => \App\Http\Middleware\EnsureCustomerOtpIsVerified::class,
+            'otp.verified' => \App\Http\Middleware\EnsureCustomerOtpIsVerified::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+

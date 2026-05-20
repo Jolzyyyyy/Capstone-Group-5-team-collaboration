@@ -12,6 +12,13 @@ use Illuminate\Support\Str;
 class ServiceController extends Controller
 {
     /**
+     * Protect admin-only actions.
+     * Customers can access: index, show
+     * Admin (logged-in users) can access the rest.
+     */
+   
+
+    /**
      * Display a listing of services (customer-facing).
      * Optional filter: ?category=Photocopy
      */
@@ -56,6 +63,19 @@ class ServiceController extends Controller
         }]);
 
         return view('services.show', compact('service'));
+    }
+
+    public function adminIndex()
+    {
+        $services = Service::query()
+            ->orderBy('category')
+            ->orderBy('name')
+            ->paginate(15);
+
+        return view('services.admin_index', [
+            'services' => $services,
+            'isViewOnly' => auth()->user()?->isAdminClient() ?? false,
+        ]);
     }
 
     /**

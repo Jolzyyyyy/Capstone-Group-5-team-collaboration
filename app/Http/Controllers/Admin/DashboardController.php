@@ -53,10 +53,10 @@ class DashboardController extends Controller
             'active_services' => Service::where('is_active', true)->count(),
             'inactive_services' => Service::where('is_active', false)->count(),
             'pending_admin_clients' => $isDeveloper
-                ? User::where('role', User::ROLE_ADMIN_CLIENT)->whereNull('approved_at')->count()
+                ? $this->developerManagedAdminQuery()->whereNull('approved_at')->count()
                 : 0,
             'approved_admin_clients' => $isDeveloper
-                ? User::where('role', User::ROLE_ADMIN_CLIENT)->whereNotNull('approved_at')->count()
+                ? User::where('role', User::ROLE_ADMIN)->whereNotNull('preregistered_by')->whereNotNull('approved_at')->count()
                 : 0,
             'unassigned_orders' => $isDeveloper
                 ? Order::whereNull('admin_client_id')->count()
@@ -95,8 +95,7 @@ class DashboardController extends Controller
         $recentAdminClients = collect();
 
         if ($isDeveloper) {
-            $recentAdminClients = User::query()
-                ->where('role', User::ROLE_ADMIN_CLIENT)
+            $recentAdminClients = $this->developerManagedAdminQuery()
                 ->with('adminClientProfile')
                 ->withCount(['assignedCustomers', 'managedOrders'])
                 ->latest('updated_at')
@@ -105,6 +104,9 @@ class DashboardController extends Controller
         }
 
         return view('Admin.dashboard', [
+            'section' => $isDeveloper
+                ? 'developer-dashboard'
+                : ($isAdminClient ? 'admin-client-dashboard' : 'dashboard'),
             'stats' => $stats,
             'pipeline' => $pipeline,
             'recentOrders' => $recentOrders,
@@ -113,5 +115,17 @@ class DashboardController extends Controller
             'recentAdminClients' => $recentAdminClients,
             'profile' => $isAdminClient ? $user->adminClientProfile : null,
         ]);
+    }
+
+    private function developerManagedAdminQuery(): Builder
+    {
+        return User::query()
+            ->where(function (Builder $query) {
+                $query->where('role', User::ROLE_ADMIN_CLIENT)
+                    ->orWhere(function (Builder $adminQuery) {
+                        $adminQuery->where('role', User::ROLE_ADMIN)
+                            ->whereNotNull('preregistered_by');
+                    });
+            });
     }
 }

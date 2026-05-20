@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="mb-6 text-center">
-        <p class="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Admin Client Setup</p>
+        <p class="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Admin Setup</p>
         <h2 class="mt-2 text-2xl font-black text-slate-900">Complete Your Reference Profile</h2>
         <p class="mt-2 text-sm text-slate-600">
             {{ $adminClient->email }} was invited to the staff portal. Set your password and provide the details needed for system records.

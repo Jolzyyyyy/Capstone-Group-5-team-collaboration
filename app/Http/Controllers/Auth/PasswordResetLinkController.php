@@ -11,8 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Notifications\SendOTP;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Notification;
 
 class PasswordResetLinkController extends Controller
 {
@@ -35,9 +34,12 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // 2. Find user by email
-        $email = strtolower(trim((string) $request->email));
-        $user = User::where('email', $email)->first();
+        // --- SECURITY UPDATE: CHECK IF USING BACKUP EMAIL ---
+        $isBackup = $request->has('use_backup');
+        $searchColumn = $isBackup ? 'backup_email' : 'email';
+
+        // 2. Find user by the chosen email column
+        $user = User::where($searchColumn, trim($request->email))->first();
 
         if (!$user) {
             return back()
@@ -61,11 +63,15 @@ class PasswordResetLinkController extends Controller
 
         // 6. Send OTP email notification
         try {
-            /** * IMPORTANT: Siguraduhin na ang SendOTP notification mo ay 
-             * walang 'implements ShouldQueue' para mag-send agad.
+            /** * IMPORTANT: Kung backup email ang gamit, doon natin ipapadala ang notification.
+             * Gagamit tayo ng Notification::route para ma-override ang default email.
              */
-            $user->notify(new SendOTP($otp));
-            RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+            if ($isBackup) {
+                Notification::route('mail', $user->backup_email)
+                    ->notify(new SendOTP($otp));
+            } else {
+                $user->notify(new SendOTP($otp));
+            }
             
         } catch (\Exception $e) {
             Log::error('Forgot Password OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
@@ -78,24 +84,21 @@ class PasswordResetLinkController extends Controller
         /**
          * 7. Store session data (CRITICAL)
          * Inilalagay natin ang mga flags para malaman ng VerifyOtpController 
-         * na Password Recovery ang ginagawa ng user, hindi regular login.
+         * na Password Recovery ang ginagawa ng user.
          */
         $request->session()->put([
             'password_reset_token' => $token,
-            'password_reset_email' => $user->email,
-            'otp_email'           => $user->email,
-            'is_forgot_password'  => true, // 🔥 Eto ang trigger para sa Reset Password redirection
+            'password_reset_email' => $user->email, // Main email pa rin ang reference para sa auth
+            'otp_email'           => $isBackup ? $user->backup_email : $user->email,
+            'is_forgot_password'  => true, 
             'auth_type'           => 'forgot_password', 
         ]);
 
         /**
          * 8. Redirect to OTP verification page
          */
-        return redirect()->route('otp.verify', [
-                'email' => $user->email,
-                'flow' => 'forgot_password',
-            ])
-            ->with('status', 'A 6-digit verification code has been sent to your email.');
+        return redirect()->route('customer.otp.verify')
+            ->with('status', 'A 6-digit verification code has been sent to your ' . ($isBackup ? 'backup' : 'email') . '.');
     }
 
     private function customerOtpResendThrottleKey(string $email, string $ip): string

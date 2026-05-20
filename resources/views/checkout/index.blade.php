@@ -68,7 +68,6 @@
 <div class="box">
     <h3>Customer Details</h3>
 
-    {{-- ✅ IMPORTANT: enctype added for file upload --}}
     <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data">
         @csrf
 
@@ -78,12 +77,11 @@
         <label for="customer_email">Email (optional)</label>
         <input id="customer_email" name="customer_email" value="{{ old('customer_email') }}">
 
-        {{-- ✅ REQUIRED ZIP UPLOAD --}}
         <label for="print_zip">Upload Print Files (ZIP) *</label>
         <input id="print_zip" type="file" name="print_zip" required accept=".zip">
 
-        <div class="hint">
-            Upload ONE <strong>.zip</strong> file containing all print-ready files before placing your order.
+        <div class="msg" style="background:#f8fafc;border:1px solid #ddd;">
+            Upload one .zip file containing all print-ready files before placing your order.
         </div>
 
         @if($errors->any())

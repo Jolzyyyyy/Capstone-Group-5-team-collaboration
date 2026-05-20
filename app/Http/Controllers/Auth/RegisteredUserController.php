@@ -4,112 +4,85 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Notifications\SendOTP;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Mail\OTPVerificationMail; 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class RegisteredUserController extends Controller
 {
     /**
-     * Show registration form
+     * Ipakita ang registration view (login.blade.php handles both).
      */
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.login'); // Dahil split-screen ang design mo
     }
 
     /**
-     * Handle registration
+     * Handle an incoming registration request.
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. Strict Validation: Letters, Mixed Case, Numbers, at Symbols para sa security.
+        // 1. Validation - Standard Laravel validation
         $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                'unique:users,email'
-            ],
-            'password' => [
-                'required',
-                'confirmed',
-                Rules\Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols(),
-            ],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // 2. Generate initial 6-digit OTP
-        $otp = sprintf("%06d", mt_rand(0, 999999));
+        // 2. Generate 6-digit OTP (Gamit ang sprintf para laging may leading zeros kung kailangan)
+        $otpCode = sprintf("%06d", mt_rand(0, 999999));
 
-        // 3. Create user record with default 'customer' role
+        // 3. Create User (Manual Type Registration)
         $user = User::create([
-            'first_name' => trim($request->first_name),
-            'last_name' => trim($request->last_name),
-            'email' => strtolower(trim($request->email)),
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
-            'has_set_password' => true,
-            'role' => 'customer', 
-            'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
+            'role' => 'customer', // Default role para sa mga bagong register
+            'otp_code' => $otpCode, 
+            'otp_expires_at' => Carbon::now()->addMinutes(10),
         ]);
 
-        // 4. Send the OTP Notification immediately
-        try {
-            /** * IMPORTANT: Kung hindi nag-send ang email, check your .env 
-             * at siguraduhin na ang SendOTP notification ay walang 'implements ShouldQueue' 
-             * kung wala kang running queue worker.
-             */
-            $user->notify(new SendOTP($otp));
-            RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
-            
-        } catch (\Exception $e) {
-            Log::error('Registration OTP failed for ' . $user->email . ': ' . $e->getMessage());
+        /**
+         * 🛡️ FIX: I-comment out ang Registered event. 
+         * Ito ang dahilan ng "Route [verification.verify] not defined" error mo
+         * dahil pinipilit nito ang default email verification ng Laravel.
+         */
+        // event(new Registered($user));
 
-            // Delete the user record para hindi magka-duplicate email error sa next try
-            $user->delete();
-
-            return back()->withErrors([
-                'email' => 'Unable to send verification email. Please check your internet or mail settings.',
-            ])->withInput();
-        }
-
-        // 5. Auto-login the user into a "restricted" session
+        // 4. I-log in ang user para ma-establish ang session
         Auth::login($user);
 
-        // ✅ After registration go to homepage
-        $request->session()->forget([
-            'customer_otp_passed',
-            'password_reset_email',
-            'password_reset_token',
-            'is_forgot_password',
-            'otp_passed',
+        // 5. I-send ang OTP Email Notification
+        try {
+            Mail::to($user->email)->send(new OTPVerificationMail($otpCode));
+        } catch (\Exception $e) {
+            Log::error("Registration Mail failed for {$user->email}: " . $e->getMessage());
+        }
+
+        /**
+         * 6. Session Markers (Para sa Middleware at Controller)
+         * Ito ang magsasabi sa system na kailangan muna dumaan sa OTP.
+         */
+        session([
+            'customer_otp_passed' => false, // Lock ang dashboard access
+            'otp_email' => $user->email,
+            'auth_type' => 'register'
         ]);
-        $request->session()->put('otp_email', $user->email);
-        $request->session()->put('auth_type', 'account_verification');
 
-        return redirect()->route('otp.verify', [
-            'email' => $user->email,
-        ])->with('status', 'A 6-digit verification code has been sent to your email.');
-    }
-
-    private function customerOtpResendThrottleKey(string $email, string $ip): string
-    {
-        return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
+        /**
+         * 7. Redirect to Verification Page
+         * 🛡️ FIX: Naka-align sa route name na 'customer.otp.verify' sa web.php
+         */
+        return redirect()->route('customer.otp.verify')
+            ->with('status', 'Registration successful! Please check your email for the verification code.');
     }
 }

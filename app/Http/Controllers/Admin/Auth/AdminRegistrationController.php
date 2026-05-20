@@ -21,8 +21,7 @@ class AdminRegistrationController extends Controller
      */
     public function create(): View
     {
-        // Dapat ang file ay nasa: resources/views/Admin/auth/admin-register.blade.php
-        return view('Admin.auth.admin-register');
+        return view('Admin.auth.admin-login');
     }
 
     /**

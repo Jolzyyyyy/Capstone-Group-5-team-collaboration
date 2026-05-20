@@ -34,33 +34,12 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('google.login');
-    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
-
-    // Password Recovery (Forgot Password Flow)
+    // Password Recovery
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
     
-    // Reset Password Form (Dito papasok ang user galing sa Email Link)
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
-    
-    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Shared OTP Flow (Customer Verification + Forgot Password)
-|--------------------------------------------------------------------------
-|
-| This must stay accessible to both authenticated customers and guests
-| who are in the password recovery flow. The controller itself decides
-| whether the session/email context is valid.
-|
-*/
-Route::prefix('verify-account')->name('otp.')->group(function () {
-    Route::get('/', [VerifyOtpController::class, 'show'])->name('verify');
-    Route::post('/', [VerifyOtpController::class, 'verify'])->name('submit');
-    Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend');
+    Route::post('reset-password', [PasswordController::class, 'update'])->name('password.update');
 });
 
 /*
@@ -70,37 +49,40 @@ Route::prefix('verify-account')->name('otp.')->group(function () {
 */
 Route::middleware('auth')->group(function () {
 
-    // THE REDIRECTOR (PRINTIFY & CO. Logic)
+    // THE REDIRECTOR
     Route::get('/dashboard-redirect', function () {
         $user = auth()->user();
         if ($user->canAccessAdminPortal()) {
-            return session('staff_otp_passed') === true
-                ? redirect()->route('admin.dashboard')
-                : redirect()->route('admin.otp.verify');
-        }
-
-        if ($user->isCustomer() && !is_null($user->email_verified_at)) {
-            session(['customer_otp_passed' => true]);
-            session()->forget('otp_email');
-
-            return redirect()->route('dashboard');
+            return redirect()->route('admin.otp.verify');
         }
         
-        // Check kung nakapasa na sa OTP ang customer
+        // FIXED: Inalign ang route name dito
         return session('customer_otp_passed') === true 
             ? redirect()->route('dashboard') 
-            : redirect()->route('otp.verify');
+            : redirect()->route('customer.otp.verify');
     })->name('dashboard.redirect');
 
-    // Security & Password Management inside Profile
-    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
-    Route::post('verify-email', [VerifyEmailController::class, 'verifyOtp'])->name('verification.verify');
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])->name('verification.send');
+    // --- Customer OTP Flow ---
+    // FIXED: Pinalitan ang prefix name mula 'otp.' tungo sa 'customer.otp.' 
+    // para mag-match sa lahat ng controllers natin.
+    Route::prefix('verify-account')->name('customer.otp.')->group(function () {
+        Route::get('/', [VerifyOtpController::class, 'show'])->name('verify');   
+        Route::post('/', [VerifyOtpController::class, 'verify'])->name('submit'); 
+        Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend'); 
+    });
 
+    // --- Admin OTP Flow ---
+    Route::prefix('admin-auth')->name('admin.otp.')->group(function () {
+        Route::get('/verify', [AdminAuthController::class, 'showOtpForm'])->name('verify');
+        Route::post('/verify', [AdminAuthController::class, 'verifyOtp'])->name('submit');
+        Route::post('/resend', [AdminAuthController::class, 'resendOtp'])->name('resend');
+    });
+
+    // Security
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
     
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-    
+    Route::put('password-change', [PasswordController::class, 'update'])->name('password.change');
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
+

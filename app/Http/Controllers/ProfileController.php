@@ -67,6 +67,26 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update the user's backup email address.
+     */
+    public function updateBackupEmail(Request $request): RedirectResponse
+    {
+        // Validation: Sinisiguradong valid email at hindi kapareho ng main email
+        $request->validate([
+            'backup_email' => ['nullable', 'email', 'max:255', 'different:email'],
+        ], [
+            'different' => 'The backup email must be different from your primary email.',
+        ]);
+
+        // I-save ang backup email sa database
+        $request->user()->update([
+            'backup_email' => $request->backup_email,
+        ]);
+
+        return Redirect::route('profile.edit')->with('status', 'backup-email-updated');
+    }
+
+    /**
      * Delete the user's account.
      */
     public function destroy(Request $request): RedirectResponse

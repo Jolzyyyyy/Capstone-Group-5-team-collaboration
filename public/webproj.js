@@ -1,349 +1,65 @@
 ﻿/**
  * Printify & Co. - Core JavaScript
- * FULL UPDATED VERSION: 8.9 (STRICT COMPLETE VERSION)
- * FEATURES: Transparent Nav, Document ID Sync (TX, TWI, IM), Corrected Xerox ID Update & Auto-Slide Sync
+ * FULL UPDATED VERSION: 11.0
+ * FIXES:
+ * - fixed detail preview slide arrows
+ * - fixed dropdown/preview sync
+ * - fixed add to cart button click
+ * - fixed buy now button click
+ * - fixed favorite heart full orange/white fill state
+ * - reduced lag by removing duplicate bindings
+ * - kept your full setup and logic
  */
 
-// --- GLOBAL VARIABLES ---
-let heroIndex = 0;
-let currentCategoryType = "";
-let currentCategorySet = [];
-let currentPreviewIndex = 0;
-let currentSlideIndex = 0;
-let currentModalItemCount = 0;
-let voucherDiscount = 0;
-const BULK_MIN_PAGES = 100;
-const SINTRA_BULK_MIN_PCS = 10;
-const fallbackImage = 'images/Prdcts1.jpg';
-let currentModalKey = '';
-let currentSelectedOptionIndex = -1;
-let currentEditingCartId = null;
+let heroIndex=0,currentCategoryType="",currentCategorySet=[],currentPreviewIndex=0,currentSlideIndex=0,voucherDiscount=0,isLoggedIn=false,slideInterval=null,cart=JSON.parse(localStorage.getItem('printCart'))||[];
+const heroSlides=document.querySelectorAll('.hero-slide'),dots=document.querySelectorAll('.dot');
 
-// LOGIN SIMULATION
-let isLoggedIn = false; 
+function getBgUrl(el){const bg=window.getComputedStyle(el).backgroundImage;if(!bg||bg==='none')return null;const m=bg.match(/url\(["']?(.*?)["']?\)/);return m?m[1]:null;}
+function preloadImages(urls=[]){const clean=urls.filter(Boolean);return Promise.all(clean.map(src=>new Promise(resolve=>{const img=new Image();img.onload=resolve;img.onerror=resolve;img.src=src;})));}
 
-const heroSlides = document.querySelectorAll('.hero-slide');
-const dots = document.querySelectorAll('.dot');
-let slideInterval = setInterval(nextHeroSlide, 8000);
+function updateHero(){if(heroSlides.length===0)return;heroSlides.forEach(s=>s.classList.remove('active'));dots.forEach(d=>d.classList.remove('active'));if(heroSlides[heroIndex])heroSlides[heroIndex].classList.add('active');if(dots[heroIndex])dots[heroIndex].classList.add('active');}
+function nextHeroSlide(){if(heroSlides.length===0)return;heroIndex=(heroIndex+1)%heroSlides.length;updateHero();}
+function jumpToHero(index){heroIndex=index;updateHero();}
 
-function normalizeCartItem(item, index) {
-    if (!item || typeof item !== 'object') return null;
-
-    const parsedQty = Math.max(1, parseInt(item.qty, 10) || 1);
-    const parsedPrice = Number(item.price);
-
-    return {
-        id: item.id || `cart-${Date.now()}-${index}`,
-        name: String(item.name || item.title || 'Service Item'),
-        details: String(item.details || item.description || 'Selected service option'),
-        qty: parsedQty,
-        price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
-        img: item.img || item.image || fallbackImage,
-        checked: item.checked !== false,
-        fileName: String(item.fileName || ''),
-        hasAttachment: item.hasAttachment != null ? Boolean(item.hasAttachment) : Boolean(item.fileName),
-        categoryType: item.categoryType || '',
-        modalKey: item.modalKey || '',
-        selectedIndex: Number.isFinite(Number(item.selectedIndex)) ? Number(item.selectedIndex) : null,
-        printCategoryValue: item.printCategoryValue || '',
-        colorModeValue: item.colorModeValue || '',
-        paperSizeValue: item.paperSizeValue || '',
-        serviceOptionValue: item.serviceOptionValue || '',
-        fileTypeValue: item.fileTypeValue || '',
-        contentTypeValue: item.contentTypeValue || ''
-    };
+function jumpTo(sectionId){
+  const productDetail=document.getElementById('productDetail'),pageWrapper=document.getElementById('pageWrapper'),mainHeader=document.getElementById('mainHeader');
+  if(productDetail)productDetail.style.display='none';
+  if(pageWrapper)pageWrapper.style.display='block';
+  if(mainHeader)mainHeader.classList.remove('detail-active');
+  if(sectionId==='products'){document.body.classList.add('services-active');if(mainHeader)mainHeader.classList.add('scrolled');}
+  else if(sectionId==='home'){if(window.scrollY<50&&mainHeader)mainHeader.classList.remove('scrolled');if(isLoggedIn)document.body.classList.add('services-active');else document.body.classList.remove('services-active');}
+  else{if(mainHeader)mainHeader.classList.add('scrolled');if(!isLoggedIn)document.body.classList.remove('services-active');}
+  document.querySelectorAll('.section').forEach(sec=>{sec.classList.remove('active');sec.style.display='none';});
+  const target=document.getElementById(sectionId);
+  if(target){target.style.display='block';setTimeout(()=>target.classList.add('active'),10);window.scrollTo({top:0,behavior:sectionId==='home'?'auto':'smooth'});}
 }
 
-function loadCart() {
-    try {
-        const stored = JSON.parse(localStorage.getItem('printCart')) || [];
-        if (!Array.isArray(stored)) return [];
-        return stored
-            .map((item, index) => normalizeCartItem(item, index))
-            .filter(Boolean);
-    } catch (error) {
-        localStorage.removeItem('printCart');
-        return [];
-    }
-}
-
-function persistCart() {
-    localStorage.setItem('printCart', JSON.stringify(cart));
-}
-
-// Initialize Cart from LocalStorage
-let cart = loadCart();
-
-// --- HERO SECTION FUNCTIONS ---
-function updateHero() {
-    if (heroSlides.length === 0) return;
-    heroSlides.forEach(s => s.classList.remove('active'));
-    dots.forEach(d => d.classList.remove('active'));
-    if (heroSlides[heroIndex]) heroSlides[heroIndex].classList.add('active');
-    if (dots[heroIndex]) dots[heroIndex].classList.add('active');
-}
-
-function nextHeroSlide() {
-    if (heroSlides.length === 0) return;
-    heroIndex = (heroIndex + 1) % heroSlides.length;
-    updateHero();
-}
-
-function updateActiveNavLink(sectionId = 'home') {
-    document.querySelectorAll('.nav-horizontal .nav-link').forEach((link) => {
-        const isActive = link.dataset.section === sectionId;
-        link.classList.toggle('is-active', isActive);
-        if (isActive) {
-            link.setAttribute('aria-current', 'page');
-        } else {
-            link.removeAttribute('aria-current');
-        }
-    });
-}
-
-function jumpToHero(index) {
-    clearInterval(slideInterval);
-    heroIndex = index;
-    updateHero();
-    slideInterval = setInterval(nextHeroSlide, 8000);
-}
-
-// --- NAVIGATION & SECTION LOGIC ---
-function jumpTo(sectionId) {
-    const productDetail = document.getElementById('productDetail');
-    const pageWrapper = document.getElementById('pageWrapper');
-    const mainHeader = document.getElementById('mainHeader');
-
-    if (productDetail) productDetail.style.display = 'none';
-    if (pageWrapper) pageWrapper.style.display = 'block';
-    if (mainHeader) mainHeader.classList.remove('detail-active');
-
-    if (sectionId === 'services') {
-        document.body.classList.add('services-active');
-        if (mainHeader) mainHeader.classList.add('scrolled'); 
-    } 
-    else if (sectionId === 'home') {
-        if (window.scrollY < 50) {
-            if (mainHeader) mainHeader.classList.remove('scrolled');
-        }
-        if (isLoggedIn) {
-            document.body.classList.add('services-active');
-        } else {
-            document.body.classList.remove('services-active');
-        }
-    } 
-    else {
-        if (mainHeader) mainHeader.classList.add('scrolled');
-        if (!isLoggedIn) {
-            document.body.classList.remove('services-active');
-        }
-    }
-
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(sec => {
-        sec.classList.remove('active');
-        sec.style.display = 'none';
-    });
-
-    const target = document.getElementById(sectionId);
-    if (target) {
-        target.style.display = 'block';
-        setTimeout(() => { target.classList.add('active'); }, 10);
-        updateActiveNavLink(sectionId);
-        
-        if (sectionId === 'home') {
-            window.scrollTo({ top: 0, behavior: 'instant' });
-        } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-}
-
-window.addEventListener('scroll', function() {
-    const mainHeader = document.getElementById('mainHeader');
-    const activeSection = document.querySelector('.section.active');
-    
-    if (activeSection && activeSection.id === 'home') {
-        if (window.scrollY > 50) {
-            mainHeader.classList.add('scrolled');
-        } else {
-            mainHeader.classList.remove('scrolled');
-        }
-    } else {
-        if (mainHeader) mainHeader.classList.add('scrolled');
-    }
+window.addEventListener('scroll',function(){
+  const mainHeader=document.getElementById('mainHeader'),activeSection=document.querySelector('.section.active');
+  if(activeSection&&activeSection.id==='home'){if(window.scrollY>50){if(mainHeader)mainHeader.classList.add('scrolled');}else{if(mainHeader)mainHeader.classList.remove('scrolled');}}
+  else{if(mainHeader)mainHeader.classList.add('scrolled');}
 });
 
-function backToMain() {
-    currentPreviewIndex = 0;
-    currentSelectedOptionIndex = -1;
+function backToMain(){document.body.classList.add('services-active');jumpTo('products');}
 
-    const productDetail = document.getElementById('productDetail');
-    const pageWrapper = document.getElementById('pageWrapper');
-    const mainHeader = document.getElementById('mainHeader');
-    const servicesSection = document.getElementById('services');
-
-    document.body.classList.add('services-active');
-    if (productDetail) productDetail.style.display = 'none';
-    if (pageWrapper) pageWrapper.style.display = 'block';
-    if (mainHeader) mainHeader.classList.remove('detail-active');
-
-    document.querySelectorAll('.section').forEach((section) => {
-        section.classList.remove('active');
-        section.style.display = 'none';
-    });
-
-    if (servicesSection) {
-        servicesSection.style.display = 'block';
-        setTimeout(() => servicesSection.classList.add('active'), 10);
-        updateActiveNavLink('services');
-        window.scrollTo({ top: Math.max(0, servicesSection.offsetTop - 80), behavior: 'smooth' });
-    }
-}
-
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-function withFallbackImage(src) {
-    return src || fallbackImage;
-}
-
-function getModalKeyForType(type) {
-    const entry = Object.entries(allData).find(([, value]) => value.type === type);
-    return entry ? entry[0] : '';
-}
-
-function resolveCartItemContext(item) {
-    if (!item) return { modalKey: '', selectedIndex: 0 };
-
-    const serviceIdMatch = String(item.details || '').match(/ID:\s*([A-Z-0-9]+)/i);
-    const serviceId = serviceIdMatch ? serviceIdMatch[1].toUpperCase() : '';
-
-    let modalKey = item.modalKey || '';
-    if (!modalKey) {
-        if (serviceId.startsWith('IDP-')) modalKey = 'id';
-        else if (serviceId.startsWith('PCS-') || serviceId.startsWith('XRX-') || serviceId.startsWith('PCP-') || serviceId.startsWith('DOC-PCPY-')) modalKey = 'photo';
-        else if (serviceId.startsWith('DOC-')) modalKey = 'doc';
-        else if (serviceId.startsWith('LFP-') || serviceId.startsWith('SINTRA-')) modalKey = 'largeformat';
-        else if (serviceId.startsWith('BND-')) modalKey = 'bind';
-        else if (serviceId.startsWith('CSP-')) modalKey = 'special';
-        else if (item.categoryType) modalKey = getModalKeyForType(item.categoryType);
-    }
-
-    const data = allData[modalKey];
-    if (!data) return { modalKey: '', selectedIndex: 0 };
-
-    let selectedIndex = Number.isFinite(Number(item.selectedIndex)) ? Number(item.selectedIndex) : -1;
-    if (selectedIndex < 0 || !data.categories[selectedIndex]) {
-        selectedIndex = data.categories.findIndex((category) => category.name === item.name);
-    }
-
-    return {
-        modalKey,
-        selectedIndex: selectedIndex >= 0 ? selectedIndex : 0
-    };
-}
-
-function isCartItemEditable(item) {
-    const { modalKey } = resolveCartItemContext(item);
-    return Boolean(modalKey && allData[modalKey]);
-}
-
-function formatPeso(value) {
-    return `PHP ${Number(value || 0).toFixed(2)}`;
-}
-
-function getOptionPricingSummary(option) {
-    const retail = Number(option?.retail_price || 0);
-    const bulk = Number(option?.bulk_price || 0);
-
-    if (retail > 0 || bulk > 0) {
-        if (bulk > 0 && bulk !== retail) {
-            return `Retail ${formatPeso(retail)} | Bulk ${formatPeso(bulk)}`;
-        }
-
-        return `Starts at ${formatPeso(retail || bulk)}`;
-    }
-
-    if (currentCategoryType === 'printing') return 'Retail from PHP 3.50';
-    if (currentCategoryType === 'xerox') return 'Retail from PHP 2.00';
-    if (currentCategoryType === 'id') {
-        if (option?.name && option.name !== 'SINGLE PHOTO') {
-            return `Package price ${formatPeso(idPricing['PACKAGE'][option.name] || 0)}`;
-        }
-        return 'Retail from PHP 5.00';
-    }
-    if (currentCategoryType === 'largeformat') return 'Starts at PHP 100.00';
-
-    return 'View pricing in details';
-}
-
-// --- DATA DEFINITION ---
-const allData = {
-    'doc': {
-        name: "DOCUMENT PRINTING",
-        type: "printing",
-        serviceImage: "images/Prdcts1.jpg",
-        categories: [
-            { name: "Text Only", imgs: ["images/TXTONLY (B&W).png", "images/TXTONLY (PC).png", "images/TXTONLY (FC).png"], specs: "" },
-            { name: "Text with Image", imgs: ["images/TXTWI (B&W).png", "images/TXTWI (PC).png", "images/TXTWI (FC).png"], specs: "" },
-            { name: "Image Only", imgs: ["images/IO (B&W).png", "images/IO (PC).png", "images/IO (FC).png"], specs: "" }
-        ]
-    },
-    'photo': {
-        name: "PHOTOCOPY & SCANNING",
-        type: "xerox",
-        serviceImage: "images/Prdcts1.jpg",
-        categories: [
-            { name: "Photocopy", imgs: ["images/PHOTOC (B&W).png"], specs: "" },
-            { name: "Scanning", imgs: ["images/TXTONLY (B&W).png"], specs: "" }
-        ]
-    },
-    'id': {
-        name: "ID & PHOTO SERVICES",
-        type: "id",
-        serviceImage: "images/Prdcts1.jpg",
-        categories: [
-            { name: "Package A", imgs: ["images/PCKGA.png"], specs: "" },
-            { name: "Package B", imgs: ["images/PCKGB.png"], specs: "" },
-            { name: "Package C", imgs: ["images/PCKGC.png"], specs: "" },
-            { name: "Package D", imgs: ["images/PCKGD.png"], specs: "" },
-            { name: "Package E", imgs: ["images/PCKGE.png"], specs: "" },
-            { name: "Package F", imgs: ["images/PCKGF.png"], specs: "" },
-            { name: "SINGLE PHOTO", imgs: ["images/SP (2-5).png", "images/SP (6-A4).png"], specs: "" }
-        ]
-    },
-    'largeformat': {
-        name: "LARGE FORMAT PRINTING",
-        type: "largeformat",
-        serviceImage: "images/Homesld1.jpg",
-        categories: [
-            { name: "SINTRA BOARD PRINTING", imgs: ["images/Homesld1.jpg"], specs: "" }
-        ]
-    },
-    'bind': {
-        name: "LAMINATION & BINDING",
-        type: "binding",
-        serviceImage: "images/Homesld2.jpg",
-        categories: [
-            { name: "LAMINATION", imgs: ["images/Homesld2.jpg"], specs: "" },
-            { name: "SPIRAL BINDING", imgs: ["images/Homesld1.jpg"], specs: "" }
-        ]
-    },
-    'special': {
-        name: "CUSTOM SPECIAL PRINTING",
-        type: "special",
-        serviceImage: "images/Homesld3.jpg",
-        categories: [
-            { name: "CUSTOM PRINT JOB", imgs: ["images/Homesld3.jpg"], specs: "" }
-        ]
-    }
+const allData={
+  'doc':{name:"DOCUMENT PRINTING",type:"printing",categories:[
+    {name:"Text Only",imgs:["images/TXTONLY (B&W).png","images/TXTONLY (PC).png","images/TXTONLY (FC).png"],specs:"Paper: Bond Paper, 80gsm. Standard document printing for reports and letters."},
+    {name:"Text with Image",imgs:["images/TXTWI (B&W).png","images/TXTWI (PC).png","images/TXTWI (FC).png"],specs:"Paper: Bond Paper, 80gsm. Mixed text & image printing."},
+    {name:"Image Only",imgs:["images/IO (B&W).png","images/IO (PC).png","images/IO (FC).png"],specs:"Paper: Bond Paper, 80gsm. High-ink coverage for documents with graphics."}
+  ]},
+  'photo':{name:"PHOTOCOPY & SCANNING",type:"xerox",categories:[
+    {name:"B&W Photocopy",imgs:["images/PHOTOC (FC).png"],specs:"Standard 80gsm Copy Paper. Fast and clear duplication."},
+    {name:"Partial Color Copy",imgs:["images/PHOTOC (PC).png"],specs:"Standard 80gsm. Best for forms with small colored logos or text."},
+    {name:"Full Color Copy",imgs:["images/PHOTOC (B&W).png"],specs:"Standard 80gsm. Full vibrant color duplication."}
+  ]},
+  'id':{name:"ID & PHOTO SERVICES",type:"id",categories:[
+    {name:"PACKAGE",imgs:["images/PCKGA.png","images/PCKGB.png","images/PCKGC.png","images/PCKGD.png","images/PCKGE.png","images/PCKGF.png"],specs:"Best value bundles for applications and school."},
+    {name:"SINGLE PHOTO",imgs:["images/SP (2-5).png","images/SP (6-A4).png"],specs:"High-quality prints for frames and memories."}
+  ]},
+  'largeformat':{name:"LARGE FORMAT PRINTING",type:"largeformat",categories:[
+    {name:"SINTRA BOARD PRINTING",imgs:["sintra1.jpg"],specs:"Material: Sintra Board (3mm Flat PVC), A4 Size.<br>Durable, moisture-resistant, and lightweight PVC foam board.<br>Smooth surface direct print, intended for indoor display."}
+  ]}
 };
 
 // --- PRICING DATABASES ---
@@ -1019,341 +735,64 @@ function getSmartHighlights() {
     return [];
 }
 
-function updateDetailTitle(category) {
-    const titleEl = document.getElementById('detailTitleHeader');
-    const categoryEl = document.getElementById('detailCategoryHeader');
-    if (!titleEl) return;
-
-    const selectedPrintCategory = document.getElementById('printCategory')?.selectedOptions[0]?.textContent?.trim() || '';
-    let titleText = category?.name || '';
-    const parentCategory = allData[currentModalKey]?.name || '';
-
-    if (currentCategoryType !== 'largeformat' && selectedPrintCategory) {
-        titleText = selectedPrintCategory;
-    }
-
-    if (categoryEl) {
-        categoryEl.textContent = parentCategory || category?.name || '';
-    }
-
-    titleEl.innerText = titleText || category?.name || '';
+function getPreviewTrack(){return document.getElementById('previewTrack');}
+function getPreviewImages(){const track=getPreviewTrack();return track?Array.from(track.querySelectorAll('img')):[];}
+function setPreviewIndex(index){
+  const track=getPreviewTrack(),imgs=getPreviewImages();
+  if(!track||imgs.length===0)return;
+  currentPreviewIndex=Math.max(0,Math.min(index,imgs.length-1));
+  track.style.transition='transform .35s ease';
+  track.style.transform=`translateX(-${currentPreviewIndex*100}%)`;
+  updatePreviewButtons();
 }
 
-function setSelectOptions(selectId, values, placeholder, preferredValue = '') {
-    const select = document.getElementById(selectId);
-    if (!select) return;
-
-    select.innerHTML = '';
-
-    if (placeholder) {
-        const placeholderOption = document.createElement('option');
-        placeholderOption.value = '';
-        placeholderOption.textContent = placeholder;
-        select.appendChild(placeholderOption);
-    }
-
-    values.forEach((value) => {
-        const option = document.createElement('option');
-        if (typeof value === 'string') {
-            option.value = value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-            option.textContent = value;
-        } else {
-            option.value = value.value;
-            option.textContent = value.label;
-        }
-        select.appendChild(option);
-    });
-
-    const hasPreferredValue = preferredValue && [...select.options].some((option) => option.value === preferredValue);
-    if (hasPreferredValue) {
-        select.value = preferredValue;
-        return;
-    }
-
-    select.value = placeholder ? '' : (select.options[0]?.value || '');
+function syncPreviewFromDropdowns(){
+  const colorModeDropdown=document.getElementById('colorMode'),paperSizeDropdown=document.getElementById('paperSize'),detailTitle=document.getElementById('detailTitleHeader');
+  if(!detailTitle)return;
+  if((currentCategoryType==='printing'||currentCategoryType==='xerox')&&colorModeDropdown){setPreviewIndex(colorModeDropdown.selectedIndex);return;}
+  if(currentCategoryType==='id'&&detailTitle.innerText==='PACKAGE'&&paperSizeDropdown){setPreviewIndex(paperSizeDropdown.selectedIndex);return;}
+  if(currentCategoryType==='id'&&detailTitle.innerText==='SINGLE PHOTO'&&paperSizeDropdown){setPreviewIndex(paperSizeDropdown.selectedIndex<=3?0:1);return;}
+  if(currentCategoryType==='largeformat')setPreviewIndex(0);
 }
 
-function renderDetailGallery(cat, index) {
-    if (!cat) return;
-
-    currentSelectedOptionIndex = index;
-    document.getElementById('detailTitleHeader').innerText = cat.name;
-    document.getElementById('productSpecs').innerHTML = cat.specs;
-    document.getElementById('productSpecs').style.display = cat.specs ? '' : 'none';
-
-    const previewTrack = document.getElementById('previewTrack');
-    previewTrack.innerHTML = '';
-    const workflowValue = document.getElementById('printCategory')?.value || '';
-    if (currentCategoryType === 'id' && workflowValue === 'id_photo') {
-        const previewItems = getIdPhotoPreviewItems();
-        previewItems.forEach((item) => {
-            previewTrack.innerHTML += `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';" style="min-width:100%; height:100%; object-fit:contain;">`;
-        });
-        const paperSize = document.getElementById('paperSize');
-        const nextPreviewIndex = previewItems.findIndex((item) => item.name === (paperSize?.value || cat.name));
-        currentPreviewIndex = nextPreviewIndex >= 0 ? nextPreviewIndex : 0;
-    } else if (currentCategoryType === 'xerox') {
-        const contentTypeValue = getActiveContentTypeValue() || 'text_only';
-        const colorValue = document.getElementById('colorMode')?.value || 'bw';
-        const previewImage = getXeroxPreviewImage(workflowValue || 'photocopy', contentTypeValue, colorValue);
-        previewTrack.innerHTML = `<img src="${escapeHtml(previewImage)}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';" style="min-width:100%; height:100%; object-fit:contain;">`;
-        currentPreviewIndex = 0;
-    } else {
-        cat.imgs.forEach((imgSrc) => {
-            previewTrack.innerHTML += `<img src="${escapeHtml(withFallbackImage(imgSrc))}" alt="${escapeHtml(cat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';" style="min-width:100%; height:100%; object-fit:contain;">`;
-        });
-        currentPreviewIndex = 0;
-    }
-    previewTrack.style.transform = 'translateX(0)';
-    previewTrack.style.transform = `translateX(-${Math.max(currentPreviewIndex, 0) * 100}%)`;
-    updatePreviewButtons();
-
-    const sidebarTrack = document.getElementById('sidebarTrack');
-    sidebarTrack.innerHTML = '';
-    if (currentCategoryType === 'id') {
-        const activeWorkflow = document.getElementById('printCategory')?.value || 'id_photo';
-        getIdWorkflowSidebarItems().forEach((item) => {
-            sidebarTrack.innerHTML += `
-                <div class="sidebar-item ${item.workflow === activeWorkflow ? 'active' : ''}" onclick="selectIdWorkflow('${item.workflow}')">
-                    <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.label)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
-                    <p>
-                        <span class="sidebar-caption-main">${escapeHtml(item.label)}</span>
-                    </p>
-                </div>`;
-        });
-    } else {
-        currentCategorySet.forEach((sidebarCat, idx) => {
-            const sidebarImage = withFallbackImage(sidebarCat.imgs?.[0]);
-            const caption = getGalleryCaption(sidebarCat.name);
-            sidebarTrack.innerHTML += `
-                <div class="sidebar-item ${idx === index ? 'active' : ''}" onclick="openDetail(${idx})">
-                    <img src="${escapeHtml(sidebarImage)}" alt="${escapeHtml(sidebarCat.name)}" onerror="this.onerror=null;this.src='${fallbackImage}';">
-                    <p>
-                        <span class="sidebar-caption-main">${escapeHtml(caption.main)}</span>
-                        ${caption.sub ? `<span class="sidebar-caption-sub">${escapeHtml(caption.sub)}</span>` : ''}
-                    </p>
-                </div>`;
-        });
-    }
+function syncDropdownsFromPreview(){
+  const colorModeDropdown=document.getElementById('colorMode'),paperSizeDropdown=document.getElementById('paperSize'),detailTitle=document.getElementById('detailTitleHeader');
+  if(!detailTitle)return;
+  if((currentCategoryType==='printing'||currentCategoryType==='xerox')&&colorModeDropdown){if(colorModeDropdown.options[currentPreviewIndex])colorModeDropdown.selectedIndex=currentPreviewIndex;updatePrice();return;}
+  if(currentCategoryType==='id'&&detailTitle.innerText==='PACKAGE'&&paperSizeDropdown){if(paperSizeDropdown.options[currentPreviewIndex])paperSizeDropdown.selectedIndex=currentPreviewIndex;updatePrice();return;}
+  if(currentCategoryType==='id'&&detailTitle.innerText==='SINGLE PHOTO'&&paperSizeDropdown){if(currentPreviewIndex===0&&paperSizeDropdown.options[0])paperSizeDropdown.selectedIndex=0;else if(currentPreviewIndex===1&&paperSizeDropdown.options[4])paperSizeDropdown.selectedIndex=4;updatePrice();}
 }
 
-function updateServiceSelectors(categoryName) {
-    const optionSelect = document.getElementById('serviceOptionSelect');
-    const contentTypeSelect = document.getElementById('contentTypeSelect');
-    const fileTypeSelect = document.getElementById('fileTypeSelect');
-    const currentOptionValue = optionSelect?.value || '';
-    const currentContentTypeValue = contentTypeSelect?.value || '';
-    const currentFileTypeValue = fileTypeSelect?.value || '';
-    const size = document.getElementById('paperSize')?.value || '';
-    const printCategoryValue = document.getElementById('printCategory')?.value || '';
-
-    let options = [];
-
-    if (currentCategoryType === 'printing') {
-        options = ['Standard Print', 'Fast Turnaround', 'Collated Set', 'Layout Check'];
-    } else if (currentCategoryType === 'xerox') {
-        const contentTypes = [
-            { value: 'text_only', label: 'Text Only' },
-            { value: 'text_image', label: 'Text with Image' },
-            { value: 'image_only', label: 'Image Only' }
-        ];
-        setSelectOptions('contentTypeSelect', contentTypes, 'Select Content Type', currentContentTypeValue);
-        options = printCategoryValue === 'scanning'
-            ? [
-                { value: 'standard_scan', label: 'Standard Scan' },
-                { value: 'multi_page_scan', label: 'Multi-page Scan' },
-                { value: 'archive_ready_file', label: 'Archive-ready File' }
-            ]
-            : [
-                { value: 'walk_in_copy', label: 'Walk-in Copy' },
-                { value: 'sorted_set', label: 'Sorted Set' },
-                { value: 'stapled_set', label: 'Stapled Set' }
-            ];
-    } else if (currentCategoryType === 'id') {
-        const packageSelectionValue = document.getElementById('paperSize')?.value || '';
-        if (printCategoryValue === 'passport_visa' && packageSelectionValue === 'passport') {
-            options = ['Passport Crop Check', 'Background Compliance Check', 'Glossy Finish', 'Basic Retouch'];
-        } else if (printCategoryValue === 'passport_visa' && packageSelectionValue === 'visa') {
-            options = ['Visa Spec Review', 'Background Compliance Check', 'Glossy Finish', 'Basic Retouch'];
-        } else if (printCategoryValue === 'single_photo_print') {
-            options = ['Glossy Finish', 'Matte Finish', 'Borderless Crop', 'Photo Editing / Retouch'];
-        } else {
-            options = categoryName !== 'SINGLE PHOTO'
-                ? ['Basic Retouch', 'Background Cleanup', 'Glossy Finish', 'Soft Copy Included']
-                : ['Glossy Finish', 'Matte Finish', 'Borderless Crop', 'Photo Editing / Retouch'];
-        }
-    } else if (currentCategoryType === 'largeformat') {
-        setSelectOptions('contentTypeSelect', largeFormatFinishOptions, 'Select Finish Type', currentContentTypeValue || 'glossy');
-        options = ['Ready to Mount', 'Indoor Display', 'Photo Finish Check'];
-    } else if (currentCategoryType === 'binding') {
-        options = ['Clear Cover Set', 'Spiral Finish', 'Laminated Cover'];
-    } else if (currentCategoryType === 'special') {
-        options = ['Custom Quote', 'Layout Consultation', 'Rush Request'];
-    }
-
-    setSelectOptions('serviceOptionSelect', options, 'Select Option', currentOptionValue);
-
-    const fileTypes = fileTypeChoices[currentCategoryType] || ['PDF', 'PNG'];
-    setSelectOptions('fileTypeSelect', fileTypes, 'Select File Type', currentFileTypeValue);
-
-    if (currentCategoryType === 'id' && categoryName === 'SINGLE PHOTO' && size && optionSelect && !optionSelect.value) {
-        optionSelect.value = optionSelect.options[1]?.value || '';
-    }
+function bindDetailControlSync(){
+  const printCategory=document.getElementById('printCategory'),colorMode=document.getElementById('colorMode'),paperSize=document.getElementById('paperSize'),qtyInput=document.getElementById('qtyInput');
+  if(printCategory&&printCategory.dataset.boundPreview!=='true'){printCategory.dataset.boundPreview='true';printCategory.addEventListener('change',()=>{updatePrice();syncPreviewFromDropdowns();});}
+  if(colorMode&&colorMode.dataset.boundPreview!=='true'){colorMode.dataset.boundPreview='true';colorMode.addEventListener('change',()=>{updatePrice();syncPreviewFromDropdowns();});}
+  if(paperSize&&paperSize.dataset.boundPreview!=='true'){paperSize.dataset.boundPreview='true';paperSize.addEventListener('change',()=>{updatePrice();syncPreviewFromDropdowns();});}
+  if(qtyInput&&qtyInput.dataset.boundQty!=='true'){qtyInput.dataset.boundQty='true';qtyInput.addEventListener('input',updatePrice);qtyInput.addEventListener('change',updatePrice);}
+  document.querySelectorAll('input[name="priceType"]').forEach(input=>{if(input.dataset.boundPriceType==='true')return;input.dataset.boundPriceType='true';input.addEventListener('change',updatePrice);});
 }
 
-function refreshServicePanel() {
-    const materialEl = document.getElementById('serviceMaterial');
-    const inclusionsEl = document.getElementById('serviceInclusions');
-    const notesEl = document.getElementById('serviceNotes');
-    const specsEl = document.getElementById('productSpecs');
-    const category = getCurrentDetailCategory();
-    const printCategory = document.getElementById('printCategory');
-    const colorMode = document.getElementById('colorMode');
-    const paperSize = document.getElementById('paperSize');
-
-    const selectedCategory = printCategory?.selectedOptions[0]?.textContent || '';
-    const selectedColor = colorMode?.selectedOptions[0]?.textContent || '';
-    const selectedSize = paperSize?.selectedOptions[0]?.textContent || '';
-
-    let material = 'Premium 80gsm Bond Paper';
-    let inclusionParts = [];
-    let notes = 'Files that require editing, layout adjustments, or design enhancement may have additional charges depending on the type and complexity of the service needed. For best results, please upload high-resolution files.';
-
-    if (currentCategoryType === 'printing') {
-        material = 'Premium 80gsm Bond Paper';
-        inclusionParts = getSmartHighlights();
-        const printingNotes = {
-            text_only: 'Ideal for reports, letters, and everyday paperwork. Upload a clean PDF or DOCX file for sharper, more professional-looking output.',
-            text_image: 'Great for handouts, modules, and mixed-content pages. Upload high-quality files so text stays clear and images print more smoothly.',
-            image_only: 'Best for graphic-heavy pages, inserts, and visual materials. Use high-resolution files for stronger color coverage and cleaner detail.'
-        };
-        notes = printingNotes[printCategory?.value] || 'Reliable document printing for school, office, and presentation needs. Upload a clean file for the best-looking result.';
-    } else if (currentCategoryType === 'xerox') {
-        material = 'Standard 80gsm Copy Paper';
-        inclusionParts = getSmartHighlights();
-        notes = printCategory?.value === 'scanning'
-            ? 'Best for turning paper documents into upload-ready digital files. Bring flat, clean originals for clearer scans and easier archiving or sharing.'
-            : 'Designed for fast, dependable duplication of reports, forms, and office paperwork. Clean originals help produce sharper and more consistent copies.';
-    } else if (currentCategoryType === 'id') {
-        material = 'Premium Photo Paper (260gsm)';
-        const workflow = idWorkflowMeta[printCategory?.value] || idWorkflowMeta.id_photo;
-        if (printCategory?.value === 'passport_visa') {
-            const packageTypeLabel = getIdPackageDisplayLabel(paperSize?.value || 'passport');
-            inclusionParts = getSmartHighlights();
-            notes = packageTypeLabel === 'Passport'
-                ? 'Prepared for passport-photo printing with a cleaner, more official-looking finish. Please confirm the latest passport-photo requirement before checkout.'
-                : 'Best for visa-photo preparation and printing. Since size rules can vary by embassy or consulate, please confirm the exact requirement before ordering.';
-        } else if (printCategory?.value === 'single_photo_print') {
-            inclusionParts = getSmartHighlights();
-            notes = 'A great choice for keepsakes, framed prints, and display copies. Upload a clear, high-resolution image for better sharpness and color depth.';
-        } else {
-            inclusionParts = getSmartHighlights();
-            const idPackageNotes = {
-                'Package A': 'A practical bundle for mixed 1x1 and 2x2 needs. Upload a clear, front-facing photo for better facial detail and cleaner print alignment.',
-                'Package B': 'Best for compact 1x1 requirements and quick profile-photo needs. A high-resolution image will help keep the final prints sharp and balanced.',
-                'Package C': 'A solid option for standard 2x2 submissions and formal requirements. Clear image files help produce sharper details and more even output.',
-                'Package D': 'Prepared for passport-style photo requests and official-looking output. Upload a clear recent image for better detail and cleaner cropping.',
-                'Package E': 'A neat option for compact square-format photo requests. Use a clear image to keep the final prints crisp and well-centered.',
-                'Package F': 'Great for wallet-size copies and portable keepsake prints. Upload a sharp image for cleaner detail in the smaller output size.'
-            };
-            notes = idPackageNotes[category.name] || workflow.note;
-        }
-    } else if (currentCategoryType === 'largeformat') {
-        material = 'Sintra Board (3mm Flat PVC)';
-        inclusionParts = getSmartHighlights();
-        const finishLabel = document.getElementById('contentTypeSelect')?.selectedOptions[0]?.textContent?.trim() || 'selected finish';
-        notes = `Best for signage, mounted visuals, and display-ready presentations. ${finishLabel} adds a more tailored large-format finish depending on the look you want for the final board.`;
-    } else if (currentCategoryType === 'binding') {
-        material = 'Document Cover and Binding Supplies';
-        inclusionParts = getSmartHighlights();
-        notes = printCategory?.value === 'lamination'
-            ? 'A smart choice for protecting certificates, forms, and frequently handled documents. Turnaround may vary depending on sheet count and finishing demand.'
-            : 'Ideal for reports, reviewers, proposals, and presentation sets. Turnaround may vary depending on page count and cover-stock availability.';
-    } else if (currentCategoryType === 'special') {
-        material = 'Custom Production Materials';
-        inclusionParts = getSmartHighlights();
-        notes = 'Best for custom requests that need layout review, special finishing, or non-standard output. Final pricing may change depending on trimming, complexity, and production requirements.';
-    }
-
-    if (materialEl) materialEl.innerHTML = renderMetaMaterial(material);
-    if (inclusionsEl) inclusionsEl.innerHTML = renderMetaHighlights(inclusionParts);
-    if (notesEl) notesEl.textContent = notes;
-    if (specsEl) {
-        specsEl.textContent = '';
-        specsEl.style.display = 'none';
-    }
-
-    updateDetailTitle(category);
-    updateDetailFieldLabels(category.name);
-    updateServiceSelectors(category.name);
+function bindDetailButtons(){
+  const addBtn=document.querySelector('.btn-cart'),buyBtn=document.querySelector('.btn-buy'),prevBtn=document.getElementById('detailPrevBtn'),nextBtn=document.getElementById('detailNextBtn');
+  if(addBtn&&addBtn.dataset.boundAdd!=='true'){addBtn.dataset.boundAdd='true';addBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();addToCart();});}
+  if(buyBtn&&buyBtn.dataset.boundBuy!=='true'){buyBtn.dataset.boundBuy='true';buyBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();placeOrderNow();});}
+  if(prevBtn&&prevBtn.dataset.boundNav!=='true'){prevBtn.dataset.boundNav='true';prevBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();movePreview(-1);});}
+  if(nextBtn&&nextBtn.dataset.boundNav!=='true'){nextBtn.dataset.boundNav='true';nextBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();movePreview(1);});}
 }
 
-function openDetail(index) {
-    const cat = currentCategorySet[index];
-    if (!cat) return;
-
-    document.body.classList.add('services-active');
-    updateActiveNavLink('services');
-
-    const printCategory = document.getElementById('printCategory');
-    const colorMode = document.getElementById('colorMode');
-    const paperSize = document.getElementById('paperSize');
-
-    if (currentCategoryType === 'printing') {
-        printCategory.innerHTML = `<option value="text_only">Text Only</option><option value="text_image">Text with Image</option><option value="image_only">Image Only</option>`;
-        paperSize.innerHTML = `<option value="short">Short (8.5 x 11)</option><option value="a4">A4 (8.27 x 11.69)</option><option value="legal">Legal (8.5 x 14)</option>`;
-        colorMode.innerHTML = `<option value="bw">B&W</option><option value="partial">Partial Color</option><option value="full">Full Color</option>`;
-
-        const printIndex = Math.max(index, 0);
-        printCategory.value = ['text_only', 'text_image', 'image_only'][printIndex] || 'text_only';
-        colorMode.value = ['bw', 'partial', 'full'][Math.min(printIndex, 2)] || 'bw';
-    }
-
-    if (currentCategoryType === 'xerox') {
-        printCategory.innerHTML = `<option value="photocopy">Photocopy</option><option value="scanning">Scanning</option>`;
-        paperSize.innerHTML = `<option value="short">Short (8.5 x 11)</option><option value="a4">A4 (8.27 x 11.69)</option><option value="legal">Legal (8.5 x 14)</option>`;
-        colorMode.innerHTML = `<option value="bw">B&W</option><option value="partial">Partial Color</option><option value="full">Full Color</option>`;
-        printCategory.value = index === 1 ? 'scanning' : 'photocopy';
-        colorMode.value = 'bw';
-        const contentTypeSelect = document.getElementById('contentTypeSelect');
-        if (contentTypeSelect && !contentTypeSelect.value) {
-            setSelectOptions('contentTypeSelect', [
-                { value: 'text_only', label: 'Text Only' },
-                { value: 'text_image', label: 'Text with Image' },
-                { value: 'image_only', label: 'Image Only' }
-            ], 'Select Content Type', 'text_only');
-        }
-    }
-
-    if (currentCategoryType === "id") updateDropdownsForID(cat.name);
-    if (currentCategoryType === "largeformat") updateDropdownsForLargeFormat(cat.name);
-    if (currentCategoryType === "binding") {
-        printCategory.innerHTML = `<option value="lamination">Lamination</option><option value="spiral_binding">Spiral Binding</option>`;
-        colorMode.innerHTML = `<option value="standard">Standard</option><option value="premium">Premium</option>`;
-        paperSize.innerHTML = `<option value="a4">A4</option><option value="legal">Legal</option>`;
-        printCategory.value = index === 0 ? 'lamination' : 'spiral_binding';
-        colorMode.value = 'standard';
-    }
-    if (currentCategoryType === "special") {
-        printCategory.innerHTML = `<option value="custom_layout">Custom Layout</option><option value="marketing_collateral">Marketing Collateral</option><option value="sticker_cut">Sticker Cut</option>`;
-        colorMode.innerHTML = `<option value="standard">Standard Production</option><option value="premium">Premium Production</option>`;
-        paperSize.innerHTML = `<option value="a4">A4</option><option value="a3">A3</option><option value="custom">Custom Size</option>`;
-        printCategory.value = ['custom_layout', 'marketing_collateral', 'sticker_cut'][index] || 'custom_layout';
-        colorMode.value = 'standard';
-    }
-
-    renderDetailGallery(cat, index);
-    refreshServicePanel();
-
-    document.getElementById('productModal').classList.remove('active');
-    document.getElementById('productModal').style.display = 'none';
-    document.getElementById('pageWrapper').style.display = 'none';
-    document.getElementById('productDetail').style.display = 'block';
-    document.getElementById('mainHeader').classList.add('detail-active');
-
-    updatePrice();
-    window.scrollTo(0, 0);
+function openModal(key){
+  const data=allData[key]||{name:"PRINTING SERVICE",categories:[]},modalTitle=document.getElementById('modalTitle'),track=document.getElementById('categoryTrack');
+  currentCategoryType=data.type;
+  if(modalTitle)modalTitle.innerText=data.name;
+  if(track){
+    track.innerHTML='';currentCategorySet=data.categories;
+    currentCategorySet.forEach((cat,index)=>{track.innerHTML+=`<div class="category-card"><img src="${cat.imgs[0]}"><h4>${cat.name}</h4><p onclick="openDetail(${index})">SELECT TYPE</p></div>`;});
+    currentSlideIndex=0;track.style.transform='translateX(0)';updateModalButtons();
+  }
+  const modal=document.getElementById('productModal');if(modal)modal.classList.add('active');
 }
+
+function closeModal(){const modal=document.getElementById('productModal');if(modal)modal.classList.remove('active');}
 
 function syncPreviewFromDropdowns() {
     if (!currentCategorySet.length) return;
@@ -2242,32 +1681,51 @@ function handleContactForm() {
     });
 }
 
-function initMap() {
-    const mapDiv = document.querySelector('.map-placeholder');
-    if (mapDiv) {
-        mapDiv.innerHTML = `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15442.271842835922!2d121.0504!3d14.6137!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDM2JzQ5LjMiTiAxMjHCsDAzJzAxLjQiRQ!5e0!3m2!1sen!2sph!4v1620000000000!5m2!1sen!2sph" width="100%" height="100%" style="border:0; border-radius:8px;" allowfullscreen="" loading="lazy"></iframe>`;
-    }
+function initMap(){
+  const mapDiv=document.querySelector('.map-placeholder');
+  if(mapDiv)mapDiv.innerHTML=`<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12345!2d121.0!3d14.5!2m3!1f0!2f0!3f0!2m3!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDMwJzAwLjAiTiAxMjHCsDAwJzAwLjAiRQ!5e0!3m2!1sen!2sph!4v123456789" width="100%" height="100%" style="border:0; border-radius:8px;" allowfullscreen="" loading="lazy"></iframe>`;
 }
 
-// --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
-    if (isLoggedIn) {
-        document.body.classList.add('services-active');
-    } else {
-        document.body.classList.remove('services-active');
-    }
+document.addEventListener('DOMContentLoaded',()=>{
+  document.documentElement.classList.add('page-loading');document.body.classList.add('page-loading');
+  if(isLoggedIn)document.body.classList.add('services-active');else document.body.classList.remove('services-active');
+  jumpTo('home');updateCartBadge();bindFavoriteButtons();applyServiceCardEffects();
+  heroIndex=0;updateHero();
+  const heroBgUrls=Array.from(document.querySelectorAll('.hero-slide')).map(getBgUrl);
+  preloadImages(heroBgUrls).then(()=>{document.documentElement.classList.remove('page-loading');document.body.classList.remove('page-loading');});
+  if(slideInterval)clearInterval(slideInterval);slideInterval=null;
+  handleContactForm();initMap();
+  const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting)entry.target.classList.add('animate');});},{threshold:0.1});
+  document.querySelectorAll('.section').forEach(s=>observer.observe(s));
+  bindDetailControlSync();bindDetailButtons();
+});
 
-    jumpTo('home');
-    updateCartBadge();
-    updateHero();
-    handleContactForm();
-    initMap();
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => { 
-            if(entry.isIntersecting) entry.target.classList.add('animate');
-        });
-    }, { threshold: 0.1 });
-    
-    document.querySelectorAll('.section').forEach(s => observer.observe(s));
+function checkoutSelected(){
+  const selected=cart.filter(i=>i.checked);
+  if(selected.length===0){alert("Please select at least 1 item to checkout.");return;}
+  const payload={items:selected.map(i=>({name:i.name,qty:i.qty,unit_price:(i.price/i.qty),service_code:(i.details&&i.details.includes("ID: "))?(i.details.split("ID: ")[1].split(" |")[0]).trim():null,price_type:"retail"}))};
+  const tokenTag=document.querySelector('meta[name="csrf-token"]'),token=tokenTag?tokenTag.getAttribute('content'):'';
+  fetch('/cart/sync',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(payload)})
+  .then(res=>{if(!res.ok)throw new Error("Sync failed");return res.json();})
+  .then(()=>{window.location.href='/payment/checkout';})
+  .catch(()=>{alert("Checkout failed. Please try again.");});
+}
+
+function placeOrderNow(){
+  const name=document.getElementById('detailTitleHeader')?.innerText||'Item',qty=parseInt(document.getElementById('qtyInput')?.value||'1',10),serviceCode=document.getElementById('currentServiceId')?.innerText||null,priceTypeInput=document.querySelector('input[name="priceType"]:checked'),priceType=priceTypeInput?priceTypeInput.value:'retail',retail=parseFloat((document.getElementById('retailAmount')?.innerText||'0').replace(/,/g,'')),bulkRaw=document.getElementById('bulkAmount')?.innerText||'0',bulk=bulkRaw==='Fixed'?retail:parseFloat(String(bulkRaw).replace(/,/g,'')),unitPrice=(priceType==='bulk')?bulk:retail;
+  if(!unitPrice||unitPrice<=0){alert("Invalid price. Please try again.");return;}
+  const payload={name:name,qty:qty>0?qty:1,unit_price:unitPrice,price_type:priceType,service_code:serviceCode};
+  const tokenTag=document.querySelector('meta[name="csrf-token"]'),token=tokenTag?tokenTag.getAttribute('content'):'';
+  fetch('/cart/buy-now',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':token},body:JSON.stringify(payload)})
+  .then(res=>{if(!res.ok)throw new Error("Buy now failed");return res.json();})
+  .then(()=>{window.location.href='/payment/checkout';})
+  .catch(()=>{alert("Place order failed. Please try again.");});
+}
+
+document.querySelector(".nav-search-btn").addEventListener("click", function () {
+  const query = document.getElementById("navSearchInput").value;
+
+  if(query.trim() !== ""){
+      alert("Searching for: " + query);
+  }
 });

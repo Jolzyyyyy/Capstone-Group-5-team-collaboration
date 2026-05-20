@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Models\User;
-use App\Notifications\SendOTP;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+use App\Models\User;
+use Carbon\Carbon;
+use App\Mail\OTPVerificationMail; 
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -17,7 +19,7 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Ipakita ang Login Form.
      */
     public function create(): View
     {
@@ -25,93 +27,86 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Handle ang pag-login ng user.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $request->authenticate();
+        // 1. I-validate ang Email at Password
+        $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        // 2. Subukang i-authenticate ang credentials
+        if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+            return back()->withErrors([
+                'email' => __('auth.failed'),
+            ]);
+        }
 
         $user = Auth::user();
 
-        if ($user->canAccessAdminPortal()) {
+        /**
+         * 3. ADMIN GUARD
+         * Kung admin ang pumasok dito sa customer login, i-logout at ibalik sa login with error.
+         * Naka-align ito sa security protocol mo para sa admin portal.
+         */
+        if (!$user->isCustomer()) {
             Auth::guard('web')->logout();
-
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()->route('login')->withErrors([
-                'email' => 'Staff and developer accounts must login through the protected portal.',
+                'email' => 'Staff accounts must login through the Admin/Developer Portal.',
             ]);
         }
 
+        // 4. Regenerate session para sa security
         $request->session()->regenerate();
-        $request->session()->forget([
-            'password_reset_email',
-            'password_reset_token',
-            'is_forgot_password',
-            'auth_type',
-            'otp_passed',
+
+        // 5. Generate 6-digit OTP (Formatted to ensure 6 digits)
+        $otp = sprintf("%06d", mt_rand(0, 999999));
+
+        // 6. I-save ang OTP sa database ('otp_code' column)
+        $user->update([
+            'otp_code' => $otp,
+            'otp_expires_at' => Carbon::now()->addMinutes(10),
         ]);
 
-        if ($user->isCustomer() && !is_null($user->email_verified_at)) {
-            $request->session()->put('customer_otp_passed', true);
-            $request->session()->forget('otp_email');
-
-            return redirect()->route('dashboard');
+        // 7. I-send ang OTP sa Email ng user
+        try {
+            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+        } catch (\Exception $e) {
+            Log::error('Login OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
+            // Itutuloy pa rin ang flow para manual resend later kung mag-fail ang initial email
         }
 
-        if ($user->isCustomer() && is_null($user->email_verified_at)) {
-            $otp = sprintf('%06d', mt_rand(0, 999999));
+        /**
+         * 8. Session Markers
+         * Mahalaga: 'customer_otp_passed' ay dapat FALSE para harangin ng middleware 'customer_otp'
+         */
+        $request->session()->put([
+            'customer_otp_passed' => false, 
+            'otp_email' => $user->email,
+            'auth_type' => 'login',
+        ]);
 
-            $user->forceFill([
-                'otp_code' => $otp,
-                'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
-            ])->save();
-
-            try {
-                $user->notify(new SendOTP($otp));
-                RateLimiter::hit(
-                    $this->customerOtpResendThrottleKey($user->email, $request->ip()),
-                    User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS
-                );
-            } catch (\Exception $e) {
-                Log::error('Login OTP failed for ' . $user->email . ': ' . $e->getMessage());
-
-                Auth::guard('web')->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return redirect()->route('login')->withErrors([
-                    'email' => 'Unable to send verification code right now. Please try again.',
-                ])->onlyInput('email');
-            }
-
-            $request->session()->put('otp_email', $user->email);
-            $request->session()->put('auth_type', 'account_verification');
-            $request->session()->forget('customer_otp_passed');
-
-            return redirect()->route('otp.verify', [
-                'email' => $user->email,
-            ])->with('status', 'A 6-digit verification code has been sent to your email.');
-        }
-
-        return redirect()->route('dashboard.redirect');
+        /**
+         * 9. Redirect sa Smart Redirect Logic sa web.php
+         * Gagamitin natin ang 'dashboard.redirect' route para malaman kung sa OTP 
+         * o sa Dashboard ang tuloy ng user.
+         */
+        return redirect()->route('dashboard.redirect')
+            ->with('status', 'A verification code has been sent to your email.');
     }
 
     /**
-     * Destroy an authenticated session (Logout).
+     * Logout ang user.
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->session()->forget([
-            'otp_passed',
-            'otp_email',
-            'auth_type',
-            'customer_otp_passed',
-            'password_reset_email',
-            'password_reset_token',
-            'is_forgot_password',
-        ]);
+        // Linisin ang OTP session keys bago mag-logout para fresh start sa susunod
+        $request->session()->forget(['customer_otp_passed', 'otp_email', 'auth_type']);
 
         Auth::guard('web')->logout();
 
@@ -126,3 +121,4 @@ class AuthenticatedSessionController extends Controller
         return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
     }
 }
+

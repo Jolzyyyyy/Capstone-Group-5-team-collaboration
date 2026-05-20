@@ -6,7 +6,7 @@
     <title>Printing Business Solution | Printify & Co.</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('webproj.css') }}">
+    <link rel="stylesheet" href="{{ asset('webproj.css') }}?v=20260520-icon-hover">
 </head>
 <body>
 
@@ -56,35 +56,26 @@
 <header class="top-nav-bar" id="mainHeader">
     <div class="nav-spacer" aria-hidden="true"></div>
     <nav class="nav-horizontal">
-    <a href="#home" data-section="home" class="nav-link is-active" onclick="jumpTo('home'); return false;">Home</a>
-    <a href="#about" data-section="about" class="nav-link" onclick="jumpTo('about'); return false;">About Us</a>
-    <a href="#services" data-section="services" class="nav-link" onclick="jumpTo('services'); return false;">Services</a>
-    <a href="#contact" data-section="contact" class="nav-link" onclick="jumpTo('contact'); return false;">Contact</a>
+        <a href="#home" class="nav-link" data-section="home" onclick="jumpTo('home'); return false;">HOME</a>
+        <a href="#about" class="nav-link" data-section="about" onclick="jumpTo('about'); return false;">ABOUT US</a>
+        <a href="#products" class="nav-link" data-section="products" onclick="jumpTo('products'); return false;">SERVICES</a>
+        <a href="#contact" class="nav-link" data-section="contact" onclick="jumpTo('contact'); return false;">CONTACT US</a>
     </nav>
 
     <div class="hero-signin-container" id="authContainer">
-        @if (Route::has('login'))
-            @auth
-                {{-- Lalabas lang ito kung naka-login na ang user --}}
-                <a href="{{ url('/dashboard') }}" class="auth-btn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-                <span class="auth-divider">|</span>
-                <form method="POST" action="{{ route('logout') }}" style="display:inline;">
-                    @csrf
-                    <a href="{{ route('logout') }}" class="auth-btn" 
-                       onclick="event.preventDefault(); this.closest('form').submit();">
-                       <i class="fa-solid fa-right-from-bracket"></i> Log Out
-                    </a>
-                </form>
-            @else
-                {{-- Lalabas ito kung hindi pa naka-login --}}
-                <a href="{{ route('register') }}" class="auth-btn"><i class="fa-solid fa-user-plus"></i> Sign Up</a>
-                <span class="auth-divider">|</span>
-                <a href="{{ route('login') }}" class="auth-btn"><i class="fa-regular fa-user"></i> Log In</a>
-            @endauth
-        @endif
+        <div class="nav-search-box">
+            <input type="text" id="navSearchInput" placeholder="Search..." autocomplete="off">
+            <button type="button" class="nav-search-btn" id="navSearchBtn" aria-label="Search sections and services">
+                <i class="fa fa-search"></i>
+            </button>
+        </div>
 
-        <a onclick="toggleCart()" id="navCart" style="cursor: pointer;">
-            <i class="fa-solid fa-cart-shopping"></i>
+        <a href="#" id="navHeart" class="nav-icon-link" aria-label="Wishlist">
+            <img src="{{ asset('images/Heart.svg') }}" alt="Heart" class="nav-svg-icon">
+        </a>
+
+        <a href="javascript:void(0)" onclick="toggleCart()" id="navCart" class="nav-icon-link" aria-label="Cart">
+            <img src="{{ asset('images/Shopping cart.svg') }}" alt="Cart" class="nav-svg-icon">
             <span class="cart-badge" id="cartBadge">0</span>
         </a>
     </div>
@@ -465,7 +456,7 @@
     </div>
 </div>
 
-<script src="{{ asset('webproj.js') }}"></script>
-
+    <script src="{{ asset('webproj.js') }}?v=20260520-icon-hover"></script>
 </body>
 </html>
+
