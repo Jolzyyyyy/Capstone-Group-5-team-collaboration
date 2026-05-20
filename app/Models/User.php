@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -33,7 +36,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'first_name',
         'last_name',
+        'first_name',
+        'last_name',
         'email',
+        'backup_email',
         'password',
         'role',               // 'admin' o 'customer'
         'admin_client_id',
@@ -69,6 +75,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
         'google_token',
         'invite_token',
+        'google_token',
+        'invite_token',
         'google2fa_secret',
         'otp_code',
     ];
@@ -83,7 +91,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'approved_at'       => 'datetime',
         'invite_expires_at'  => 'datetime',
         'invitation_accepted_at' => 'datetime',
+        'approved_at'       => 'datetime',
+        'invite_expires_at'  => 'datetime',
+        'invitation_accepted_at' => 'datetime',
         'password'          => 'hashed',
+        'has_set_password'  => 'boolean',
         'google2fa_enabled' => 'boolean',
         'recovery_codes'    => 'json',
         'has_set_password'  => 'boolean', 
@@ -204,7 +216,7 @@ class User extends Authenticatable implements MustVerifyEmail
     */
 
     /**
-     * Check kung expired na ang OTP (10 mins limit).
+     * Check kung expired na ang OTP.
      */
     public function isOtpExpired(): bool
     {
@@ -277,6 +289,7 @@ class User extends Authenticatable implements MustVerifyEmail
     | BOOT METHOD
     |--------------------------------------------------------------------------
     */
+
     protected static function boot()
     {
         parent::boot();
@@ -318,5 +331,40 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->first_name = $parts[0] ?? null;
         $this->last_name = $parts[1] ?? null;
         $this->name = trim(implode(' ', array_filter([$this->first_name, $this->last_name])));
+                $user->role = self::ROLE_CUSTOMER;
+            }
+        });
+
+        static::saving(function ($user) {
+            $user->syncNameParts();
+        });
+    }
+
+    public function syncNameParts(): void
+    {
+        $firstName = trim((string) ($this->first_name ?? ''));
+        $lastName = trim((string) ($this->last_name ?? ''));
+
+        if ($firstName !== '' || $lastName !== '') {
+            $this->first_name = $firstName !== '' ? $firstName : null;
+            $this->last_name = $lastName !== '' ? $lastName : null;
+            $this->name = trim(implode(' ', array_filter([$firstName, $lastName])));
+            return;
+        }
+
+        $fullName = trim((string) ($this->name ?? ''));
+
+        if ($fullName === '') {
+            $this->first_name = null;
+            $this->last_name = null;
+            $this->name = null;
+            return;
+        }
+
+        $parts = preg_split('/\s+/', $fullName, 2);
+        $this->first_name = $parts[0] ?? null;
+        $this->last_name = $parts[1] ?? null;
+        $this->name = trim(implode(' ', array_filter([$this->first_name, $this->last_name])));
     }
 }
+

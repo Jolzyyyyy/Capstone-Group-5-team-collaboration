@@ -41,13 +41,10 @@ class PasswordResetLinkController extends Controller
         // 2. Find user by the chosen email column
         $user = User::where($searchColumn, trim($request->email))->first();
 
-        // Security Note: Generic error message para sa privacy ng users
         if (!$user) {
             return back()
                 ->withInput($request->only('email'))
-                ->withErrors([
-                    'email' => __("We can't find a user with that email address."),
-                ]);
+                ->with('status', 'If that email belongs to an account, a verification code has been sent.');
         }
 
         // 3. Generate 6-digit OTP
@@ -61,7 +58,7 @@ class PasswordResetLinkController extends Controller
         // 5. Save OTP to Database
         $user->forceFill([
             'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
+            'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ])->save();
 
         // 6. Send OTP email notification
@@ -99,9 +96,13 @@ class PasswordResetLinkController extends Controller
 
         /**
          * 8. Redirect to OTP verification page
-         * Siguraduhin na ang route name ay 'customer.otp.verify' base sa web.php mo.
          */
         return redirect()->route('customer.otp.verify')
             ->with('status', 'A 6-digit verification code has been sent to your ' . ($isBackup ? 'backup' : 'email') . '.');
+    }
+
+    private function customerOtpResendThrottleKey(string $email, string $ip): string
+    {
+        return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
     }
 }

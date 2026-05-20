@@ -9,6 +9,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerPortalController;
+use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 

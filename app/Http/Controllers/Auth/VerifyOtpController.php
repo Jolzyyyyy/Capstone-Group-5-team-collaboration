@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -10,9 +11,15 @@ use App\Models\User;
 use App\Mail\OTPVerificationMail; 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class VerifyOtpController extends Controller
 {
+    private const CUSTOMER_OTP_MAX_ATTEMPTS = 3;
+    private const CUSTOMER_OTP_RESEND_MAX_ATTEMPTS = 1;
+
     /**
      * Ipakita ang OTP verification form.
      * FIXED: Method name is 'show' to match the error requirement.
@@ -45,21 +52,51 @@ class VerifyOtpController extends Controller
         $request->validate([
             'otp' => ['required', 'string', 'size:6'],
             'email' => ['required', 'email'],
+            'verification_flow' => ['nullable', 'string'],
         ]);
+
+        $otpThrottleKey = $this->customerOtpThrottleKey($request);
+
+        $this->ensureRateLimit(
+            $otpThrottleKey,
+            self::CUSTOMER_OTP_MAX_ATTEMPTS,
+            'otp'
+        );
 
         $user = User::where('email', trim($request->email))->first();
 
         if (!$user) {
+            $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
+
+            if ($attempts >= self::CUSTOMER_OTP_MAX_ATTEMPTS) {
+                $this->throwOtpLockout($otpThrottleKey, 'otp');
+            }
+
             return back()->withErrors(['otp' => 'Account not found.']);
         }
 
         // 1. Security Check: Tugma ba ang OTP?
         if (trim((string)$user->otp_code) !== trim((string)$request->otp)) {
-            return back()->withInput()->withErrors(['otp' => 'The security code you entered is incorrect.']);
+            $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
+
+            if ($attempts >= self::CUSTOMER_OTP_MAX_ATTEMPTS) {
+                $this->throwOtpLockout($otpThrottleKey, 'otp');
+            }
+
+            return back()
+                ->withInput()
+                ->withErrors(['otp' => 'The security code you entered is incorrect.'])
+                ->with('otp_attempt_count', min($attempts, self::CUSTOMER_OTP_MAX_ATTEMPTS));
         }
 
         // 2. Security Check: Expired na ba ang code?
         if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->isPast()) {
+            $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
+
+            if ($attempts >= self::CUSTOMER_OTP_MAX_ATTEMPTS) {
+                $this->throwOtpLockout($otpThrottleKey, 'otp');
+            }
+
             return back()->withErrors(['otp' => 'This code has expired. Please request a new one.']);
         }
 
@@ -110,6 +147,20 @@ class VerifyOtpController extends Controller
      */
     public function resend(Request $request)
     {
+        $otpThrottleKey = $this->customerOtpThrottleKey($request);
+
+        $this->ensureRateLimit(
+            $otpThrottleKey,
+            self::CUSTOMER_OTP_MAX_ATTEMPTS,
+            'otp'
+        );
+
+        $this->ensureRateLimit(
+            $this->customerOtpResendThrottleKey($request),
+            self::CUSTOMER_OTP_RESEND_MAX_ATTEMPTS,
+            'otp'
+        );
+
         $email = $request->email ?? session('otp_email') ?? session('password_reset_email');
 
         if (!$email) {
@@ -124,7 +175,7 @@ class VerifyOtpController extends Controller
         
         $user->update([
             'otp_code' => $otp,
-            'otp_expires_at' => now()->addMinutes(10),
+            'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
         try {
@@ -134,5 +185,64 @@ class VerifyOtpController extends Controller
             Log::error("OTP Resend failed for $email: " . $e->getMessage());
             return back()->withErrors(['otp' => 'Failed to send code. Please check your internet connection.']);
         }
+    }
+
+    private function ensureRateLimit(string $key, int $maxAttempts, string $bag): void
+    {
+        if (!RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            return;
+        }
+
+        $this->throwOtpLockout($key, $bag);
+    }
+
+    private function throwOtpLockout(string $key, string $bag): never
+    {
+        event(new Lockout(request()));
+        $seconds = RateLimiter::availableIn($key);
+
+        throw ValidationException::withMessages([
+            $bag => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => (int) ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    private function customerOtpThrottleKey(Request $request): string
+    {
+        return $this->customerOtpThrottleKeyFromContext($request->input('email', ''), $request->ip());
+    }
+
+    private function isForgotPasswordFlow(Request $request): bool
+    {
+        if (Auth::check()) {
+            return false;
+        }
+
+        if (session('auth_type') === 'forgot_password') {
+            return true;
+        }
+
+        return session('is_forgot_password') === true
+            || $request->query('flow') === 'forgot_password'
+            || $request->input('verification_flow') === 'forgot_password';
+    }
+
+    private function customerOtpResendThrottleKey(Request $request): string
+    {
+        $email = $request->input('email') ?? session('otp_email') ?? session('password_reset_email') ?? '';
+
+        return $this->customerOtpResendThrottleKeyFromContext((string) $email, $request->ip());
+    }
+
+    private function customerOtpThrottleKeyFromContext(?string $email, string $ip): string
+    {
+        return 'customer-otp:' . Str::transliterate(Str::lower((string) $email) . '|' . $ip);
+    }
+
+    private function customerOtpResendThrottleKeyFromContext(?string $email, string $ip): string
+    {
+        return 'customer-otp-resend:' . Str::transliterate(Str::lower((string) $email) . '|' . $ip);
     }
 }

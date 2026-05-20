@@ -36,11 +36,17 @@
     @endif
 </div>
 
-<div class="box">
-    <p><strong>Status:</strong> <span class="pill">{{ $order->status }}</span></p>
-    <p><strong>Total:</strong> ₱{{ number_format($order->total_price, 2) }}</p>
-    <p><strong>Date:</strong> {{ $order->created_at->format('M d, Y h:i A') }}</p>
-</div>
+                    <div class="rounded-lg border border-[#eadfd2] bg-white p-5 shadow-sm">
+                        <p class="text-xs font-black uppercase text-[#ff8d2a]">Customer Info</p>
+                        <div class="mt-4 space-y-2 text-sm text-[#6f675f]">
+                            <p><span class="font-black text-[#22201f]">Name:</span> {{ $order->customer_name }}</p>
+                            <p><span class="font-black text-[#22201f]">Email:</span> {{ $order->customer_email ?? '-' }}</p>
+                            @if ($isAdminView)
+                                <p><span class="font-black text-[#22201f]">Account:</span> {{ $order->user?->name ?? 'N/A' }}</p>
+                                <p><span class="font-black text-[#22201f]">Admin Client:</span> {{ $order->adminClient?->name ?? 'Unassigned' }}</p>
+                            @endif
+                        </div>
+                    </div>
 
 <div class="box">
     <h3>Customer Info</h3>
@@ -54,39 +60,24 @@
     @endif
 </div>
 
-<div class="box">
-    <h3>Order Items</h3>
-
-    @if($order->items->count() === 0)
-        <p>No items found for this order.</p>
-    @else
-        <table>
-            <thead>
-                <tr>
-                    <th>Service</th>
-                    <th>Price Type</th>
-                    <th>Unit Price</th>
-                    <th>Qty</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach($order->items as $item)
-                <tr>
-                    <td>
-                        <strong>{{ $item->service_name ?? ($item->service->name ?? 'Service') }}</strong><br>
-                        <span class="muted">Service ID: {{ $item->service_id }}</span>
-                    </td>
-                    <td>{{ strtoupper($item->price_type ?? 'retail') }}</td>
-                    <td>₱{{ number_format($item->unit_price, 2) }}</td>
-                    <td>{{ $item->quantity }}</td>
-                    <td>₱{{ number_format($item->subtotal, 2) }}</td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    @endif
-</div>
+                    <div class="divide-y divide-[#f0e5d8]">
+                        @forelse ($order->items as $item)
+                            <div class="grid gap-3 px-5 py-4 text-sm sm:grid-cols-[1fr,auto] sm:items-center">
+                                <div>
+                                    <p class="font-black text-[#22201f]">{{ $item->service_name ?? ($item->service->name ?? 'Service') }}</p>
+                                    <p class="text-xs text-[#6f675f]">{{ $item->variation_label ?? 'Standard variation' }}</p>
+                                    <p class="text-xs text-[#8a6d52]">Qty {{ $item->quantity }} at {{ $money($item->unit_price) }}</p>
+                                </div>
+                                <p class="font-black text-[#22201f]">{{ $money($item->subtotal) }}</p>
+                            </div>
+                        @empty
+                            <div class="px-5 py-12 text-center text-sm font-semibold text-[#6f675f]">
+                                No items found for this order.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
 
 <div class="box">
     <h3>Attached ZIP File</h3>

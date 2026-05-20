@@ -13,10 +13,6 @@ class OrderController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Show logged-in user's orders only.
-     * GET /my-orders
-     */
     public function myOrders()
     {
         $orders = Order::query()
@@ -33,7 +29,7 @@ class OrderController extends Controller
      */
     public function myShow(Order $order)
     {
-        if ((int)$order->user_id !== (int)auth()->id()) {
+        if ((int) $order->user_id !== (int) auth()->id()) {
             abort(403, 'Unauthorized');
         }
 
@@ -47,10 +43,6 @@ class OrderController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    /**
-     * Display a listing of all orders (admin).
-     * GET /orders
-     */
     public function index()
     {
         $orders = Order::query()
@@ -74,11 +66,15 @@ class OrderController extends Controller
 
     public function edit(Order $order)
     {
+        $this->authorizePortalOrder($order);
+
         return view('orders.edit', compact('order'));
     }
 
     public function update(Request $request, Order $order)
     {
+        $this->authorizePortalOrder($order);
+
         $validated = $request->validate([
             'status' => ['required', 'string', 'max:255'],
         ]);
@@ -90,7 +86,17 @@ class OrderController extends Controller
 
     public function destroy(Order $order)
     {
+        $this->authorizePortalOrder($order);
+        abort_unless(request()->user()->isDeveloper(), 403);
+
         $order->delete();
         return redirect()->route('admin.orders.index')->with('success', 'Order deleted successfully.');
+    }
+
+    private function authorizePortalOrder(Order $order): void
+    {
+        $user = request()->user();
+
+        abort_unless($user && $order->loadMissing('user')->isVisibleToPortalUser($user), 403);
     }
 }

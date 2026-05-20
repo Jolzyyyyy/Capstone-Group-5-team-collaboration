@@ -1,38 +1,49 @@
-<!doctype html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Orders (Admin)</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 24px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 12px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #f5f5f5; }
-        .btn { padding: 8px 12px; border: 1px solid #111; background: #111; color: #fff; text-decoration: none; display:inline-block; }
-        .btn-outline { background: #fff; color: #111; }
-        .row { display:flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
-        .msg { padding: 10px; margin-top: 12px; border-radius: 6px; }
-        .success { background: #eaffea; border: 1px solid #72d572; }
-        .error { background: #ffecec; border: 1px solid #ff9090; }
-        .pill { padding: 4px 10px; border-radius: 999px; border: 1px solid #ddd; display:inline-block; }
-        .muted { color: #666; font-size: 12px; }
-    </style>
-</head>
-<body>
+<x-app-layout>
+    @php
+        $user = Auth::user();
+        $isDeveloper = $user->isDeveloper();
+        $money = fn ($value) => 'PHP ' . number_format((float) $value, 2);
+    @endphp
 
-<h1>Orders (Admin)</h1>
+    <div class="min-h-screen bg-[#f7f4ef]" style="font-family: 'Poppins', sans-serif;">
+        <section class="border-b border-[#eadfd2] bg-white">
+            <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
+                <div>
+                    <p class="text-xs font-black uppercase text-[#ff8d2a]">Order Database</p>
+                    <h1 class="mt-2 text-3xl font-black text-[#22201f]">{{ $isDeveloper ? 'All Orders' : 'Assigned Orders' }}</h1>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-[#6f675f]">
+                        {{ $isDeveloper ? 'Developer view includes all customer and admin-client order records.' : 'Admin-client view is limited to assigned customer and order records.' }}
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center justify-center rounded-lg border border-[#eadfd2] bg-white px-4 py-3 text-sm font-black uppercase text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">Dashboard</a>
+                    <a href="{{ route('admin.services.index') }}" class="inline-flex items-center justify-center rounded-lg bg-[#ff8d2a] px-4 py-3 text-sm font-black uppercase text-white transition hover:bg-[#ff6a00]">Services</a>
+                </div>
+            </div>
+        </section>
 
-@if(session('success'))
-    <div class="msg success">{{ session('success') }}</div>
-@endif
+        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            @if (session('success'))
+                <div class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                    {{ session('success') }}
+                </div>
+            @endif
 
-@if(session('error'))
-    <div class="msg error">{{ session('error') }}</div>
-@endif
+            @if (session('error'))
+                <div class="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
+                    {{ session('error') }}
+                </div>
+            @endif
 
-<div class="row">
-    <a class="btn btn-outline" href="{{ route('services.index') }}">Services</a>
-</div>
+            <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
+                <div class="grid border-b border-[#f0e5d8] px-5 py-3 text-xs font-black uppercase text-[#8a6d52] md:grid-cols-[0.7fr,1.5fr,1.2fr,0.9fr,1fr,1fr]">
+                    <div>Order</div>
+                    <div>Customer</div>
+                    <div>{{ $isDeveloper ? 'Admin Client' : 'Assigned Scope' }}</div>
+                    <div>Status</div>
+                    <div>Total</div>
+                    <div class="text-right">Actions</div>
+                </div>
 
 @if($orders->count() === 0)
     <p>No orders found.</p>
@@ -93,7 +104,4 @@
     <div style="margin-top: 12px;">
         {{ $orders->links() }}
     </div>
-@endif
-
-</body>
-</html>
+</x-app-layout>

@@ -6,17 +6,20 @@ use Illuminate\Support\Facades\Route;
  * 🛠️ AUTH CONTROLLERS (App\Http\Controllers\Auth)
  */
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyOtpController; 
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 
 /**
  * 🛠️ ADMIN AUTH CONTROLLERS
  */
-use App\Http\Controllers\Admin\Auth\AdminAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,10 +27,6 @@ use App\Http\Controllers\Admin\Auth\AdminAuthController;
 |--------------------------------------------------------------------------
 */
 Route::middleware('guest')->group(function () {
-    // Admin Register (Secret)
-    Route::get('p-co-2026/register-7b5e93-adm-key', [AdminAuthController::class, 'showRegisterForm'])->name('admin.register');
-    Route::post('p-co-2026/register-7b5e93-adm-key', [AdminAuthController::class, 'register'])->name('admin.register.submit');
-
     // Customer Register & Login
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('register', [RegisteredUserController::class, 'store']);
@@ -86,3 +85,4 @@ Route::middleware('auth')->group(function () {
     Route::put('password-change', [PasswordController::class, 'update'])->name('password.change');
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
+

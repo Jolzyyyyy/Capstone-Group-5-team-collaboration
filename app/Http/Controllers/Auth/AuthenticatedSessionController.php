@@ -12,6 +12,9 @@ use Carbon\Carbon;
 use App\Mail\OTPVerificationMail; 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -112,4 +115,10 @@ class AuthenticatedSessionController extends Controller
 
         return redirect('/');
     }
+
+    private function customerOtpResendThrottleKey(string $email, string $ip): string
+    {
+        return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
+    }
 }
+

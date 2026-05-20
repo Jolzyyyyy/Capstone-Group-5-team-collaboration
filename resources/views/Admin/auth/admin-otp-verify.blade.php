@@ -1,3 +1,8 @@
+@php
+    $otpLockoutSeconds = $otpLockoutSeconds ?? 0;
+    $resendCooldownSeconds = $resendCooldownSeconds ?? 0;
+@endphp
+
 <x-guest-layout>
     {{-- 1. LAYOUT OVERRIDE (Same as Customer) --}}
     <style>

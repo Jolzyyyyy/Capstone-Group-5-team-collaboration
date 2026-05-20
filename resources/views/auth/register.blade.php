@@ -6,14 +6,42 @@
         <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest">{{ __('Create Account') }}</h2>
     </div>
 
+    @if ($errors->any())
+        <div class="auth-note auth-note--danger mb-6">
+            <strong>{{ __('Please review your registration details.') }}</strong>
+            <span>{{ __('If the page returned here instead of moving to OTP verification, one or more fields still need correction below.') }}</span>
+        </div>
+    @endif
+
+    @if (Route::has('google.login'))
+        <a href="{{ route('google.login') }}" class="mb-6 flex min-h-[3rem] w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-800 shadow-sm transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-base font-black text-[#ff8d2a]">G</span>
+            {{ __('Sign up with Google') }}
+        </a>
+
+        <div class="mb-6 flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+            <span class="h-px flex-1 bg-slate-200"></span>
+            <span>{{ __('or') }}</span>
+            <span class="h-px flex-1 bg-slate-200"></span>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
-        {{-- Name Field --}}
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        {{-- First and Last Name Fields --}}
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <x-input-label for="first_name" :value="__('First Name')" />
+                <x-text-input id="first_name" class="block mt-1 w-full" type="text" name="first_name" :value="old('first_name')" required autofocus autocomplete="given-name" />
+                <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="last_name" :value="__('Last Name')" />
+                <x-text-input id="last_name" class="block mt-1 w-full" type="text" name="last_name" :value="old('last_name')" required autocomplete="family-name" />
+                <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
+            </div>
         </div>
 
         {{-- Email Field --}}
@@ -93,6 +121,10 @@
                 {{ __('Register') }}
             </x-primary-button>
         </div>
+
+        <p class="auth-action-hint">
+            {{ __('Use the same email you can access right now because your OTP verification code will be sent there after registration.') }}
+        </p>
     </form>
 
     {{-- Social Section --}}

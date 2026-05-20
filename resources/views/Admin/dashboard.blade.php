@@ -666,7 +666,19 @@
                                 <span style="font-weight: 800; font-size: 10px; color: white;">ADMIN / DEVELOPER</span>
                                 <span style="font-size: 9px; color: #10B981; font-weight: 700;">● ONLINE</span>
                             </div>
+                        @endforeach
+                    </div>
+                </section>
+            </div>
+
+            <div class="mt-8 grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
+                <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
+                    <div class="flex items-center justify-between border-b border-[#f0e5d8] px-5 py-4">
+                        <div>
+                            <p class="text-xs font-black uppercase text-[#ff8d2a]">Sales And Orders</p>
+                            <h2 class="mt-1 text-lg font-black text-[#22201f]">Recent Orders</h2>
                         </div>
+                        <a href="{{ route('admin.orders.index') }}" class="text-sm font-bold text-[#b45309] underline">Open order database</a>
                     </div>
 
                     <div class="hero-title-area">
@@ -913,3 +925,4 @@
         });
     </script>
 </x-app-layout>
+

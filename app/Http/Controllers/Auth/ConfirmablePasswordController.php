@@ -51,7 +51,7 @@ class ConfirmablePasswordController extends Controller
          */
         
         // Admin Flow
-        if ($user->role === 'admin') {
+        if ($user->canAccessAdminPortal()) {
             return redirect()->intended(route('admin.dashboard'));
         }
 
