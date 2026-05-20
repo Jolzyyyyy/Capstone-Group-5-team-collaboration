@@ -11,47 +11,85 @@ class EnsureCustomerOtpIsVerified
 {
     /**
      * Handle an incoming request.
-     *
-     * Sinisiguro nito na ang mga customers ay dapat makapasa sa OTP verification 
-     * bago ma-access ang anumang protected routes ng PRINTIFY & CO.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. AUTH CHECK: Kung hindi naka-login, pabalikin sa login page.
+        // Kunin ang kasalukuyang pangalan ng route
+        $currentRoute = $request->route() ? $request->route()->getName() : null;
+
+        // 1. ALLOW GUESTS ON FORGOT PASSWORD FLOW
+        if ($request->session()->get('is_forgot_password') === true) {
+            $forgotPasswordRoutes = [
+                'customer.otp.verify',
+                'customer.otp.submit',
+                'customer.otp.resend',
+                'password.reset',
+                'password.update'
+            ];
+
+            if (in_array($currentRoute, $forgotPasswordRoutes)) {
+                return $next($request);
+            }
+        }
+
+        // 2. AUTH CHECK
+        // Hayaan ang default 'auth' middleware ang humawak kung hindi naka-login
         if (!Auth::check()) {
-            return redirect()->route('login');
+            return $next($request); 
         }
 
         $user = Auth::user();
 
-        // 2. ROLE BYPASS: Payagan ang admins na dumaan nang walang OTP challenge.
-        if ($user->role === 'admin') { 
+        // 3. CUSTOMER AREA GUARD
+        if (!$user->isCustomer()) {
+            abort(403, 'Unauthorized access for ' . ($user->role ?? 'unknown role'));
+        }
+
+        // 4. WHITELISTED ROUTES (Dito hindi haharang ang middleware)
+        // Siguraduhin na ang lahat ng route names dito ay match sa routes/web.php
+        $allowedRoutes = [
+            'customer.otp.verify',
+            'customer.otp.submit',
+            'customer.otp.resend',
+            'setup-password',
+            'password.setup.submit',
+            'customer.logout',
+            'dashboard.redirect' 
+        ];
+
+        if (in_array($currentRoute, $allowedRoutes)) {
             return $next($request);
         }
 
-        /**
-         * 3. OTP VERIFICATION CHECK
-         * Ginagamit natin ang 'customer_otp_passed' flag na sineset natin 
-         * sa VerifyOtpController matapos ang matagumpay na input.
-         */
+        // 5. OTP VERIFICATION CHECK
         if (session('customer_otp_passed') !== true) {
 
-            // Siguraduhin na ang email ay nasa session para sa display sa OTP view.
+            // Backup check: Kung verified na sa DB at hindi naman bagong register, auto-pass
+            if ($user->email_verified_at && session('auth_type') !== 'register') {
+                session(['customer_otp_passed' => true]);
+                return $next($request);
+            }
+
+            // Siguraduhin na may email sa session para sa view
             if (!session()->has('otp_email')) {
                 session(['otp_email' => $user->email]);
             }
 
             /**
-             * I-redirect sila sa OTP verification page.
-             * Nagdagdag tayo ng error message para alam ng user kung bakit sila na-redirect.
+             * 🛡️ LOOP & ERROR PROTECTION: 
+             * Inalis natin ang redirect sa 'verify-account' dahil 
+             * ayon sa log mo, hindi ito existing (Route Not Defined).
+             * Gagamitin natin ang tamang route name: 'customer.otp.verify'
              */
+            if ($currentRoute === 'customer.otp.verify') {
+                return $next($request);
+            }
+
+            // DITO ANG FIX: Pinalitan ang 'verify-account' ng 'customer.otp.verify'
             return redirect()->route('customer.otp.verify')
-                             ->withErrors([
-                                 'otp' => 'Security verification required. Please enter the 6-digit code sent to your email.'
-                             ]);
+                ->withErrors(['otp' => 'Security verification required.']);
         }
 
-        // 4. ALLOW REQUEST: Kung pasado sa OTP, proceed sa dashboard o profile!
         return $next($request);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\ServiceVariation;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -17,20 +18,24 @@ class CartController extends Controller
         $items = [];
         $total = 0;
 
-        foreach ($cart as $serviceId => $row) {
+        foreach ($cart as $cartKey => $row) {
             $lineTotal = $row['price'] * $row['qty'];
             $total += $lineTotal;
 
             $items[] = [
-                'service_id' => $serviceId,
-                'name'       => $row['name'],
-                'category'   => $row['category'],
-                'unit'       => $row['unit'],
-                'price'      => $row['price'],
-                'price_type' => $row['price_type'], // retail or bulk
-                'qty'        => $row['qty'],
-                'line_total' => $lineTotal,
-                'image_path' => $row['image_path'] ?? null,
+                'cart_key'         => $cartKey,
+                'service_id'       => $row['service_id'],
+                'variation_id'     => $row['variation_id'],
+                'service_item_id'  => $row['service_item_id'],
+                'name'             => $row['name'],
+                'category'         => $row['category'],
+                'variation_label'  => $row['variation_label'],
+                'unit'             => $row['unit'],
+                'price'            => $row['price'],
+                'price_type'       => $row['price_type'],
+                'qty'              => $row['qty'],
+                'line_total'       => $lineTotal,
+                'image_path'       => $row['image_path'] ?? null,
             ];
         }
 
@@ -38,7 +43,7 @@ class CartController extends Controller
     }
 
     /**
-     * Add a service to cart (or increase qty).
+     * Add a variation to cart (or increase qty).
      * POST /cart/add/{service}
      */
     public function add(Request $request, Service $service)
@@ -46,33 +51,45 @@ class CartController extends Controller
         abort_if(!$service->is_active, 404);
 
         $validated = $request->validate([
+            'service_variation_id' => ['required', 'exists:service_variations,id'],
             'qty' => ['nullable', 'integer', 'min:1', 'max:999'],
             'price_type' => ['nullable', 'in:retail,bulk'],
         ]);
 
-        $qty = (int)($validated['qty'] ?? 1);
+        $qty = (int) ($validated['qty'] ?? 1);
         $priceType = $validated['price_type'] ?? 'retail';
 
+        $variation = ServiceVariation::where('id', $validated['service_variation_id'])
+            ->where('service_id', $service->id)
+            ->where('is_active', true)
+            ->firstOrFail();
+
         $price = $priceType === 'bulk'
-            ? (float)$service->bulk_price
-            : (float)$service->retail_price;
+            ? (float) $variation->bulk_price
+            : (float) $variation->retail_price;
 
         $cart = session()->get('cart', []);
 
-        if (isset($cart[$service->id])) {
-            $cart[$service->id]['qty'] += $qty;
-            // if user changes price_type, update it too
-            $cart[$service->id]['price_type'] = $priceType;
-            $cart[$service->id]['price'] = $price;
+        // unique cart key per service variation + price type
+        $cartKey = $service->id . '_' . $variation->id . '_' . $priceType;
+
+        if (isset($cart[$cartKey])) {
+            $cart[$cartKey]['qty'] += $qty;
+            $cart[$cartKey]['price'] = $price;
+            $cart[$cartKey]['price_type'] = $priceType;
         } else {
-            $cart[$service->id] = [
-                'name'       => $service->name,
-                'category'   => $service->category,
-                'unit'       => $service->unit,
-                'price'      => $price,
-                'price_type' => $priceType,
-                'qty'        => $qty,
-                'image_path' => $service->image_path,
+            $cart[$cartKey] = [
+                'service_id'      => $service->id,
+                'variation_id'    => $variation->id,
+                'service_item_id' => $variation->service_item_id,
+                'name'            => $service->name,
+                'category'        => $service->category,
+                'variation_label' => $variation->variation_label,
+                'unit'            => $service->unit,
+                'price'           => $price,
+                'price_type'      => $priceType,
+                'qty'             => $qty,
+                'image_path'      => $service->image_path,
             ];
         }
 
@@ -82,10 +99,10 @@ class CartController extends Controller
     }
 
     /**
-     * Update qty/price_type of an item in cart
-     * POST /cart/update/{service}
+     * Update qty/price_type of a cart item
+     * POST /cart/update/{cartKey}
      */
-    public function update(Request $request, Service $service)
+    public function update(Request $request, string $cartKey)
     {
         $validated = $request->validate([
             'qty' => ['required', 'integer', 'min:1', 'max:999'],
@@ -94,18 +111,38 @@ class CartController extends Controller
 
         $cart = session()->get('cart', []);
 
-        if (!isset($cart[$service->id])) {
+        if (!isset($cart[$cartKey])) {
             return redirect()->route('cart.index')->with('error', 'Item not found in cart.');
         }
 
-        $priceType = $validated['price_type'];
-        $price = $priceType === 'bulk'
-            ? (float)$service->bulk_price
-            : (float)$service->retail_price;
+        $variation = ServiceVariation::find($cart[$cartKey]['variation_id']);
 
-        $cart[$service->id]['qty'] = (int)$validated['qty'];
-        $cart[$service->id]['price_type'] = $priceType;
-        $cart[$service->id]['price'] = $price;
+        if (!$variation || !$variation->is_active) {
+            return redirect()->route('cart.index')->with('error', 'Selected variation is no longer available.');
+        }
+
+        $newPriceType = $validated['price_type'];
+        $newPrice = $newPriceType === 'bulk'
+            ? (float) $variation->bulk_price
+            : (float) $variation->retail_price;
+
+        // if price type changes, key should also change
+        $newCartKey = $cart[$cartKey]['service_id'] . '_' . $variation->id . '_' . $newPriceType;
+
+        $updatedRow = $cart[$cartKey];
+        $updatedRow['qty'] = (int) $validated['qty'];
+        $updatedRow['price_type'] = $newPriceType;
+        $updatedRow['price'] = $newPrice;
+
+        unset($cart[$cartKey]);
+
+        if (isset($cart[$newCartKey])) {
+            $cart[$newCartKey]['qty'] += $updatedRow['qty'];
+            $cart[$newCartKey]['price'] = $updatedRow['price'];
+            $cart[$newCartKey]['price_type'] = $updatedRow['price_type'];
+        } else {
+            $cart[$newCartKey] = $updatedRow;
+        }
 
         session()->put('cart', $cart);
 
@@ -114,13 +151,13 @@ class CartController extends Controller
 
     /**
      * Remove item from cart
-     * POST /cart/remove/{service}
+     * POST /cart/remove/{cartKey}
      */
-    public function remove(Request $request, Service $service)
+    public function remove(Request $request, string $cartKey)
     {
         $cart = session()->get('cart', []);
 
-        unset($cart[$service->id]);
+        unset($cart[$cartKey]);
 
         session()->put('cart', $cart);
 

@@ -72,14 +72,18 @@
                 <td>{{ $order->created_at->format('M d, Y h:i A') }}</td>
 
                 <td class="row" style="margin-top:0;">
-                    <a class="btn" href="{{ route('orders.show', $order) }}">View</a>
-                    <a class="btn btn-outline" href="{{ route('orders.edit', $order) }}">Edit</a>
+                    <a class="btn" href="{{ route('admin.orders.show', $order) }}">View</a>
+                    @if(!auth()->user()?->isAdminClient())
+                        <a class="btn btn-outline" href="{{ route('admin.orders.edit', $order) }}">Edit</a>
+                    @endif
 
-                    <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Delete this order?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-outline">Delete</button>
-                    </form>
+                    @if(!auth()->user()?->isAdminClient())
+                        <form method="POST" action="{{ route('admin.orders.destroy', $order) }}" onsubmit="return confirm('Delete this order?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline">Delete</button>
+                        </form>
+                    @endif
                 </td>
             </tr>
         @endforeach

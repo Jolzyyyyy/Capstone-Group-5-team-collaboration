@@ -7,138 +7,127 @@ use App\Http\Controllers\Controller;  // ✅ ADD THIS
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Service;
+use App\Models\ServiceVariation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
-    /**
-     * Checkout is for logged-in customers only.
-     */
-    // public function __construct()
-// {
-//     $this->middleware('auth');
-// }
-
-    /**
-     * Show checkout page (summary + customer details).
-     */
     public function index()
     {
-        $cart = session()->get('cart', []);
+        $rawCart = session()->get('cart', []);
 
-        if (empty($cart)) {
+        if (empty($rawCart)) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        $summary = $this->summary($cart);
+        $cart = [];
+        $itemsCount = 0;
+        $total = 0;
 
-        return view('checkout.index', [
-            'cart' => $cart,
-            'summary' => $summary,
-        ]);
+        foreach ($rawCart as $cartKey => $row) {
+            $qty = (int) ($row['qty'] ?? 1);
+            $unitPrice = (float) ($row['price'] ?? 0);
+            $subtotal = $qty * $unitPrice;
+
+            $itemsCount += $qty;
+            $total += $subtotal;
+
+            $cart[] = [
+                'cart_key'        => $cartKey,
+                'service_id'      => (int) ($row['service_id'] ?? 0),
+                'variation_id'    => (int) ($row['variation_id'] ?? 0),
+                'service_item_id' => $row['service_item_id'] ?? '',
+                'name'            => $row['name'] ?? 'Service',
+                'category'        => $row['category'] ?? '',
+                'variation_label' => $row['variation_label'] ?? '',
+                'unit'            => $row['unit'] ?? '',
+                'price_type'      => $row['price_type'] ?? 'retail',
+                'unit_price'      => $unitPrice,
+                'qty'             => $qty,
+                'subtotal'        => $subtotal,
+            ];
+        }
+
+        $summary = [
+            'items_count' => $itemsCount,
+            'total'       => $total,
+        ];
+
+        return view('checkout.index', compact('cart', 'summary'));
     }
 
-    /**
-     * Place order: create orders + order_items from session cart.
-     */
     public function place(Request $request)
     {
-        $cart = session()->get('cart', []);
+        $rawCart = session()->get('cart', []);
 
-        if (empty($cart)) {
+        if (empty($rawCart)) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        $validated = $request->validate([
+        $request->validate([
             'customer_name'  => ['required', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
+            'print_zip'      => ['required', 'file', 'mimes:zip', 'max:51200'],
+        ], [
+            'print_zip.required' => 'Please upload a ZIP file before placing the order.',
         ]);
 
-        // Safety: re-check service prices from DB so user cannot cheat by editing session
-        $serviceIds = array_keys($cart);
-        $services = Service::whereIn('id', $serviceIds)->get()->keyBy('id');
+        return DB::transaction(function () use ($request, $rawCart) {
+            $customer = $request->user();
 
-        DB::beginTransaction();
-
-        try {
             $order = Order::create([
-                'user_id'        => auth()->id(), // make sure orders table has user_id
-                'customer_name'  => $validated['customer_name'],
-                'customer_email' => $validated['customer_email'] ?? null,
+                'user_id'        => auth()->id(),
+                'admin_client_id' => $customer?->admin_client_id,
+                'customer_name'  => $request->customer_name,
+                'customer_email' => $request->customer_email,
                 'status'         => 'Pending',
                 'total_price'    => 0,
             ]);
 
-            $total = 0;
+            foreach ($rawCart as $cartKey => $row) {
+                $service = Service::findOrFail($row['service_id']);
 
-            foreach ($cart as $serviceId => $item) {
-                $service = $services->get($serviceId);
+                $variation = ServiceVariation::where('id', $row['variation_id'] ?? 0)
+                    ->where('service_id', $service->id)
+                    ->first();
 
-                // If service missing/inactive, stop checkout (prevents ordering deleted service)
-                if (!$service || !$service->is_active) {
-                    throw new \Exception("Service not available: {$item['name']}");
-                }
-
-                $priceType = $item['price_type'] ?? 'retail';
-                $qty = (int)($item['qty'] ?? 1);
-                if ($qty < 1) $qty = 1;
-
-                $unitPrice = $priceType === 'bulk'
-                    ? (float)$service->bulk_price
-                    : (float)$service->retail_price;
-
-                // bulk fallback
-                if ($priceType === 'bulk' && (float)$service->bulk_price <= 0) {
-                    $priceType = 'retail';
-                    $unitPrice = (float)$service->retail_price;
-                }
-
-                $subtotal = $unitPrice * $qty;
-                $total += $subtotal;
+                $qty = (int) ($row['qty'] ?? 1);
+                $unitPrice = (float) ($row['price'] ?? 0);
+                $subtotal = $qty * $unitPrice;
 
                 OrderItem::create([
-                    'order_id'    => $order->id,
-                    'service_id'  => $service->id,
-                    'service_name'=> $service->name, // keep snapshot even if service changes later
-                    'price_type'  => $priceType,
-                    'unit_price'  => $unitPrice,
-                    'quantity'    => $qty,
-                    'subtotal'    => $subtotal,
+                    'order_id'             => $order->id,
+                    'service_id'           => $service->id,
+                    'service_variation_id' => $variation?->id,
+                    'service_item_id'      => $row['service_item_id'] ?? $variation?->service_item_id,
+                    'service_name'         => $row['name'] ?? $service->name,
+                    'variation_label'      => $row['variation_label'] ?? $variation?->variation_label,
+                    'price_type'           => $row['price_type'] ?? 'retail',
+                    'unit_price'           => $unitPrice,
+                    'quantity'             => $qty,
+                    'subtotal'             => $subtotal,
                 ]);
             }
 
-            $order->update([
-                'total_price' => $total,
+            $order->recomputeTotal();
+
+            $zip = $request->file('print_zip');
+            $path = $zip->store("order-files/{$order->id}", 'public');
+
+            $order->files()->create([
+                'original_name' => $zip->getClientOriginalName(),
+                'path'          => $path,
+                'mime'          => $zip->getClientMimeType(),
+                'size'          => $zip->getSize(),
             ]);
 
-            // clear cart after successful checkout
             session()->forget('cart');
 
-            DB::commit();
-
-            // Next step: payment (later). For now show order details page.
-            return redirect()->route('orders.show', $order)->with('success', 'Order placed successfully!');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            return redirect()->route('checkout.index')->with('error', 'Checkout failed: ' . $e->getMessage());
-        }
-    }
-
-    private function summary(array $cart): array
-    {
-        $itemsCount = 0;
-        $total = 0;
-
-        foreach ($cart as $item) {
-            $itemsCount += (int)($item['qty'] ?? 0);
-            $total += (float)($item['subtotal'] ?? 0);
-        }
-
-        return [
-            'items_count' => $itemsCount,
-            'total' => $total,
-        ];
+            return redirect()
+                ->route('orders.my.show', $order->id)
+                ->with('success', 'Order placed successfully! ZIP attached ✅');
+        });
     }
 
     // ============================================================

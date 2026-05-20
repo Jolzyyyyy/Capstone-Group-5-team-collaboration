@@ -3,15 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Service extends Model
 {
-    use HasFactory;
-
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
         'name',
         'category',
@@ -23,12 +17,25 @@ class Service extends Model
         'is_active',
     ];
 
-    /**
-     * A service can appear in many order items.
-     * (Shopee / Amazon style)
-     */
+    protected $casts = [
+        'retail_price' => 'decimal:2',
+        'bulk_price' => 'decimal:2',
+        'is_active' => 'boolean',
+    ];
+
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function variations()
+    {
+        return $this->hasMany(ServiceVariation::class);
+    }
+
+    public function activeVariations()
+    {
+        return $this->hasMany(ServiceVariation::class)
+            ->where('is_active', true);
     }
 }

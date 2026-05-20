@@ -21,8 +21,8 @@ class CustomerOtpMiddleware
 
         $user = Auth::user();
 
-        // 2. ROLE CHECK: Payagan ang admins na mag-bypass
-        if ($user->role === 'admin') { 
+        // 2. ROLE CHECK: Payagan ang staff portal users na mag-bypass
+        if ($user->canAccessAdminPortal()) { 
             return $next($request);
         }
 
@@ -36,7 +36,7 @@ class CustomerOtpMiddleware
             'otp.resend',    // Resend OTP action
             'logout',        // Allow logout
             'password.reset', // Payagan ang reset password form
-            'password.update'
+            'password.store'
         ];
 
         if ($request->routeIs($allowedRoutes)) {

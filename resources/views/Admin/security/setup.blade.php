@@ -76,18 +76,18 @@
                                maxlength="6"
                                placeholder="000000"
                                autocomplete="off"
-                               style="height: 45px; max-width: 250px; margin: 0 auto; font-size: 22px !important;" 
-                               class="block w-full text-center font-mono font-bold border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               style="height: 48px; width: 100%; max-width: 280px; margin: 0 auto; font-size: 24px !important; letter-spacing: 0.2em;" 
+                               class="block text-center font-mono font-bold border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                required 
                                autofocus />
                     </div>
 
                     <div class="w-full px-4">
                         <button type="submit" 
-                                 style="background-color: #1e293b; color: #ffffff; width: 100%; max-width: 250px; height: 45px; margin: 0 auto; display: block; border-radius: 10px; font-weight: bold; font-size: 13px !important; text-transform: uppercase; letter-spacing: 0.1em; border: none; cursor: pointer; transition: all 0.2s;"
-                                 onmouseover="this.style.backgroundColor='#334155'" 
+                                 style="background-color: #1e293b; color: #ffffff; width: 100%; max-width: 280px; height: 48px; margin: 0 auto; display: block; border-radius: 8px; font-weight: bold; font-size: 13px !important; text-transform: uppercase; letter-spacing: 0.1em; border: none; cursor: pointer; transition: all 0.2s;"
+                                 onmouseover="this.style.backgroundColor='#0f172a'" 
                                  onmouseout="this.style.backgroundColor='#1e293b'">
-                            Verify and Activate
+                            Verify & Activate
                         </button>
                     </div>
                 </form>
@@ -106,7 +106,6 @@
             const otpInput = document.getElementById('2fa_input');
             if(otpInput) {
                 otpInput.addEventListener('input', function (e) {
-                    // Manatiling numbers lang ang tinatanggap
                     this.value = this.value.replace(/[^0-9]/g, '');
                 });
             }

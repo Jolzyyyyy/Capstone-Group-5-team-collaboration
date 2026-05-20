@@ -11,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Notifications\SendOTP;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class PasswordResetLinkController extends Controller
 {
@@ -33,8 +34,12 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // 2. Find user by email
-        $user = User::where('email', trim($request->email))->first();
+        // --- SECURITY UPDATE: CHECK IF USING BACKUP EMAIL ---
+        $isBackup = $request->has('use_backup');
+        $searchColumn = $isBackup ? 'backup_email' : 'email';
+
+        // 2. Find user by the chosen email column
+        $user = User::where($searchColumn, trim($request->email))->first();
 
         // Security Note: Generic error message para sa privacy ng users
         if (!$user) {
@@ -61,10 +66,15 @@ class PasswordResetLinkController extends Controller
 
         // 6. Send OTP email notification
         try {
-            /** * IMPORTANT: Siguraduhin na ang SendOTP notification mo ay 
-             * walang 'implements ShouldQueue' para mag-send agad.
+            /** * IMPORTANT: Kung backup email ang gamit, doon natin ipapadala ang notification.
+             * Gagamit tayo ng Notification::route para ma-override ang default email.
              */
-            $user->notify(new SendOTP($otp));
+            if ($isBackup) {
+                Notification::route('mail', $user->backup_email)
+                    ->notify(new SendOTP($otp));
+            } else {
+                $user->notify(new SendOTP($otp));
+            }
             
         } catch (\Exception $e) {
             Log::error('Forgot Password OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
@@ -77,13 +87,13 @@ class PasswordResetLinkController extends Controller
         /**
          * 7. Store session data (CRITICAL)
          * Inilalagay natin ang mga flags para malaman ng VerifyOtpController 
-         * na Password Recovery ang ginagawa ng user, hindi regular login.
+         * na Password Recovery ang ginagawa ng user.
          */
         $request->session()->put([
             'password_reset_token' => $token,
-            'password_reset_email' => $user->email,
-            'otp_email'           => $user->email,
-            'is_forgot_password'  => true, // 🔥 Eto ang trigger para sa Reset Password redirection
+            'password_reset_email' => $user->email, // Main email pa rin ang reference para sa auth
+            'otp_email'           => $isBackup ? $user->backup_email : $user->email,
+            'is_forgot_password'  => true, 
             'auth_type'           => 'forgot_password', 
         ]);
 
@@ -92,6 +102,6 @@ class PasswordResetLinkController extends Controller
          * Siguraduhin na ang route name ay 'customer.otp.verify' base sa web.php mo.
          */
         return redirect()->route('customer.otp.verify')
-            ->with('status', 'A 6-digit verification code has been sent to your email.');
+            ->with('status', 'A 6-digit verification code has been sent to your ' . ($isBackup ? 'backup' : 'email') . '.');
     }
 }

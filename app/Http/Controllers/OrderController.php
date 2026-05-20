@@ -7,22 +7,9 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    /**
-     * ADMIN: manage all orders (index/show/edit/update/destroy)
-     * USER: can only access myOrders + myShow
-     *
-     * NOTE:
-     * We enforce access using ROUTES middleware (role groups).
-     * Here we still require auth for all methods.
-     */
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /*
     |--------------------------------------------------------------------------
-    | USER PAGES (My Orders)
+    | USER PAGES (My Orders - Customer Side)
     |--------------------------------------------------------------------------
     */
 
@@ -37,12 +24,12 @@ class OrderController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('orders.my_index', compact('orders'));
+        // Ito ang gagamitin nating file para sa Customer
+        return view('customer-orders', compact('orders'));
     }
 
     /**
      * Show a specific order that belongs to the logged-in user.
-     * GET /my-orders/{order}
      */
     public function myShow(Order $order)
     {
@@ -50,14 +37,13 @@ class OrderController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $order->load(['items.service']);
-
-        return view('orders.my_show', compact('order'));
+        $order->load(['items.service', 'files']);
+        return view('orders.show', compact('order'));
     }
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN PAGES (Manage Orders)
+    | ADMIN PAGES (Manage Orders - Admin Side)
     |--------------------------------------------------------------------------
     */
 
@@ -68,59 +54,43 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::query()
+            ->visibleToPortalUser(auth()->user())
             ->latest()
             ->paginate(15);
 
         return view('orders.index', compact('orders'));
     }
 
-    /**
-     * Display a specific order (admin).
-     * GET /orders/{order}
-     */
     public function show(Order $order)
     {
-        $order->load(['items.service', 'user']);
+        abort_unless(Order::query()
+            ->visibleToPortalUser(auth()->user())
+            ->whereKey($order->getKey())
+            ->exists(), 403);
 
+        $order->load(['items.service', 'user', 'files']);
         return view('orders.show', compact('order'));
     }
 
-    /**
-     * Edit order (admin).
-     * GET /orders/{order}/edit
-     */
     public function edit(Order $order)
     {
         return view('orders.edit', compact('order'));
     }
 
-    /**
-     * Update order (admin).
-     * PUT /orders/{order}
-     */
     public function update(Request $request, Order $order)
     {
         $validated = $request->validate([
             'status' => ['required', 'string', 'max:255'],
         ]);
 
-        $order->update([
-            'status' => $validated['status'],
-        ]);
+        $order->update(['status' => $validated['status']]);
 
-        return redirect()->route('orders.index')
-            ->with('success', 'Order updated successfully.');
+        return redirect()->route('admin.orders.index')->with('success', 'Order updated successfully.');
     }
 
-    /**
-     * Delete order (admin).
-     * DELETE /orders/{order}
-     */
     public function destroy(Order $order)
     {
         $order->delete();
-
-        return redirect()->route('orders.index')
-            ->with('success', 'Order deleted successfully.');
+        return redirect()->route('admin.orders.index')->with('success', 'Order deleted successfully.');
     }
 }

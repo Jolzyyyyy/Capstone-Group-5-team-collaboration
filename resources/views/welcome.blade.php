@@ -8,7 +8,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('webproj.css') }}">
+    <link rel="stylesheet" href="{{ asset('webproj.css') }}?v=20260520-icon-hover">
 </head>
 <body>
 
@@ -16,16 +16,16 @@
     <div class="nav-left-spacer"></div>
 
     <nav class="nav-horizontal">
-        <a href="#home" onclick="jumpTo('home')">HOME</a>
-        <a href="#about" onclick="jumpTo('about')">ABOUT US</a>
-        <a href="#products" onclick="jumpTo('products')">SERVICES</a>
-        <a href="#contact" onclick="jumpTo('contact')">CONTACT US</a>
+        <a href="#home" class="nav-link" data-section="home" onclick="jumpTo('home'); return false;">HOME</a>
+        <a href="#about" class="nav-link" data-section="about" onclick="jumpTo('about'); return false;">ABOUT US</a>
+        <a href="#products" class="nav-link" data-section="products" onclick="jumpTo('products'); return false;">SERVICES</a>
+        <a href="#contact" class="nav-link" data-section="contact" onclick="jumpTo('contact'); return false;">CONTACT US</a>
     </nav>
 
     <div class="hero-signin-container" id="authContainer">
         <div class="nav-search-box">
             <input type="text" id="navSearchInput" placeholder="Search..." autocomplete="off">
-            <button type="button" class="nav-search-btn">
+            <button type="button" class="nav-search-btn" id="navSearchBtn" aria-label="Search sections and services">
                 <i class="fa fa-search"></i>
             </button>
         </div>
@@ -520,6 +520,6 @@
         </div>
     </div>
 
-    <script src="{{ asset('webproj.js') }}"></script>
+    <script src="{{ asset('webproj.js') }}?v=20260520-icon-hover"></script>
 </body>
 </html>

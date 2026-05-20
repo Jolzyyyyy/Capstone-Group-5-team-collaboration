@@ -18,11 +18,22 @@
 </head>
 <body>
 
-<h1>Order #{{ $order->id }} (Admin)</h1>
+@php
+    $isAdminView = request()->routeIs('admin.orders.show');
+@endphp
+
+<h1>Order #{{ $order->id }} {{ $isAdminView ? '(Admin)' : '(My Order)' }}</h1>
 
 <div class="row">
-    <a class="btn btn-outline" href="{{ route('orders.index') }}">Back to Orders</a>
-    <a class="btn btn-outline" href="{{ route('orders.edit', $order) }}">Edit Status</a>
+    @if($isAdminView)
+        <a class="btn btn-outline" href="{{ route('admin.orders.index') }}">Back to Orders</a>
+    @else
+        <a class="btn btn-outline" href="{{ route('my-orders') }}">Back to My Orders</a>
+    @endif
+
+    @if($isAdminView && !auth()->user()?->isAdminClient())
+        <a class="btn btn-outline" href="{{ route('admin.orders.edit', $order) }}">Edit Status</a>
+    @endif
 </div>
 
 <div class="box">
@@ -35,8 +46,12 @@
     <h3>Customer Info</h3>
     <p><strong>Customer Name:</strong> {{ $order->customer_name }}</p>
     <p><strong>Email:</strong> {{ $order->customer_email ?? '-' }}</p>
-    <p><strong>User ID:</strong> {{ $order->user_id ?? '-' }}</p>
-    <p><strong>Account Name:</strong> {{ $order->user?->name ?? 'N/A' }}</p>
+    @if($isAdminView)
+        <p><strong>User ID:</strong> {{ $order->user_id ?? '-' }}</p>
+        <p><strong>Account Name:</strong> {{ $order->user?->name ?? 'N/A' }}</p>
+    @else
+        <p class="muted">This order belongs to your account.</p>
+    @endif
 </div>
 
 <div class="box">
@@ -74,12 +89,33 @@
 </div>
 
 <div class="box">
-    <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Delete this order?');">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-outline">Delete Order</button>
-    </form>
+    <h3>Attached ZIP File</h3>
+
+    @if(!isset($order->files) || $order->files->count() === 0)
+        <p class="muted">No ZIP file attached.</p>
+    @else
+        @foreach($order->files as $file)
+            <p>
+                <a class="btn btn-outline" href="{{ \Illuminate\Support\Facades\Storage::url($file->path) }}" target="_blank">
+                    Download ZIP: {{ $file->original_name }}
+                </a>
+            </p>
+            <div class="muted">
+                Uploaded file is required before placing the order.
+            </div>
+        @endforeach
+    @endif
 </div>
+
+@if($isAdminView && !auth()->user()?->isAdminClient())
+    <div class="box">
+        <form method="POST" action="{{ route('admin.orders.destroy', $order) }}" onsubmit="return confirm('Delete this order?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-outline">Delete Order</button>
+        </form>
+    </div>
+@endif
 
 </body>
 </html>

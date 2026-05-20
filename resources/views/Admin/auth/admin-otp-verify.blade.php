@@ -1,89 +1,212 @@
 <x-guest-layout>
-    <div class="mb-4 text-center">
-        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">Security Verification</h2>
-    </div>
-
-    <div class="mb-6 text-sm text-gray-600 text-center px-4">
-        {{ __('Pakisulat ang 6-digit security code na ipinadala namin sa iyong Gmail') }}
-    </div>
-
-    @if (session('status'))
-        <div class="mb-4 font-medium text-sm text-green-600 text-center bg-green-50 p-2 rounded border border-green-200">
-            {{ session('status') }}
-        </div>
-    @endif
-
-    <div x-data="{ 
-        otp: '', 
-        timer: 60, 
-        canResend: false,
-        init() {
-            let interval = setInterval(() => {
-                if(this.timer > 0) this.timer--;
-                else { this.canResend = true; clearInterval(interval); }
-            }, 1000);
+    {{-- 1. LAYOUT OVERRIDE (Same as Customer) --}}
+    <style>
+        .min-h-screen {
+            background-color: #f3f4f6 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0 !important;
         }
-    }">
+        
+        .min-h-screen > div:first-child { display: none !important; }
+
+        .min-h-screen > div:last-child {
+            width: 100% !important;
+            max-width: none !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+        }
+    </style>
+
+    {{-- 2. EXACT CUSTOMER UI DIMENSIONS & SPACING (Admin Theme Colors) --}}
+    <style>
+        .auth-container {
+            background-color: #fff !important;
+            border-radius: 20px !important;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.05) !important;
+            width: 350px !important; /* EXACT SIZE */
+            max-width: 95vw !important;
+            padding: 30px 25px !important; /* EXACT PADDING */
+            text-align: center !important;
+            box-sizing: border-box !important;
+        }
+
+        .auth-title {
+            font-size: 1.25rem !important; 
+            font-weight: 700 !important;
+            color: #1a202c !important;
+            margin-bottom: 0.5rem !important;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+        }
+
+        .instruction-text {
+            font-size: 13px !important;
+            color: #64748b !important;
+            line-height: 1.5 !important;
+            margin-bottom: 20px !important;
+        }
+
+        .otp-input {
+            background-color: #f0f2f5 !important;
+            border: none !important;
+            padding: 12px 15px !important;
+            border-radius: 8px !important; 
+            width: 100% !important;
+            font-size: 22px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.4em !important;
+            text-align: center !important;
+            color: #1a202c !important;
+            box-sizing: border-box !important;
+            outline: none !important;
+            margin-bottom: 5px !important;
+        }
+
+        .auth-btn {
+            background-color: #4f46e5 !important; /* ADMIN THEME BLUE */
+            color: white !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            padding: 10px 0 !important;
+            border-radius: 25px !important;
+            width: 100% !important;
+            margin-top: 15px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            letter-spacing: 1px !important;
+            border: none !important;
+            transition: all 0.2s ease !important;
+            display: block !important;
+        }
+
+        .auth-btn:hover { background-color: #4338ca !important; }
+        .auth-btn:active { transform: scale(0.98) !important; }
+        .auth-btn:disabled { background-color: #cbd5e1 !important; cursor: not-allowed !important; }
+
+        .footer-nav {
+            margin-top: 10px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+        }
+
+        .nav-link {
+            font-size: 13px !important;
+            color: #64748b !important;
+            font-weight: 500 !important;
+            text-decoration: none !important;
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+        }
+
+        .nav-link:hover { 
+            color: #4f46e5 !important; 
+            text-decoration: underline !important;
+        }
+
+        .resend-link {
+            color: #4f46e5 !important; /* ADMIN THEME BLUE */
+            font-weight: 700 !important;
+        }
+
+        .timer-info {
+            font-size: 12px !important;
+            color: #94a3b8 !important;
+            font-style: italic !important;
+            margin-top: 12px !important;
+            margin-bottom: 5px !important;
+        }
+    </style>
+
+    <div class="auth-container" 
+         x-data="{ 
+            otp: '', 
+            timer: 60, 
+            canResend: false,
+            init() {
+                let interval = setInterval(() => {
+                    if (this.timer > 0) {
+                        this.timer--;
+                    } else {
+                        this.canResend = true;
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            }
+         }">
+        
+        <h1 class="auth-title">Verify Admin Account</h1>
+        
+        <p class="instruction-text">
+            Please enter the 6-digit security code sent to your email address to continue.
+        </p>
+
+        @if (session('status'))
+            <div style="color: #16a34a; font-size: 12px; font-weight: 600; margin-bottom: 10px;">
+                {{ session('status') }}
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('admin.otp.submit') }}">
             @csrf
-
             <input type="hidden" name="email" value="{{ session('admin_email') }}">
 
-            <div class="mb-6">
-                <x-input-label for="otp" :value="__('6-Digit Verification Code')" class="text-center mb-2" />
-                
-                <input id="otp" 
-                    type="text" 
-                    name="otp" 
-                    x-model="otp"
-                    @input="otp = otp.replace(/[^0-9]/g, '')"
-                    inputmode="numeric"
-                    maxlength="6" 
-                    placeholder="000000"
-                    required 
-                    autofocus 
-                    class="block w-full text-center text-3xl tracking-[0.75rem] font-mono font-bold border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm transition duration-150" 
-                    :class="otp.length > 0 && otp.length < 6 ? 'border-orange-400 ring-1 ring-orange-400' : ''" 
-                />
+            <input
+                id="otp"
+                type="text"
+                name="otp"
+                x-model="otp"
+                @input="otp = otp.replace(/[^0-9]/g, '')"
+                maxlength="6"
+                placeholder="000000"
+                class="otp-input"
+                required
+                autofocus
+            />
 
-                @error('otp')
-                    <div class="mt-2 text-red-600 text-sm text-center font-bold bg-red-50 p-2 rounded border border-red-200">
-                        {{ $message }}
-                    </div>
-                @enderror
-            </div>
+            @error('otp')
+                <div style="color: #dc2626; font-size: 11px; font-weight: 700; margin-top: 5px;">{{ $message }}</div>
+            @enderror
 
-            <div class="mt-6">
-                <x-primary-button 
-                    class="w-full justify-center py-3 bg-gray-800 hover:bg-gray-700 active:bg-gray-900 transition ease-in-out duration-150 disabled:opacity-50">
-                    {{ __('VERIFY CODE') }}
-                </x-primary-button>
-            </div>
+            <button type="submit" class="auth-btn" x-bind:disabled="otp.length !== 6">
+                Verify My Account
+            </button>
         </form>
 
-        <div class="mt-8 flex flex-col items-center gap-4">
-            <form method="POST" action="{{ route('admin.otp.resend') }}">
-                @csrf
-                <input type="hidden" name="email" value="{{ session('admin_email') }}">
-                
-                <button type="submit" 
-                        x-show="canResend"
-                        class="text-sm text-indigo-600 hover:text-indigo-900 underline font-medium">
-                    {{ __('Resend Code') }}
-                </button>
-                
-                <span x-show="!canResend" class="text-sm text-gray-500 font-medium italic">
-                    {{ __('Maaaring mag-resend sa loob ng ') }} 
-                    <span class="text-indigo-600 font-bold"><span x-text="timer"></span>s</span>
-                </span>
-            </form>
+        <div class="footer-nav">
+            {{-- Resend Logic Section --}}
+            <div>
+                <form method="POST" action="{{ route('admin.otp.resend') }}">
+                    @csrf
+                    <input type="hidden" name="email" value="{{ session('admin_email') }}">
+                    
+                    <button type="submit" x-show="canResend" class="nav-link resend-link">
+                        Resend Code
+                    </button>
 
-            <form method="POST" action="{{ route('admin.logout') }}">
-                @csrf
-                <button type="submit" class="underline text-xs text-gray-500 hover:text-gray-800 uppercase tracking-widest">
-                    {{ __('Cancel & Log Out') }}
-                </button>
-            </form>
+                    <div x-show="!canResend" class="timer-info">
+                        Resend available in <span x-text="timer" style="color:#4f46e5; font-weight: bold;"></span>s
+                    </div>
+                </form>
+            </div>
+
+            {{-- Logout Section --}}
+            <div style="margin-top: -2px;">
+                <form method="POST" action="{{ route('admin.logout') }}">
+                    @csrf
+                    <button type="submit" class="nav-link">
+                        Cancel
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </x-guest-layout>

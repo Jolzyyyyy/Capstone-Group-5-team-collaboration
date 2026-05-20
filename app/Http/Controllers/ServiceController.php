@@ -13,10 +13,7 @@ class ServiceController extends Controller
      * Customers can access: index, show
      * Admin (logged-in users) can access the rest.
      */
-    public function __construct()
-    {
-        $this->middleware(['auth', 'role:admin,developer'])->except(['index', 'show']);
-    }
+   
 
     /**
      * Display a listing of services (customer-facing).
@@ -46,6 +43,19 @@ class ServiceController extends Controller
         abort_if(!$service->is_active, 404);
 
         return view('services.show', compact('service'));
+    }
+
+    public function adminIndex()
+    {
+        $services = Service::query()
+            ->orderBy('category')
+            ->orderBy('name')
+            ->paginate(15);
+
+        return view('services.admin_index', [
+            'services' => $services,
+            'isViewOnly' => auth()->user()?->isAdminClient() ?? false,
+        ]);
     }
 
     /**

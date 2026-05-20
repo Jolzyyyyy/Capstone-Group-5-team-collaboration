@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
                  * 1. ADMIN FLOW (UNTOUCHED)
                  * Nanatiling original ang logic para sa Admin ayon sa iyong request.
                  */
-                if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+                if (method_exists($user, 'canAccessAdminPortal') && $user->canAccessAdminPortal()) {
                     return route('admin.otp.verify');
                 }
 

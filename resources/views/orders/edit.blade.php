@@ -20,12 +20,12 @@
 <h1>Edit Order #{{ $order->id }} (Admin)</h1>
 
 <div class="row">
-    <a class="btn btn-outline" href="{{ route('orders.show', $order) }}">Back to Order</a>
-    <a class="btn btn-outline" href="{{ route('orders.index') }}">Back to Orders</a>
+    <a class="btn btn-outline" href="{{ route('admin.orders.show', $order) }}">Back to Order</a>
+    <a class="btn btn-outline" href="{{ route('admin.orders.index') }}">Back to Orders</a>
 </div>
 
 <div class="box">
-    <form method="POST" action="{{ route('orders.update', $order) }}">
+    <form method="POST" action="{{ route('admin.orders.update', $order) }}">
         @csrf
         @method('PUT')
 

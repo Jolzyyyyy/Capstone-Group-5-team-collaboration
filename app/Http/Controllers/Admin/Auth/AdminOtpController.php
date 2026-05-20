@@ -96,7 +96,7 @@ class AdminOtpController extends Controller
         // Generate new 6-digit OTP
         $otp = sprintf("%06d", mt_rand(100000, 999999));
         $user->otp_code = $otp;
-        $user->otp_expires_at = now()->addMinutes(10);
+        $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
         $user->save();
 
         // Send Email specifically for Admin
