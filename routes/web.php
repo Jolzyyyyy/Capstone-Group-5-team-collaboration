@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 // --- CUSTOMER CONTROLLERS ---
+use App\Http\Controllers\FrontPageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -25,13 +26,14 @@ use App\Models\Service;
 | 1. PUBLIC ROUTES (Storefront)
 |--------------------------------------------------------------------------
 */
-Route::get('/', function () {
-    $services = Service::where('is_active', 1)
-        ->with('activeVariations')
-        ->get();
-
-    return view('welcome', compact('services'));
-})->name('home');
+Route::get('/', fn () => redirect('/home'))->name('root');
+Route::get('/home', [FrontPageController::class, 'home'])->name('home');
+Route::get('/products', fn () => redirect('/services'))->name('landing.products');
+Route::get('/about', [FrontPageController::class, 'about'])->name('landing.about');
+Route::get('/contact', [FrontPageController::class, 'contact'])->name('landing.contact');
+Route::get('/service-detail', [FrontPageController::class, 'serviceDetail'])->name('landing.service-detail');
+Route::get('/service-details', [FrontPageController::class, 'serviceDetail'])->name('landing.service-details');
+Route::get('/checkout', [FrontPageController::class, 'checkout'])->name('checkout.index');
 
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
