@@ -1,462 +1,358 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Printing Business Solution | Printify & Co.</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('webproj.css') }}?v=20260520-icon-hover">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Printing Business Solution | Printify &amp; Co.</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&family=Stack+Sans+Headline:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preload" as="image" href="{{ asset('images/optimized/Document PrintingS.webp') }}" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="{{ asset('images/optimized/PhotocopyS.webp') }}" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="{{ asset('images/optimized/Photo IDS.webp') }}" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" href="{{ asset('images/optimized/Lamination & BindingS.webp') }}" type="image/webp">
+<link rel="preload" as="image" href="{{ asset('images/optimized/Large FormatingS.webp') }}" type="image/webp">
+<link rel="preload" as="image" href="{{ asset('images/optimized/Custom SpecialS.webp') }}" type="image/webp">
+<style>
+:root{--red:#ff2b1a;--orange:#ff5a12;--orange2:#ff7b22;--dark:#070707;--text:#111111;--muted:#707070;--line:#ececec;--white:#ffffff;}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;overflow-x:hidden;color:var(--text);background:#ffffff;font-family:'Poppins',sans-serif;}
+.premium-site-header{position:sticky;top:0;z-index:1000;width:100%;background:rgba(255,255,255,0.98);border-bottom:1px solid #eeeeee;box-shadow:0 8px 30px rgba(0,0,0,0.05);transition:background .34s ease,border-color .34s ease,box-shadow .34s ease;}
+.premium-site-header.header-dark{background:rgba(7,7,7,0.98);border-bottom-color:rgba(255,255,255,0.12);box-shadow:0 10px 34px rgba(0,0,0,0.28);}
+.premium-main-navbar{position:relative;width:min(1680px,calc(100% - 110px));min-height:70px;margin:0 auto;display:flex;align-items:center;gap:34px;}
+.brand-logo-block{flex:0 0 230px;min-width:230px;height:70px;color:#111111;text-decoration:none;line-height:1;display:flex;flex-direction:column;justify-content:center;}
+.brand-main-text{font-family:'Poppins',sans-serif;font-size:24px;font-weight:900;letter-spacing:-1.2px;color:#111111;transition:color .2s ease;}
+.brand-sub-text{margin-top:4px;color:var(--red);font-family:'Montserrat',sans-serif;font-size:7.8px;font-weight:800;letter-spacing:1.35px;transition:color .2s ease;}
+.premium-site-header.header-dark .brand-main-text{color:#ffffff;}
+.nav-horizontal{position:absolute;left:50%;top:0;height:70px;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:54px;}
+.nav-link{position:relative;height:70px;display:inline-flex;align-items:center;color:#111111;text-decoration:none;border-bottom:0;font-family:'Montserrat',sans-serif;font-size:13.5px;font-weight:800;line-height:1;letter-spacing:1.45px;white-space:nowrap;transition:color 0.18s ease;}
+.nav-link::after{content:"";position:absolute;left:6px;right:6px;top:calc(50% + 13px);height:2px;border-radius:999px;background:var(--orange);opacity:0;transform:scaleX(0);transform-origin:center;transition:opacity .18s ease,transform .18s ease;}
+.nav-link:hover{color:var(--orange);}
+.nav-link.active{color:var(--orange);}
+.nav-link:hover::after,.nav-link.active::after{opacity:1;transform:scaleX(1);}
+.premium-site-header.header-dark .nav-link{color:#ffffff;}
+.premium-site-header.header-dark .nav-link:hover,.premium-site-header.header-dark .nav-link.active{color:var(--orange);}
+.hero-signin-container{height:70px;margin-left:auto;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:16px;}
+.nav-search-box{width:285px;height:38px;border:1px solid #dedede;border-radius:16px;background:#ffffff;display:flex;align-items:center;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,0.05);transition:border-color .22s ease,box-shadow .22s ease;}
+.nav-search-box:focus-within{border-color:var(--orange);box-shadow:0 12px 28px rgba(255,90,18,0.14);}
+.nav-search-box input{width:100%;height:100%;border:0;outline:0;padding:0 15px;color:#333333;font-size:11.5px;font-family:'Poppins',sans-serif;background:#ffffff;}
+.nav-search-box input::placeholder{color:#8b8b8b;}
+.nav-search-btn{width:44px;height:38px;border:0;border-left:1px solid rgba(0,0,0,.04);border-radius:0 15px 15px 0;cursor:pointer;background:var(--orange);display:grid;place-items:center;color:#ffffff;font-size:15px;transition:background .22s ease,box-shadow .22s ease;}
+.nav-search-btn i{color:inherit;}
+.nav-search-btn:hover{background:var(--red);box-shadow:0 8px 18px rgba(255,43,26,.24);transform:none;}
+.nav-icon-link{position:relative;height:70px;color:#111111;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:24px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:13.5px;font-weight:800;line-height:1;transition:color .2s ease;}
+.nav-icon-link:hover{color:var(--orange);}
+.nav-click-pulse{transform:scale(.96);}
+.nav-icon-link i{color:inherit;transition:color .2s ease;}
+.nav-svg-icon{width:25px;height:25px;object-fit:contain;display:block;filter:brightness(0) saturate(100%);transition:filter .2s ease;}
+.nav-icon-link:hover .nav-svg-icon,.nav-icon-link.is-active .nav-svg-icon{filter:brightness(0) saturate(100%) invert(48%) sepia(98%) saturate(2262%) hue-rotate(351deg) brightness(101%) contrast(101%);}
+.premium-site-header.header-dark .nav-icon-link{color:#ffffff;}
+.premium-site-header.header-dark .nav-svg-icon{filter:brightness(0) saturate(100%) invert(100%);}
+.premium-site-header.header-dark .nav-icon-link:hover .nav-svg-icon,.premium-site-header.header-dark .nav-icon-link.is-active .nav-svg-icon{filter:brightness(0) saturate(100%) invert(48%) sepia(98%) saturate(2262%) hue-rotate(351deg) brightness(101%) contrast(101%);}
+.account-label{max-width:150px;color:#111111;font-family:'Montserrat',sans-serif;font-size:13.5px;font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .2s ease;}
+.premium-site-header.header-dark .account-label{color:#ffffff;}
+.nav-icon-link:hover .account-label,.premium-site-header.header-dark .nav-icon-link:hover .account-label{color:var(--orange);}
+.main-content{padding-top:0;}
+.section{display:none;}
+.section.active{display:block;}
+#home,#products,#services,#about,#contact{display:block!important;scroll-margin-top:76px;}
+.home-premium-page{width:100%;background:#ffffff;}
+.home-premium-hero{position:relative;height:550px;min-height:550px;overflow:hidden;background:#070707;}
+.home-premium-slider,.hero-slide,.hero-overlay,.home-hero-light-streaks,.home-hero-particles{position:absolute;inset:0;}
+.hero-slide{opacity:0;background-size:cover;background-position:center center;transform:scale(1.01);will-change:opacity;transition:opacity .75s ease;}
+.hero-slide.active{opacity:1;transform:scale(1);}
+.home-premium-overlay{z-index:1;background:linear-gradient(90deg,rgba(0,0,0,0.84)0%,rgba(0,0,0,0.58)33%,rgba(0,0,0,0.22)62%,rgba(0,0,0,0.56)100%),radial-gradient(circle at 28% 55%,rgba(255,91,18,0.23),transparent 35%),radial-gradient(circle at 84% 40%,rgba(18,85,120,0.28),transparent 35%);}
+.home-hero-light-streaks{z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.74;background:linear-gradient(115deg,transparent 15%,rgba(255,91,18,.22)30%,transparent 41%),linear-gradient(108deg,transparent 62%,rgba(255,255,255,.14)70%,transparent 80%);}
+.home-hero-particles{display:none;}
+.home-premium-hero-inner{position:relative;z-index:5;width:min(1500px,calc(100% - 270px));height:550px;margin:0 auto;display:grid;grid-template-columns:minmax(470px,610px)minmax(300px,365px);align-items:center;justify-content:space-between;gap:76px;padding:44px 0 70px;}
+.home-premium-copy{color:#ffffff;max-width:600px;transform:translateY(-2px);}
+.home-premium-kicker{margin:0 0 9px;color:#ffffff;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;}
+.home-premium-title{margin:0;color:#ffffff;font-family:'Poppins',sans-serif;font-size:clamp(39px,3.3vw,58px);line-height:0.96;letter-spacing:-1.6px;font-weight:900;text-transform:uppercase;text-shadow:0 8px 28px rgba(0,0,0,0.58);}
+.home-premium-title .title-line{display:block;white-space:nowrap;}
+.home-premium-title .title-accent{color:var(--orange);}
+.home-premium-title .letter{display:inline-block;opacity:0;transform:translateY(10px);animation:letterIgnite .52s cubic-bezier(.2,.8,.2,1)forwards;}
+.home-premium-title .letter.space{width:0.32em;}
+.home-premium-description{max-width:585px;margin:18px 0 0;color:rgba(255,255,255,0.9);font-family:'Poppins',sans-serif;font-size:15px;font-weight:400;line-height:1.52;}
+.home-premium-actions{margin-top:25px;display:flex;align-items:center;gap:16px;}
+.home-primary-btn,.home-secondary-btn{height:47px;padding:0 26px;border-radius:999px;cursor:pointer;font-family:'Stack Sans Headline',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.8px;display:inline-flex;align-items:center;gap:11px;transition:background .25s ease,color .25s ease,border-color .25s ease,box-shadow .25s ease;}
+.home-primary-btn{color:#ffffff;border:1px solid rgba(255,255,255,0.68);background:rgba(0,0,0,0.25);box-shadow:0 14px 34px rgba(0,0,0,0.22);}
+.home-secondary-btn{color:#ffffff;border:1px solid rgba(255,255,255,0.68);background:rgba(0,0,0,0.25);box-shadow:0 14px 34px rgba(0,0,0,0.16);}
+.home-primary-btn:hover,.home-secondary-btn:hover{background:var(--orange);border-color:var(--orange);color:#ffffff;box-shadow:0 14px 34px rgba(255,90,18,0.32);transform:none;}
+.home-premium-service-panel{justify-self:end;width:365px;padding:26px 25px;border:1px solid rgba(255,255,255,0.18);border-radius:22px;color:#ffffff;background:linear-gradient(135deg,rgba(20,22,26,0.78),rgba(255,255,255,0.10));backdrop-filter:blur(15px);box-shadow:0 25px 70px rgba(0,0,0,0.35);}
+.hero-feature-item{display:grid;grid-template-columns:44px 1fr;gap:13px;align-items:start;transition:color .2s ease;}
+.hero-feature-item+.hero-feature-item{margin-top:23px;}
+.hero-feature-icon{width:35px;height:35px;border-radius:50%;color:var(--orange);background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.68);display:grid;place-items:center;font-size:17px;}
+.hero-feature-text h3{margin:0 0 4px;color:#ffffff;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;transition:color .2s ease;}
+.hero-feature-text p{margin:0;color:rgba(255,255,255,0.76);font-family:'Poppins',sans-serif;font-size:11px;font-weight:400;line-height:1.42;transition:color .2s ease;}
+.hero-feature-item:hover h3{color:#ffffff;}
+.hero-feature-item:hover p{color:rgba(255,255,255,.92);}
+.home-premium-dots{position:absolute;left:50%;bottom:31px;z-index:6;display:flex;align-items:center;gap:10px;transform:translateX(-50%);}
+.home-premium-dots .dot{width:11px;height:11px;cursor:pointer;border-radius:999px;background:rgba(255,255,255,0.65);transition:0.25s ease;}
+.home-premium-dots .dot.active{width:31px;background:var(--orange);}
+@keyframes letterIgnite{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:1320px){.premium-main-navbar{width:min(100% - 34px,1180px);display:flex;flex-wrap:wrap;padding:10px 0;}.nav-horizontal{position:static;order:3;flex-basis:100%;height:auto;transform:none;gap:34px;}.nav-link{height:auto;padding:17px 0;}.nav-link::after{top:auto;bottom:8px;}.hero-signin-container{min-width:0;margin-left:auto;}.nav-search-box{width:230px;}}
+@media(max-width:1180px){.brand-logo-block{min-width:190px;}.nav-search-box{display:none;}.home-premium-hero,.home-premium-hero-inner{height:680px;min-height:680px;}.home-premium-hero-inner{width:min(100% - 44px,1000px);grid-template-columns:1fr;gap:22px;align-content:center;}.home-premium-service-panel{justify-self:start;width:min(100%,460px);}}
+@media(max-width:720px){.premium-main-navbar{width:calc(100% - 26px);gap:14px;}.brand-main-text{font-size:21px;}.nav-horizontal{justify-content:flex-start;overflow-x:auto;gap:24px;}.nav-link{font-size:12px;padding:17px 0;}.hero-signin-container{gap:13px;}.account-label{display:none;}.home-premium-hero,.home-premium-hero-inner{height:760px;min-height:760px;}.home-premium-title{font-size:38px;}.home-premium-title .title-line{white-space:normal;}.home-premium-description{font-size:13px;}.home-premium-actions{flex-wrap:wrap;}.home-premium-service-panel{padding:22px;}}
+
+.checkout-section{display:none;min-height:calc(100vh - 70px);background:#fbfaf8;}
+.checkout-section.active{display:block;}
+body.checkout-open{background:#fbfaf8;}
+body.checkout-open #pageWrapper{display:none;}
+body.front-route-service-details #pageWrapper,
+body.front-route-checkout #pageWrapper{display:none!important;}
+body.front-route-service-details #serviceDetail{display:block;}
+.front-feedback-toast{position:fixed;left:50%;top:94px;z-index:100000;min-width:260px;max-width:min(460px,calc(100vw - 32px));transform:translate(-50%,-14px);opacity:0;pointer-events:none;background:#111827;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:13px 16px;text-align:center;font:700 12px/1.45 'Inter','Poppins',sans-serif;box-shadow:0 18px 50px rgba(17,24,39,.26);transition:opacity .2s ease,transform .2s ease}
+.front-feedback-toast.show{opacity:1;transform:translate(-50%,0)}
+
+</style>
 </head>
-<body>
-
-@php
-    $resolveImageUrl = function (?string $path): string {
-        $fallback = asset('images/Prdcts1.jpg');
-
-        if (empty($path)) {
-            return $fallback;
-        }
-
-        $normalizedPath = ltrim(trim($path), '/');
-
-        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['http://', 'https://'])) {
-            return $normalizedPath;
-        }
-
-        if (\Illuminate\Support\Str::startsWith($normalizedPath, 'public/')) {
-            $normalizedPath = \Illuminate\Support\Str::after($normalizedPath, 'public/');
-        }
-
-        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['images/', 'img/'])) {
-            return file_exists(public_path($normalizedPath)) ? asset($normalizedPath) : $fallback;
-        }
-
-        if (file_exists(public_path('images/' . $normalizedPath))) {
-            return asset('images/' . $normalizedPath);
-        }
-
-        if (file_exists(public_path($normalizedPath))) {
-            return asset($normalizedPath);
-        }
-
-        return $fallback;
-    };
-
-    $serviceCards = [
-        ['key' => 'doc', 'title' => 'DOCUMENT PRINTING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'photo', 'title' => 'PHOTOCOPY & SCANNING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'id', 'title' => 'ID & PHOTO SERVICES', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'bind', 'title' => 'LAMINATION & BINDING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'largeformat', 'title' => 'LARGE FORMAT PRINTING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'special', 'title' => 'CUSTOM SPECIAL PRINTING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-    ];
-@endphp
-
-<header class="top-nav-bar" id="mainHeader">
-    <div class="nav-spacer" aria-hidden="true"></div>
-    <nav class="nav-horizontal">
-        <a href="#home" class="nav-link" data-section="home" onclick="jumpTo('home'); return false;">HOME</a>
-        <a href="#about" class="nav-link" data-section="about" onclick="jumpTo('about'); return false;">ABOUT US</a>
-        <a href="#products" class="nav-link" data-section="products" onclick="jumpTo('products'); return false;">SERVICES</a>
-        <a href="#contact" class="nav-link" data-section="contact" onclick="jumpTo('contact'); return false;">CONTACT US</a>
-    </nav>
-
-    <div class="hero-signin-container" id="authContainer">
-        <div class="nav-search-box">
-            <input type="text" id="navSearchInput" placeholder="Search..." autocomplete="off">
-            <button type="button" class="nav-search-btn" id="navSearchBtn" aria-label="Search sections and services">
-                <i class="fa fa-search"></i>
-            </button>
-        </div>
-
-        <a href="#" id="navHeart" class="nav-icon-link" aria-label="Wishlist">
-            <img src="{{ asset('images/Heart.svg') }}" alt="Heart" class="nav-svg-icon">
-        </a>
-
-        <a href="javascript:void(0)" onclick="toggleCart()" id="navCart" class="nav-icon-link" aria-label="Cart">
-            <img src="{{ asset('images/Shopping cart.svg') }}" alt="Cart" class="nav-svg-icon">
-            <span class="cart-badge" id="cartBadge">0</span>
-        </a>
-    </div>
+@php($activeSection = $activeSection ?? 'home')
+<body class="front-route-{{ str_replace('_', '-', $activeSection) }}">
+<div id="frontFeedbackToast" class="front-feedback-toast" role="status" aria-live="polite"></div>
+<header class="top-nav-bar premium-site-header" id="mainHeader">
+<div class="premium-main-navbar">
+<a href="/home" class="brand-logo-block" aria-label="Printify and Co Home">
+<span class="brand-main-text">PRINTIFY &amp; CO.</span>
+<span class="brand-sub-text">CRAFTING YOUR VISION INTO REALITY</span>
+</a>
+<nav class="nav-horizontal" aria-label="Main navigation">
+<a href="/home" class="nav-link {{ $activeSection === 'home' ? 'active' : '' }}" data-section="home">HOME</a>
+<a href="/about" class="nav-link {{ $activeSection === 'about' ? 'active' : '' }}" data-section="about">ABOUT US</a>
+<a href="/services" class="nav-link {{ $activeSection === 'products' || $activeSection === 'service-details' ? 'active' : '' }}" data-section="products">SERVICES</a>
+<a href="/contact" class="nav-link {{ $activeSection === 'contact' ? 'active' : '' }}" data-section="contact">CONTACT US</a>
+</nav>
+<div class="hero-signin-container" id="authContainer">
+<div class="nav-search-box">
+<input type="text" id="navSearchInput" placeholder="Search products or services..." autocomplete="off">
+<button type="button" class="nav-search-btn" id="navSearchBtn" aria-label="Search sections and services"><i class="fa fa-search"></i></button>
+</div>
+<a href="javascript:void(0)" id="navHeart" class="nav-icon-link" onclick="toggleWishlist();return false;" aria-label="Wishlist" aria-pressed="false"><img src="{{ asset('images/Heart.svg') }}" alt="Heart" class="nav-svg-icon"></a>
+<a href="javascript:void(0)" onclick="if(typeof requireSignedInForOrder==='function'&&!requireSignedInForOrder())return false;if(typeof toggleCart==='function'){return toggleCart();}return false;" id="navCart" class="nav-icon-link" aria-label="Cart"><img src="{{ asset('images/Shopping cart.svg') }}" alt="Cart" class="nav-svg-icon"><span class="cart-badge" id="cartBadge">0</span></a>
+@auth
+@if(Auth::user()->role === 'admin')
+<a href="{{ route('admin.dashboard') }}" class="nav-icon-link" title="Admin Panel"><img src="{{ asset('images/user-logged.svg') }}" alt="Admin Profile" class="nav-svg-icon"><span class="account-label">{{ Auth::user()->name }}</span></a>
+@else
+<a href="{{ route('dashboard') }}" class="nav-icon-link"><img src="{{ asset('images/user-logged.svg') }}" alt="Profile" class="nav-svg-icon"><span class="account-label">{{ Auth::user()->name }}</span></a>
+@endif
+@else
+<a href="{{ route('login') }}" id="navUserPlus" class="nav-icon-link"><img src="{{ asset('images/User plus.svg') }}" alt="User Plus" class="nav-svg-icon"><span class="account-label">Account</span><i class="fa-solid fa-chevron-down" style="font-size:10px"></i></a>
+@endauth
+</div>
+</div>
 </header>
 
 <div class="main-content" id="pageWrapper">
-    <section id="home" class="section active">
-        <div class="hero-container">
-            <div class="hero-slide active" style="background-image:url('{{ asset('images/Homesld1.jpg') }}')"></div>
-            <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld2.jpg') }}')"></div>
-            <div class="hero-slide" style="background-image:url('{{ asset('images/Homesld3.jpg') }}')"></div>
-            
-            <div class="slide-indicators">
-                <div class="dot active" onclick="jumpToHero(0)"></div>
-                <div class="dot" onclick="jumpToHero(1)"></div>
-                <div class="dot" onclick="jumpToHero(2)"></div>
-            </div>
-
-            <div class="hero-text animate" id="homeText">
-                <h1>Printify & Co.</h1>
-                <p class="hero-tagline">
-                    Crafting Your Vision into Reality
-                </p>
-                <p class="hero-subtitle">
-                    Premium Prints | Fast Delivery | Unlimited Possibilities
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <section id="services" class="section">
-        <h2 class="services-section-title">What We Print</h2>
-        <p class="services-section-intro">Print solutions designed for school, business, events, and everyday document needs.</p>
-        <div class="services-container">
-            @foreach ($serviceCards as $service)
-                <div class="service-item" onclick="openModal('{{ $service['key'] }}')">
-                    <div class="service-image-wrapper">
-                        <img
-                            src="{{ $service['image'] }}"
-                            alt="{{ $service['title'] }}"
-                            onerror="this.onerror=null;this.src='{{ asset('images/Prdcts1.jpg') }}';"
-                        >
-                    </div>
-                    <h3>{{ $service['title'] }}</h3>
-                </div>
-            @endforeach
-        </div>
-    </section>
-
-    <section id="about" class="section">
-        <h2 class="about-section-title">Who We Are</h2>
-        <div class="about-grid-container">
-            <div class="about-intro">
-                <p>A trusted print partner focused on quality output, fast turnaround, and dependable service.</p>
-            </div>
-
-            <div class="about-main-content">
-                <div class="about-col">
-                    <div class="info-block">
-                        <h3><i class="fa-solid fa-bullseye"></i> Mission &amp; Vision</h3>
-                        <p>Clearly presenting our long-term goals to help users understand our business direction and service commitment to excellence.</p>
-                    </div>
-                    <div class="info-block">
-                        <h3><i class="fa-solid fa-star"></i> Core Values</h3>
-                        <p>Quality, reliability, customer satisfaction, and timely delivery. We reinforce trust through professional craftsmanship.</p>
-                    </div>
-                    <div class="info-block">
-                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Company History</h3>
-                        <p>Established with a passion for printing, showing growth and experience through major achievements in the industry.</p>
-                    </div>
-                </div>
-
-                <div class="about-col">
-                    <div class="info-block">
-                        <h3><i class="fa-solid fa-microchip"></i> Technology &amp; Equipment</h3>
-                        <p>We showcase modern printing machines and software to emphasize quality, efficiency, and modern production standards.</p>
-                    </div>
-                    <div class="info-block">
-                        <h3><i class="fa-solid fa-users"></i> Meet the Team</h3>
-                        <p>Our key staff and management work together to humanize the business and build lasting customer trust.</p>
-                    </div>
-                    <div class="info-block">
-                        <h3><i class="fa-solid fa-certificate"></i> Why Choose Us</h3>
-                        <p>Competitive advantages including affordable pricing, fast turnaround time, and high-end quality assurance.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="testimonials-preview">
-                <h3>Customer Testimonials</h3>
-                <p>"The best printing service in the city! Fast and very reliable." - Satisfied Client</p>
-            </div>
-        </div>
-    </section>
-
-    <section id="contact" class="section">
-        <h2 class="contact-section-title">Let's Connect</h2>
-        <p class="contact-section-intro">Send us your inquiry, request a quote, or ask for guidance on the best print option for your project.</p>
-        <div class="contact-wrapper">
-            <div class="contact-info-side">
-                <div class="contact-info-card">
-                    <h3 class="contact-panel-title">Get in Touch</h3>
-                    <div class="contact-detail-list">
-                        <p><i class="fa-solid fa-location-dot"></i> 123 Printing St., Metro Manila</p>
-                        <p><i class="fa-solid fa-phone"></i> +63 912 345 6789</p>
-                        <p><i class="fa-solid fa-envelope"></i> hello@printify.co</p>
-                        <p><i class="fa-solid fa-clock"></i> Operating Hours: Mon - Sat, 8:00 AM - 6:00 PM</p>
-                    </div>
-
-                    <div class="social-channels">
-                        <p><strong>Follow Us</strong></p>
-                        <div class="social-links-row">
-                            <a href="#" class="social-link social-facebook" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                            <a href="#" class="social-link social-instagram" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                            <a href="#" class="social-link social-viber" aria-label="Viber"><i class="fa-brands fa-viber"></i></a>
-                        </div>
-                    </div>
-
-                    <div class="map-placeholder">
-                        <span><i class="fa-solid fa-map-location-dot"></i> Embedded Google Map Here</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="contact-form-side">
-                <div class="contact-form-card">
-                    <h3 class="contact-panel-title">Send a Message</h3>
-                    <p class="contact-form-intro">Tell us what you need and our team will get back to you with the right printing guidance.</p>
-                    <form id="contactForm" class="contact-form">
-                        <input type="text" placeholder="Your Name">
-                        <input type="email" placeholder="Email Address">
-                        <select>
-                        <option value="">Inquiry Category</option>
-                        <option value="general">General Inquiry</option>
-                        <option value="quotation">Request a Quotation</option>
-                        <option value="service">Service Support</option>
-                        </select>
-                        <textarea placeholder="Your Message" rows="5"></textarea>
-                        <button type="button" class="contact-submit-btn">Send Message</button>
-                        <p class="contact-form-note">An auto-response confirmation will be sent to your email.</p>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </section>
+<section id="home" class="section active">
+<div class="home-premium-page">
+<div class="home-premium-hero">
+<div class="hero-slider home-premium-slider">
+<div class="hero-slide active" style="background-image:url('{{ asset('images/Homesld1.jpg') }}')"></div>
+<div class="hero-slide" style="background-image:url('{{ asset('images/Homesld2.jpg') }}')"></div>
+<div class="hero-slide" style="background-image:url('{{ asset('images/Homesld3.jpg') }}')"></div>
 </div>
-
-<section id="productDetail" class="detail-section">
-    <div class="detail-container">
-        <div class="detail-sidebar" id="detailSidebar">
-            <div class="sidebar-viewport">
-                <div class="sidebar-track" id="sidebarTrack">
-                    </div>
-            </div>
-        </div>
-
-        <div class="detail-images-slider">
-            <div class="product-title-header">
-                <p id="detailCategoryHeader" class="detail-category-header">DOCUMENT PRINTING</p>
-                <h2 id="detailTitleHeader">DOCUMENT PRINTING</h2>
-                <div class="stock-indicator">
-                    <div class="stock-dot-glow"></div>
-                    <span id="availabilityText">IN STOCK</span>
-                </div>
-            </div>
-            
-            <div class="preview-viewport">
-                <button class="preview-btn prev-p" id="detailPrevBtn" onclick="movePreview(-1)">&lt;</button>
-                <div class="preview-track" id="previewTrack">
-                    </div>
-                <button class="preview-btn next-p" id="detailNextBtn" onclick="movePreview(1)">&gt;</button>
-            </div>
-
-            <div class="reviews-yellow-box">
-                <div class="rev-header-inline">
-                    <span>Customer Reviews</span>
-                    <span style="color: #f1c40f;">5/5 <small style="color:#333">(Verified)</small></span>
-                </div>
-                <div class="reviews-horizontal-scroll" id="reviewsList">
-                    </div>
-            </div>
-        </div>
-
-        <div class="detail-info-panel" id="detailInfoPanel">
-            <div class="detail-meta-card">
-                <p id="serviceMaterial" class="service-material">Premium 80gsm Bond Paper</p>
-                <div id="serviceInclusions" class="service-inclusions">Select a variation to view inclusions and service details.</div>
-            </div>
-
-            <div class="detail-options-grid" id="primaryOptionsGrid">
-            
-            <div class="custom-option-group" id="printCategoryGroup">
-                <label id="printCategoryLabel">Printing Category</label>
-                <select class="custom-select" id="printCategory" onchange="syncPreviewFromDropdowns(); updatePrice()">
-                    <optgroup label="TEXT ONLY">
-                        <option value="DOC-TX-001">B&W - DOC-TX-001</option>
-                        <option value="DOC-TX-002">Partially Colored - DOC-TX-002</option>
-                        <option value="DOC-TX-003">Full Colored - DOC-TX-003</option>
-                    </optgroup>
-                    <optgroup label="TEXT WITH IMAGE (TWI)">
-                        <option value="DOC-TWI-004">B&W - DOC-TWI-004</option>
-                        <option value="DOC-TWI-005">Partially Colored - DOC-TWI-005</option>
-                        <option value="DOC-TWI-006">Full Colored - DOC-TWI-006</option>
-                    </optgroup>
-                    <optgroup label="IMAGE ONLY (IM)">
-                        <option value="DOC-IM-007">B&W - DOC-IM-007</option>
-                        <option value="DOC-IM-008">Partially Colored - DOC-IM-008</option>
-                        <option value="DOC-IM-009">Full Colored - DOC-IM-009</option>
-                    </optgroup>
-                    <optgroup label="PHOTOCOPY & SCANNING">
-                        <option value="DOC-PCPY-001">B&W Photocopy - DOC-PCPY-001</option>
-                        <option value="DOC-PCPY-002">Partial Color Copy - DOC-PCPY-002</option>
-                        <option value="DOC-PCPY-003">Full Color Copy - DOC-PCPY-003</option>
-                    </optgroup>
-                    <optgroup label="ID & PHOTO SERVICES">
-                        <option value="IDP-PKG-001">Package A (1x1 & 2x2 Mixed) - IDP-PKG-001</option>
-                        <option value="IDP-PKG-002">Package B (1x1 - 8pcs) - IDP-PKG-002</option>
-                        <option value="IDP-PKG-003">Package C (2x2 - 8pcs) - IDP-PKG-003</option>
-                        <option value="IDP-PKG-004">Package D (Passport Size - 5pcs) - IDP-PKG-004</option>
-                        <option value="IDP-PKG-005">Package E (1.5 x 1.5 - 6pcs) - IDP-PKG-005</option>
-                        <option value="IDP-PKG-006">Package F (Wallet Size - 5pcs) - IDP-PKG-006</option>
-                    </optgroup>
-                </select>
-            </div>
-
-            <div class="custom-option-group" id="contentTypeGroup" style="display:none;">
-                <label id="contentTypeLabel">Content Type</label>
-                <select class="custom-select" id="contentTypeSelect" onchange="syncPreviewFromDropdowns(); updatePrice()">
-                    <option value="">Select Content Type</option>
-                </select>
-            </div>
-
-            <div class="custom-option-group" id="colorVariationGroup">
-                <label id="colorModeLabel">Color Variation</label>
-                <select class="custom-select" id="colorMode" onchange="syncPreviewFromDropdowns(); updatePrice()">
-                    <option value="0">Standard Quality</option>
-                    <option value="1">High Definition</option>
-                    <option value="2">Draft / Economy</option>
-                </select>
-            </div>
-
-            <div class="custom-option-group" id="paperSizeGroup">
-                <label id="paperSizeLabel">Paper Size</label>
-                <select class="custom-select" id="paperSize" onchange="syncPreviewFromDropdowns(); updatePrice()">
-                    <option value="short">Short (8.5 x 11)</option>
-                    <option value="a4">A4 (8.27 x 11.69)</option>
-                    <option value="long">Long (8.5 x 13)</option>
-                </select>
-            </div>
-
-            <div class="custom-option-group quantity-row" id="quantityGroup">
-                <label>Quantity</label>
-                <div class="qty-container">
-                    <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
-                    <input type="number" id="qtyInput" value="1" min="1" class="qty-input-styled" oninput="updatePrice()">
-                    <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
-                </div>
-            </div>
-            </div>
-
-            <div class="detail-inline-note">
-                <span class="detail-inline-label">Reminder:</span>
-                <p>Please double-check your selected quantity, selected service option, and uploaded file before submitting your order.</p>
-            </div>
-
-            <div class="custom-option-group stacked-group" id="fileUploadGroup">
-                <label>File Upload</label>
-                <input type="file" id="fileUploadInput" class="custom-file-input">
-            </div>
-
-            <div class="detail-options-grid detail-secondary-grid">
-                <div class="custom-option-group" id="serviceOptionGroup">
-                    <label id="serviceOptionLabel">Service Option</label>
-                    <select class="custom-select" id="serviceOptionSelect" onchange="syncPreviewFromDropdowns(); updatePrice()">
-                        <option value="">Select Option</option>
-                    </select>
-                </div>
-
-                <div class="custom-option-group" id="fileTypeGroup">
-                    <label>File Type</label>
-                    <select class="custom-select" id="fileTypeSelect">
-                        <option value="">Select File Type</option>
-                        <option value="jpg">JPG / JPEG</option>
-                        <option value="png">PNG</option>
-                        <option value="pdf">PDF</option>
-                        <option value="docx">DOCX</option>
-                        <option value="psd">PSD</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="detail-inline-note detail-note-block">
-                <span class="detail-inline-label">Note:</span>
-                <p id="serviceNotes">Files that require editing, layout adjustments, or design enhancement may have additional charges depending on the type and complexity of the service needed. For best results, please upload high-resolution files.</p>
-            </div>
-
-            <div class="service-id-row">
-                <span class="service-id-label">SERVICE ID:</span>
-                <span id="currentServiceId" class="service-id-value">DOC-TX-001</span>
-            </div>
-
-            <p id="productSpecs" class="specs-box">Premium 80gsm paper, crisp ink quality.</p>
-
-            <div class="price-summary">
-                <div class="price-row-flex">
-                    <label class="price-option-wrapper" id="retailPriceOption">
-                        <input type="radio" name="priceType" value="retail" checked onclick="updatePrice()">
-                        <div class="price-item">
-                            <p class="price-label">Retail</p>
-                            <div class="unit-price">PHP <span id="retailAmount">0.00</span></div>
-                        </div>
-                    </label>
-                    <label class="price-option-wrapper" id="bulkPriceOption">
-                        <input type="radio" name="priceType" value="bulk" onclick="updatePrice()">
-                        <div class="price-item">
-                            <p class="price-label" style="color:#27ae60;">Bulk</p>
-                            <div class="unit-price" style="color:#27ae60;">PHP <span id="bulkAmount">0.00</span></div>
-                        </div>
-                    </label>
-                </div>
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
-                <div class="total-price-box">
-                    <span style="font-size: 13px; color: #666;">Total Amount:</span>
-                    <h3 class="total-price" style="color: #d35400;">PHP <span id="totalAmount">0.00</span></h3>
-                </div>
-                <p id="bulkThresholdNote" class="bulk-threshold-note">Bulk pricing is available for 100+ pages. Upload a print-ready file and confirm the final page count before checkout.</p>
-            </div>
-
-            <div class="btn-row">
-                <button class="btn-cart" onclick="addToCart()"><i class="fa-solid fa-cart-plus"></i> Add to Cart</button>
-                <button type="button" class="btn-buy" onclick="placeOrderNow()">Place Order Now</button>
-            </div>
-
-            <div class="return-container">
-                <a onclick="backToMain()" class="return-link-btn" style="cursor: pointer;">
-                   <i class="fa-solid fa-arrow-left"></i> BACK TO SERVICES
-                </a>
-            </div>
-        </div>
-    </div>
+<div class="hero-overlay home-premium-overlay"></div>
+<div class="home-hero-light-streaks" aria-hidden="true"></div>
+<div class="home-hero-particles" aria-hidden="true"></div>
+<div class="home-premium-hero-inner">
+<div class="home-premium-copy">
+<p class="home-premium-kicker">HIGH-QUALITY PRINTING SOLUTIONS</p>
+<h1 class="home-premium-title" id="kineticHeroTitle" aria-label="Premium prints. Fast delivery. Unlimited possibilities.">
+<span class="title-line">PREMIUM PRINTS.</span>
+<span class="title-line">FAST DELIVERY.</span>
+<span class="title-line title-accent">UNLIMITED</span>
+<span class="title-line">POSSIBILITIES.</span>
+</h1>
+<p class="home-premium-description">High-quality printing solutions for every need. From documents to large formats, we deliver precision, color, and impact.</p>
+<div class="home-premium-actions">
+<button type="button" class="home-primary-btn" onclick="window.location.href='/services'">EXPLORE SERVICES <i class="fa-solid fa-arrow-right"></i></button>
+<button type="button" class="home-secondary-btn" onclick="window.location.href='/contact'">GET A QUOTE <i class="fa-regular fa-file-lines"></i></button>
+</div>
+</div>
+<div class="home-premium-service-panel" aria-label="Service highlights">
+<div class="hero-feature-item"><div class="hero-feature-icon"><i class="fa-solid fa-award"></i></div><div class="hero-feature-text"><h3>Premium Quality</h3><p>Vibrant colors, sharp detail, and lasting prints.</p></div></div>
+<div class="hero-feature-item"><div class="hero-feature-icon"><i class="fa-solid fa-stopwatch"></i></div><div class="hero-feature-text"><h3>Fast Turnaround</h3><p>Quick production and reliable on-time delivery.</p></div></div>
+<div class="hero-feature-item"><div class="hero-feature-icon"><i class="fa-solid fa-book-open"></i></div><div class="hero-feature-text"><h3>Wide Range</h3><p>From documents to large format and custom prints.</p></div></div>
+<div class="hero-feature-item"><div class="hero-feature-icon"><i class="fa-solid fa-coins"></i></div><div class="hero-feature-text"><h3>Affordable Pricing</h3><p>Competitive rates without compromising quality.</p></div></div>
+</div>
+</div>
+<div class="slide-indicators home-premium-dots">
+<div class="dot active" onclick="jumpToHero(0)"></div>
+<div class="dot" onclick="jumpToHero(1)"></div>
+<div class="dot" onclick="jumpToHero(2)"></div>
+</div>
+</div>
+</div>
 </section>
-
-<div class="cart-drawer-overlay" id="cartOverlay" onclick="toggleCart()"></div>
-<div class="cart-drawer" id="cartDrawer">
-    <div class="cart-header">
-        <h2>Your Shopping Cart</h2>
-        <span class="close-cart" onclick="toggleCart()">&times;</span>
-    </div>
-    <div class="cart-items-list" id="cartItemsList"></div>
-    <div class="cart-footer">
-        <div class="voucher-container">
-            <div class="voucher-input-group">
-                <input type="text" id="voucherCode" placeholder="Enter Voucher Code">
-                <button class="apply-voucher-btn" onclick="applyVoucher()">Apply</button>
-            </div>
-            <p id="voucherMsg" class="voucher-message"></p>
-        </div>
-        <div class="cart-total-row">
-            <span>Total</span>
-            <span>PHP <span id="drawerTotal">0.00</span></span>
-        </div>
-        <button class="cart-btn-checkout" onclick="checkoutSelected()">Checkout Now</button>
-    </div>
+@include('f-services')
+@include('f-about-us')
+@include('f-contact-us')
 </div>
 
-<div id="productModal" class="product-modal">
-    <div class="product-modal-content">
-        <span class="close-modal" onclick="closeModal()">&times;</span>
-        <h2 id="modalTitle">CHOOSE TYPE</h2>
-        <div class="category-slider">
-            <button class="modal-btn" id="modalPrev" onclick="moveSlide(-1)">&lt;</button>
-            <div class="slider-viewport">
-                <div class="category-track" id="categoryTrack">
-                    </div>
-            </div>
-            <button class="modal-btn" id="modalNext" onclick="moveSlide(1)">&gt;</button>
-        </div>
-    </div>
-</div>
+@include('f-service-details')
+@include('f-checkout')
 
-    <script src="{{ asset('webproj.js') }}?v=20260520-icon-hover"></script>
+<script>
+let currentHeroIndex=0,heroTimer=null,isAutoScrolling=false,autoScrollTarget='{{ $activeSection }}',scrollSpyTick=null;
+const initialRouteSection='{{ $activeSection }}';
+const isSignedIn=@json(Auth::check());
+const loginUrl='{{ route('login') }}';
+const darkHeaderSections=new Set(['products','about','contact','service-details','checkout','cart','payment','confirmation']);
+const standaloneRouteSections=new Set(['service-details','checkout']);
+const sectionAliases={services:'products',service:'products',product:'products','about-us':'about','contact-us':'contact','service-details':'service-details','service-detail':'service-details',serviceDetails:'service-details',serviceDetail:'service-details',checkout:'checkout'};
+const sectionSelectors={home:['#home'],products:['#products','#services','[data-section-id="products"]','[data-section="products"]'],about:['#about','#about-us','[data-section-id="about"]','[data-section="about"]'],contact:['#contact','#contact-us','[data-section-id="contact"]','[data-section="contact"]'],'service-details':['#service-details','#serviceDetail','#serviceDetails','.service-details','.service-detail','[data-page="service-details"]'],checkout:['#checkout','[data-section-id="checkout"]','[data-page="checkout"]']};
+function normalizeSectionId(sectionId){const raw=(sectionId||'home').toString().replace(/^#/,'').trim();return sectionAliases[raw]||raw||'home';}
+function getSectionEl(sectionId){const normalized=normalizeSectionId(sectionId),list=sectionSelectors[normalized]||['#'+normalized];for(const selector of list){const el=document.querySelector(selector);if(el)return el;}return null;}
+function routeSectionFromPath(){const path=(window.location.pathname||'').toLowerCase();if(/checkout|payment|confirmation/.test(path))return 'checkout';if(/cart/.test(path))return 'cart';if(/service-detail|service_details|details|detail-info/.test(path))return 'service-details';if(/service|product/.test(path))return 'products';if(/about/.test(path))return 'about';if(/contact|quote|inquiry/.test(path))return 'contact';return 'home';}
+function sectionFromLocation(){const hash=normalizeSectionId(window.location.hash||'');return hash&&hash!=='home'?hash:routeSectionFromPath();}
+function navSectionFor(sectionId){const normalized=normalizeSectionId(sectionId);if(normalized==='service-details')return 'products';if(['checkout','cart','payment','confirmation'].includes(normalized))return '';return normalized;}
+function updateHeaderTheme(sectionId){const header=document.getElementById('mainHeader');if(header)header.classList.toggle('header-dark',darkHeaderSections.has(normalizeSectionId(sectionId)));}
+function setActiveNav(sectionId){const normalized=normalizeSectionId(sectionId),navTarget=navSectionFor(normalized);document.querySelectorAll('.nav-link').forEach(link=>link.classList.toggle('active',!!navTarget&&link.dataset.section===navTarget));updateHeaderTheme(normalized);}
+function sectionPath(sectionId){const normalized=normalizeSectionId(sectionId);return normalized==='home'?'/home':'/'+normalized;}
+function updateBrowserUrl(sectionId,replaceUrl=false){const normalized=normalizeSectionId(sectionId);if(!normalized||['cart','payment','confirmation'].includes(normalized))return;const nextPath=sectionPath(normalized);if(window.location.pathname===nextPath&&!window.location.hash)return;const nextUrl=new URL(window.location.href);nextUrl.pathname=nextPath;nextUrl.hash='';(replaceUrl?window.history.replaceState:window.history.pushState).call(window.history,{sectionId:normalized},'',nextUrl);}
+function setStandalonePage(sectionId){const normalized=normalizeSectionId(sectionId);const checkout=getSectionEl('checkout');document.body.classList.toggle('checkout-open',normalized==='checkout');if(checkout)checkout.classList.toggle('active',normalized==='checkout');if(normalized!=='checkout'&&checkout)checkout.classList.remove('active');}
+function jumpTo(sectionId,options={}){const normalized=normalizeSectionId(sectionId);setStandalonePage(normalized);const target=getSectionEl(normalized);autoScrollTarget=normalized;isAutoScrolling=true;setActiveNav(normalized);if(target)window.scrollTo({top:Math.max(0,target.getBoundingClientRect().top+window.scrollY-70),behavior:options.instant?'auto':'smooth'});if(options.updateUrl!==false)updateBrowserUrl(normalized,!!options.replaceUrl);if(normalized==='checkout')document.dispatchEvent(new CustomEvent('printify:checkout-opened',{detail:{source:'jumpTo'}}));clearTimeout(window.__pfyScrollEnd);window.__pfyScrollEnd=setTimeout(()=>{isAutoScrolling=false;syncScrollSpy(true);},options.instant?120:760);}
+function getVisibleMainSection(){const marker=window.scrollY+74+(window.innerHeight*.26);let current='home';['home','products','about','contact'].forEach(id=>{const el=getSectionEl(id);if(!el||el.offsetParent===null)return;const top=el.getBoundingClientRect().top+window.scrollY;if(marker>=top)current=id;});return current;}
+function syncScrollSpy(forceUrl=false){if(standaloneRouteSections.has(initialRouteSection)){setActiveNav(initialRouteSection);return;}if(document.body.classList.contains('checkout-open')){setActiveNav('checkout');if(forceUrl)updateBrowserUrl('checkout',true);return;}if(isAutoScrolling){setActiveNav(autoScrollTarget);return;}const detail=getSectionEl('service-details');if(detail&&detail.classList.contains('active')){setActiveNav('service-details');if(forceUrl)updateBrowserUrl('service-details',true);return;}const section=getVisibleMainSection();setActiveNav(section);if(forceUrl||window.location.pathname!==sectionPath(section)||window.location.hash)updateBrowserUrl(section,true);}
+function setupScrollSpy(){window.addEventListener('scroll',()=>{if(scrollSpyTick)return;scrollSpyTick=requestAnimationFrame(()=>{scrollSpyTick=null;syncScrollSpy(false);});},{passive:true});window.addEventListener('resize',()=>syncScrollSpy(true));syncScrollSpy(true);}
+function syncSectionFromHash(replaceUrl=true){const section=sectionFromLocation()||initialRouteSection;jumpTo(section,{instant:true,replaceUrl:replaceUrl,updateUrl:false});}
+function setupHeaderObserver(){let tick=null;const observer=new MutationObserver(()=>{clearTimeout(tick);tick=setTimeout(()=>syncScrollSpy(true),35);});observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});}
+function jumpToHero(index){
+const slides=document.querySelectorAll('.hero-slide'),dots=document.querySelectorAll('.home-premium-dots .dot');
+if(!slides.length)return;
+currentHeroIndex=(index+slides.length)%slides.length;
+slides.forEach((slide,i)=>slide.classList.toggle('active',i===currentHeroIndex));
+dots.forEach((dot,i)=>dot.classList.toggle('active',i===currentHeroIndex));
+}
+function startHeroSlider(){
+clearInterval(heroTimer);
+heroTimer=setInterval(()=>{if(!document.hidden)jumpToHero(currentHeroIndex+1);},6800);
+}
+
+function toggleWishlist(){
+const heart=document.getElementById('navHeart');
+if(heart){heart.classList.remove('is-active');heart.classList.add('nav-click-pulse');setTimeout(()=>heart.classList.remove('nav-click-pulse'),180);heart.setAttribute('aria-pressed','false');heart.title='Wishlist';}
+document.dispatchEvent(new CustomEvent('printify:wishlist-toggled',{detail:{active:false,source:'home-header'}}));
+syncScrollSpy(true);
+return false;
+}
+function restoreWishlistState(){
+localStorage.removeItem('printifyHomeWishlist');
+const heart=document.getElementById('navHeart');
+if(heart){heart.classList.remove('is-active','nav-click-pulse');heart.setAttribute('aria-pressed','false');heart.title='Wishlist';}
+}
+function requireSignedInForOrder(){
+if(isSignedIn)return true;
+sessionStorage.setItem('printifyIntendedUrl',window.location.href);
+window.location.href=loginUrl;
+return false;
+}
+function animateHeroTitle(){
+const title=document.getElementById('kineticHeroTitle');
+if(!title||title.dataset.animated==='true')return;
+let delay=0;
+title.querySelectorAll('.title-line').forEach(line=>{
+const text=line.textContent;
+line.textContent='';
+text.split('').forEach(char=>{
+const letter=document.createElement('span');
+letter.className=char===' '?'letter space':'letter';
+letter.textContent=char===' '?'\u00A0':char;
+letter.style.animationDelay=delay+'ms';
+line.appendChild(letter);
+delay+=10;
+});
+delay+=45;
+});
+title.dataset.animated='true';
+}
+function setupSearch(){
+const input=document.getElementById('navSearchInput'),button=document.getElementById('navSearchBtn');
+const runSearch=()=>{
+const term=(input.value||'').toLowerCase().trim();
+if(!term){if(input)input.focus();return;}
+if(term.includes('home'))window.location.href='/';
+else if(term.includes('about'))window.location.href='/about';
+else if(term.includes('contact')||term.includes('quote')||term.includes('inquiry'))window.location.href='/contact';
+else if(term.includes('service')||term.includes('print')||term.includes('product')||term.includes('premium')||term.includes('document')||term.includes('large format'))window.location.href='/services';
+else window.location.href='/services';
+document.dispatchEvent(new CustomEvent('printify:search-submitted',{detail:{term:term,source:'home-header'}}));
+};
+if(button)button.addEventListener('click',runSearch);
+if(input)input.addEventListener('keydown',event=>{if(event.key==='Enter')runSearch();});
+}
+
+function showFrontFeedback(message){
+const toast=document.getElementById('frontFeedbackToast');
+if(!toast)return;
+toast.textContent=message||'Action completed.';
+toast.classList.add('show');
+clearTimeout(window.__frontFeedbackTimer);
+window.__frontFeedbackTimer=setTimeout(()=>toast.classList.remove('show'),2600);
+}
+window.showFrontFeedback=showFrontFeedback;
+window.addEventListener('printify-front-feedback',event=>showFrontFeedback(event.detail&&event.detail.message));
+
+function parsePesoAmount(text){const value=String(text||'').replace(/,/g,'').match(/(?:₱|P)?\s*([0-9]+(?:\.[0-9]+)?)/i);return value?Number(value[1]):0;}
+function visibleText(selector,root=document){const el=root.querySelector(selector);return el?(el.textContent||'').trim():'';}
+function ensureCheckoutStorageFromVisibleOrder(){
+try{
+const hasActive=localStorage.getItem('printifyActiveCheckout');
+const hasItems=localStorage.getItem('printifyCheckoutItems');
+if(hasActive||hasItems)return;
+const root=getSectionEl('service-details')||document;
+const summary=root.querySelector('.order-summary,.summary-card,.service-summary,.checkout-summary,[data-order-summary]')||root;
+const name=visibleText('[data-checkout-name],.summary-title,.order-title,.service-title,h1,h2,h3',summary)||'Printing Service';
+const fileName=visibleText('[data-file-name],.file-name,.uploaded-file-name,.upload-file-name',summary).replace(/^file:\s*/i,'');
+const qtyText=visibleText('[data-qty],.quantity,.qty',summary);
+const totalText=visibleText('[data-total],.total-amount,.grand-total,.total,.retail-price,.price',summary)||summary.textContent;
+const qty=parseInt((qtyText.match(/\d+/)||['1'])[0],10)||1;
+const total=parsePesoAmount(totalText)||0;
+const item={id:'checkout-'+Date.now(),name:name,qty:qty,quantity:qty,price:total&&qty?Number((total/qty).toFixed(2)):0,lineTotal:total,total:total,category:visibleText('[data-category],.printing-category',summary),paperSize:visibleText('[data-paper-size],.paper-size',summary),colorVariation:visibleText('[data-color],.color-variation',summary),serviceOption:visibleText('[data-service-option],.service-option',summary),fileName:fileName};
+localStorage.setItem('printifyActiveCheckout',JSON.stringify(item));
+localStorage.setItem('printifyCheckoutItems',JSON.stringify([item]));
+localStorage.setItem('printifyCheckoutSource','service-details');
+}catch(error){console.warn('Checkout storage fallback skipped:',error);}
+}
+window.openCheckoutSection=function(item){
+if(!requireSignedInForOrder())return false;
+if(item&&typeof item==='object'){localStorage.setItem('printifyActiveCheckout',JSON.stringify(item));localStorage.setItem('printifyCheckoutItems',JSON.stringify([item]));localStorage.setItem('printifyCheckoutSource','direct');}
+else ensureCheckoutStorageFromVisibleOrder();
+if(window.location.pathname!=='/checkout'){window.location.href='/checkout';return false;}
+jumpTo('checkout',{updateUrl:true});
+document.dispatchEvent(new CustomEvent('printify:checkout-opened',{detail:{source:'openCheckoutSection'}}));
+return false;
+};
+window.goToCheckoutNow=window.openCheckoutSection;
+document.addEventListener('click',event=>{
+const trigger=event.target.closest('[data-open-checkout],[data-checkout],a[href="#checkout"],button,a');
+if(!trigger)return;
+const href=(trigger.getAttribute('href')||'').trim().toLowerCase();
+const text=(trigger.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+const opensCheckout=href==='#checkout'||trigger.hasAttribute('data-open-checkout')||trigger.hasAttribute('data-checkout')||text==='checkout now'||text==='proceed to checkout'||text.includes('checkout now');
+if(!opensCheckout)return;
+event.preventDefault();
+window.openCheckoutSection();
+});
+
+document.addEventListener('DOMContentLoaded',()=>{
+requestAnimationFrame(animateHeroTitle);
+startHeroSlider();
+setupSearch();
+if(typeof window.updateCartBadge==='function')window.updateCartBadge();
+if(typeof window.renderPrintifyCart==='function')window.renderPrintifyCart();
+restoreWishlistState();
+syncSectionFromHash(true);
+setupScrollSpy();
+setActiveNav(initialRouteSection);
+requestAnimationFrame(()=>{if(initialRouteSection==='home')window.scrollTo({top:0,left:0,behavior:'auto'});else jumpTo(initialRouteSection,{instant:true,updateUrl:false});});
+setTimeout(()=>{if(initialRouteSection==='home')window.scrollTo({top:0,left:0,behavior:'auto'});else jumpTo(initialRouteSection,{instant:true,updateUrl:false});},80);
+setupHeaderObserver();
+window.addEventListener('popstate',()=>syncSectionFromHash(true));
+window.addEventListener('hashchange',()=>syncSectionFromHash(true));
+if(typeof window.openModal!=='function'){window.openModal=function(){jumpTo('products');};}
+});
+</script>
 </body>
 </html>
-
