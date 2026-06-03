@@ -2466,7 +2466,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('services-active');
     }
 
-    jumpTo('home');
+    const initialSection = (window.location.hash || '#home').replace('#', '');
+    jumpTo(['home', 'services', 'about', 'contact'].includes(initialSection) ? initialSection : 'home');
     updateCartBadge();
     updateHero();
     handleContactForm();
@@ -2486,4 +2487,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.1 });
     
     document.querySelectorAll('.section').forEach(s => observer.observe(s));
+});
+
+window.addEventListener('hashchange', () => {
+    const sectionId = (window.location.hash || '#home').replace('#', '');
+    if (['home', 'services', 'about', 'contact'].includes(sectionId)) {
+        jumpTo(sectionId);
+    }
 });
