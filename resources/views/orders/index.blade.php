@@ -47,7 +47,7 @@
 
                 <div class="divide-y divide-[#f0e5d8]">
                     @forelse ($orders as $order)
-                        <div class="grid gap-4 px-5 py-4 text-sm md:grid-cols-[0.7fr,1.5fr,1.2fr,0.9fr,1fr,1fr] md:items-center">
+                        <div class="grid gap-4 px-5 py-4 text-sm md:grid-cols-[0.7fr,1.5fr,1.2fr,0.9fr,0.9fr,1fr,1fr] md:items-center">
                             <div class="font-black text-[#22201f]">#{{ $order->id }}</div>
                             <div class="min-w-0">
                                 <p class="font-black text-[#22201f]">{{ $order->customer_name }}</p>
@@ -57,6 +57,9 @@
                             <div class="text-[#6f675f]">{{ $order->adminClient?->name ?? ($isDeveloper ? 'Unassigned' : 'Assigned to you') }}</div>
                             <div>
                                 <span class="rounded-lg bg-[#fff8ef] px-3 py-1 text-xs font-black uppercase text-[#8a6d52]">{{ $order->status }}</span>
+                            </div>
+                            <div>
+                                <span class="rounded-lg bg-[#eef8ff] px-3 py-1 text-xs font-black uppercase text-[#2563eb]">{{ str_replace('_', ' ', $order->payment_status ?? 'unpaid') }}</span>
                             </div>
                             <div class="font-black text-[#22201f]">{{ $money($order->total_price) }}</div>
                             <div class="flex flex-wrap justify-start gap-2 md:justify-end">

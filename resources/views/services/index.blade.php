@@ -15,11 +15,7 @@
             </div>
 
             <h2 class="text-4xl font-extrabold text-center text-gray-900 mb-8">Our Services</h2>
-<<<<<<< Updated upstream
 
-=======
-            
->>>>>>> Stashed changes
             @if($services->count() === 0)
                 <div class="bg-white p-6 rounded-lg shadow text-center">
                     <p class="text-gray-500 italic">No services available at the moment.</p>
@@ -69,7 +65,7 @@
                                 </div>
 
                                 @if($service->activeVariations->isNotEmpty())
-                                    <form method="POST" action="{{ route('cart.add', $service->id) }}" class="mt-4 space-y-2">
+                                    <form method="POST" action="{{ route('cart.add', $service->id) }}" enctype="multipart/form-data" class="mt-4 space-y-2">
                                         @csrf
                                         <div>
                                             <label class="block text-[11px] uppercase text-gray-500 font-bold mb-1">Package</label>
@@ -96,8 +92,14 @@
                                             </div>
                                         </div>
 
+                                        <div>
+                                            <label class="block text-[11px] uppercase text-gray-500 font-bold mb-1">Print File</label>
+                                            <input type="file" name="print_file" required class="w-full rounded-md border border-orange-200 bg-orange-50 px-2 py-2 text-xs text-gray-700 file:mr-2 file:rounded file:border-0 file:bg-orange-100 file:px-2 file:py-1 file:text-xs file:font-bold file:text-orange-700">
+                                            <p class="mt-1 text-[11px] font-semibold text-gray-500">Required before add to cart.</p>
+                                        </div>
+
                                         <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-200 text-xs uppercase">
-                                            Select Type
+                                            Add to Cart
                                         </button>
                                     </form>
                                 @else

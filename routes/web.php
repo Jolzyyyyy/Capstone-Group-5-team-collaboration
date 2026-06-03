@@ -35,11 +35,15 @@ Route::get('/', function () {
 
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
+Route::post('/paymongo/webhook', [PaymongoCheckoutController::class, 'webhook'])->name('payment.webhook');
 
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::post('/add/{service}', [CartController::class, 'add'])->name('add');
-    Route::post('/remove/{service}', [CartController::class, 'remove'])->name('remove');
+    Route::post('/update/{cartKey}', [CartController::class, 'update'])->name('update');
+    Route::post('/remove/{cartKey}', [CartController::class, 'remove'])->name('remove');
+    Route::post('/sync', [CartController::class, 'syncCart'])->name('sync');
+    Route::post('/buy-now', [CartController::class, 'buyNow'])->name('buy-now');
     Route::post('/clear', [CartController::class, 'clear'])->name('clear');
 });
 
@@ -127,13 +131,16 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
         ]);
     })->name('dashboard');
 
-    Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
-    
     // Checkout page
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 
-    // Place order (ZIP required) — MUST MATCH checkout form route('checkout.place')
+    // Place order
     Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
+
+    Route::get('/payment/checkout/{order?}', [PaymongoCheckoutController::class, 'checkout'])->name('payment.checkout');
+    Route::post('/payment/pay/{order}', [PaymongoCheckoutController::class, 'pay'])->name('payment.pay');
+    Route::get('/payment/success/{order}', [PaymongoCheckoutController::class, 'success'])->name('payment.success');
+    Route::get('/payment/cancel/{order}', [PaymongoCheckoutController::class, 'cancel'])->name('payment.cancel');
 
     // Customer: My Orders pages
     Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');

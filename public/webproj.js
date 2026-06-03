@@ -18,6 +18,10 @@ const fallbackImage = 'images/Prdcts1.jpg';
 let currentModalKey = '';
 let currentSelectedOptionIndex = -1;
 let currentEditingCartId = null;
+let cartFileStore = new Map();
+let cartFileDbPromise = null;
+const CART_FILE_DB = 'printify-cart-files';
+const CART_FILE_STORE = 'files';
 
 // LOGIN SIMULATION
 let isLoggedIn = false; 
@@ -38,10 +42,14 @@ function normalizeCartItem(item, index) {
         details: String(item.details || item.description || 'Selected service option'),
         qty: parsedQty,
         price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+        unitPrice: Number.isFinite(Number(item.unitPrice)) ? Number(item.unitPrice) : null,
+        priceType: item.priceType || 'retail',
+        serviceCode: item.serviceCode || '',
         img: item.img || item.image || fallbackImage,
         checked: item.checked !== false,
         fileName: String(item.fileName || ''),
         hasAttachment: item.hasAttachment != null ? Boolean(item.hasAttachment) : Boolean(item.fileName),
+        serverCartSynced: Boolean(item.serverCartSynced),
         categoryType: item.categoryType || '',
         modalKey: item.modalKey || '',
         selectedIndex: Number.isFinite(Number(item.selectedIndex)) ? Number(item.selectedIndex) : null,
@@ -68,7 +76,107 @@ function loadCart() {
 }
 
 function persistCart() {
-    localStorage.setItem('printCart', JSON.stringify(cart));
+    const serializableCart = cart.map(({ attachmentFile, ...item }) => item);
+    localStorage.setItem('printCart', JSON.stringify(serializableCart));
+}
+
+function openCartFileDb() {
+    if (!window.indexedDB) return Promise.resolve(null);
+    if (cartFileDbPromise) return cartFileDbPromise;
+
+    cartFileDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(CART_FILE_DB, 1);
+
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(CART_FILE_STORE)) {
+                db.createObjectStore(CART_FILE_STORE, { keyPath: 'id' });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    }).catch(() => null);
+
+    return cartFileDbPromise;
+}
+
+async function saveCartFile(itemId, file) {
+    if (!itemId || !file) return;
+
+    cartFileStore.set(itemId, file);
+
+    const db = await openCartFileDb();
+    if (!db) return;
+
+    await new Promise((resolve) => {
+        const transaction = db.transaction(CART_FILE_STORE, 'readwrite');
+        transaction.objectStore(CART_FILE_STORE).put({
+            id: String(itemId),
+            file: file,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            savedAt: Date.now()
+        });
+        transaction.oncomplete = resolve;
+        transaction.onerror = resolve;
+    });
+}
+
+async function loadSavedCartFile(itemId) {
+    if (!itemId) return null;
+    if (cartFileStore.has(itemId)) return cartFileStore.get(itemId);
+
+    const db = await openCartFileDb();
+    if (!db) return null;
+
+    return new Promise((resolve) => {
+        const transaction = db.transaction(CART_FILE_STORE, 'readonly');
+        const request = transaction.objectStore(CART_FILE_STORE).get(String(itemId));
+        request.onsuccess = () => resolve(request.result?.file || null);
+        request.onerror = () => resolve(null);
+    });
+}
+
+async function deleteSavedCartFile(itemId) {
+    if (!itemId) return;
+    cartFileStore.delete(itemId);
+
+    const db = await openCartFileDb();
+    if (!db) return;
+
+    await new Promise((resolve) => {
+        const transaction = db.transaction(CART_FILE_STORE, 'readwrite');
+        transaction.objectStore(CART_FILE_STORE).delete(String(itemId));
+        transaction.oncomplete = resolve;
+        transaction.onerror = resolve;
+    });
+}
+
+async function hydrateCartFiles(items = cart) {
+    await Promise.all(items.map(async (item) => {
+        if (!item || cartFileStore.has(item.id)) return;
+
+        const savedFile = await loadSavedCartFile(item.id);
+        if (!savedFile) return;
+
+        cartFileStore.set(item.id, savedFile);
+        item.fileName = item.fileName || savedFile.name;
+        item.hasAttachment = true;
+    }));
+}
+
+function itemHasCheckoutAttachment(item) {
+    return Boolean(item && (
+        cartFileStore.has(item.id)
+        || item.serverCartSynced
+        || item.fileName
+    ));
+}
+
+function itemNeedsReattachment(item) {
+    return false;
 }
 
 // Initialize Cart from LocalStorage
@@ -735,7 +843,7 @@ function getBulkRule(categoryValue = '') {
     return {
         threshold: BULK_MIN_PAGES,
         unit: 'pages',
-        note: `Bulk pricing is available for ${BULK_MIN_PAGES}+ pages. Upload a print-ready file and confirm the final page count before checkout.`
+        note: `Bulk pricing is available for ${BULK_MIN_PAGES}+ pages. Confirm the final quantity before checkout.`
     };
 }
 
@@ -1924,6 +2032,10 @@ function buildCurrentCartItem() {
     const fileInput = document.getElementById('fileUploadInput');
     const attachedFile = fileInput?.files?.[0] || null;
     const existingItem = currentEditingCartId ? cart.find((item) => item.id === currentEditingCartId) : null;
+    const existingFile = existingItem ? cartFileStore.get(existingItem.id) : null;
+    const existingServerSyncedFile = Boolean(existingItem?.serverCartSynced);
+    const priceType = document.querySelector('input[name="priceType"]:checked')?.value || 'retail';
+    const unitPrice = total / Math.max(1, qty);
 
     if (currentCategoryType === 'xerox' && !contentTypeValue) {
         alert('Please choose a content type first.');
@@ -1932,6 +2044,11 @@ function buildCurrentCartItem() {
 
     if (!serviceOptionValue) {
         alert('Please choose a service option first.');
+        return null;
+    }
+
+    if (!attachedFile && !existingFile && !existingServerSyncedFile) {
+        alert('Please attach your print-ready file before adding this service to cart.');
         return null;
     }
 
@@ -1952,10 +2069,15 @@ function buildCurrentCartItem() {
         details: detailText,
         qty: qty,
         price: total,
+        unitPrice: unitPrice,
+        priceType: priceType,
+        serviceCode: sId,
         img: firstImg ? firstImg.src : fallbackImage,
         checked: true,
         fileName: attachedFile ? attachedFile.name : (existingItem?.fileName || ''),
-        hasAttachment: attachedFile ? true : Boolean(existingItem?.hasAttachment),
+        hasAttachment: true,
+        serverCartSynced: attachedFile ? false : existingServerSyncedFile,
+        attachmentFile: attachedFile || existingFile,
         categoryType: currentCategoryType,
         modalKey: currentModalKey || getModalKeyForType(currentCategoryType),
         selectedIndex: currentSelectedOptionIndex,
@@ -1968,11 +2090,14 @@ function buildCurrentCartItem() {
     };
 }
 
-function addOrUpdateCartItem(cartItem) {
+async function addOrUpdateCartItem(cartItem) {
+    const attachmentFile = cartItem.attachmentFile || null;
+
     if (currentEditingCartId) {
         const editingIndex = cart.findIndex((item) => item.id === currentEditingCartId);
         if (editingIndex >= 0) {
             cart[editingIndex] = { ...cart[editingIndex], ...cartItem, id: currentEditingCartId };
+            if (attachmentFile) await saveCartFile(currentEditingCartId, attachmentFile);
             currentEditingCartId = null;
             return cart[editingIndex];
         }
@@ -1983,9 +2108,14 @@ function addOrUpdateCartItem(cartItem) {
     if (existingIndex >= 0) {
         cart[existingIndex].qty += cartItem.qty;
         cart[existingIndex].price += cartItem.price;
+        cart[existingIndex].unitPrice = cartItem.unitPrice;
+        cart[existingIndex].priceType = cartItem.priceType;
+        cart[existingIndex].serviceCode = cartItem.serviceCode;
         cart[existingIndex].checked = true;
         cart[existingIndex].fileName = cartItem.fileName || cart[existingIndex].fileName || '';
-        cart[existingIndex].hasAttachment = Boolean(cart[existingIndex].fileName);
+        cart[existingIndex].hasAttachment = Boolean(cart[existingIndex].fileName || attachmentFile || cart[existingIndex].serverCartSynced);
+        if (attachmentFile) cart[existingIndex].serverCartSynced = false;
+        if (attachmentFile) await saveCartFile(cart[existingIndex].id, attachmentFile);
         cart[existingIndex].categoryType = cartItem.categoryType;
         cart[existingIndex].modalKey = cartItem.modalKey;
         cart[existingIndex].selectedIndex = cartItem.selectedIndex;
@@ -1999,6 +2129,7 @@ function addOrUpdateCartItem(cartItem) {
     }
 
     cart.push(cartItem);
+    if (attachmentFile) await saveCartFile(cartItem.id, attachmentFile);
     return cartItem;
 }
 
@@ -2042,16 +2173,16 @@ function editCartItem(index) {
 
     updatePrice();
     setCartOpen(false);
-    setCartMessage('Editing cart item. Reattach a file if you want to replace the current attachment.', item.hasAttachment ? 'info' : 'error');
+    setCartMessage('Editing cart item. Review the service details before saving changes.', 'info');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function addToCart() {
+async function addToCart() {
     const cartItem = buildCurrentCartItem();
     if (!cartItem) return;
 
     const wasEditing = Boolean(currentEditingCartId);
-    addOrUpdateCartItem(cartItem);
+    await addOrUpdateCartItem(cartItem);
     persistCart();
     updateCartBadge();
     resetDetailOrderingState();
@@ -2061,7 +2192,7 @@ function addToCart() {
         wasEditing
             ? 'Cart item updated. The form was reset so you can start a new selection.'
             : 'Item added to cart. The form was reset so you can continue shopping.',
-        cartItem.hasAttachment ? 'success' : 'info'
+        'success'
     );
 }
 
@@ -2073,7 +2204,8 @@ function updateCartBadge() {
 }
 
 function removeFromCart(index) {
-    cart.splice(index, 1);
+    const [removed] = cart.splice(index, 1);
+    if (removed) deleteSavedCartFile(removed.id);
     persistCart();
     updateCartBadge();
     renderCart();
@@ -2108,9 +2240,10 @@ function renderCart() {
         const cartImage = withFallbackImage(item.img);
         const safePrice = Number(item.price) || 0;
         const editable = isCartItemEditable(item);
-        const fileStatus = item.hasAttachment
-            ? `File: ${item.fileName}`
-            : 'No file attached yet';
+        const fileReady = itemHasCheckoutAttachment(item);
+        const fileStatus = fileReady
+            ? `<p class="cart-item-file has-file">${item.serverCartSynced ? 'Saved checkout file' : 'Attached file'}: ${escapeHtml(item.fileName || 'Print file')}</p>`
+            : `<p class="cart-item-file missing-file">${itemNeedsReattachment(item) ? 'Reattach final file before checkout: ' + escapeHtml(item.fileName) : 'File required before checkout.'}</p>`;
         const legacyWarning = editable
             ? ''
             : '<p class="cart-item-legacy-warning">Refresh item: this older cart entry needs to be removed and added again before it can be edited.</p>';
@@ -2122,9 +2255,9 @@ function renderCart() {
                 <div class="cart-item-info">
                     <h4>${escapeHtml(item.name)}</h4>
                     <p class="cart-item-details">${escapeHtml(item.details)}</p>
-                    <p class="cart-item-file ${item.hasAttachment ? 'has-file' : 'missing-file'}">${escapeHtml(fileStatus)}</p>
                     ${legacyWarning}
                     <p class="cart-item-price">Qty: ${item.qty} | PHP ${safePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    ${fileStatus}
                     <button type="button" class="cart-item-edit ${editable ? '' : 'is-warning'}" onclick="editCartItem(${index})">${editButtonLabel}</button>
                     <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})">Remove</button>
                 </div>
@@ -2174,47 +2307,123 @@ function applyVoucher() {
     calculateCartTotal();
 }
 
-function checkoutSelected() {
+async function checkoutSelected() {
     const selectedItems = cart.filter((item) => item.checked);
     if (!selectedItems.length) {
         alert('Select at least one cart item before checkout.');
         return;
     }
 
-    const itemsMissingAttachment = selectedItems.filter((item) => !item.hasAttachment);
-    if (itemsMissingAttachment.length) {
-        setCartMessage('Attach a file to every selected cart item before checkout.', 'error');
-        alert('Checkout blocked. One or more selected items do not have an attached file.');
+    await hydrateCartFiles(selectedItems);
+
+    const missingFileItem = selectedItems.find((item) => !itemHasCheckoutAttachment(item));
+    if (missingFileItem) {
+        const message = itemNeedsReattachment(missingFileItem)
+            ? `The file name "${missingFileItem.fileName}" was remembered, but the browser no longer has the actual file after refresh. Please edit ${missingFileItem.name} and reattach the final print-ready file once.`
+            : `Please attach the final print-ready file for ${missingFileItem.name} before checkout.`;
+        alert(message);
+        setCartMessage('The file name is visible, but the actual upload is not available. Reattach the final file once, then checkout will save it.', 'error');
         return;
     }
 
-    setCartMessage(`Checkout ready for ${selectedItems.length} item(s).`, 'success');
-    alert(`Checkout ready for ${selectedItems.length} item(s).`);
+    const syncUrl = document.querySelector('meta[name="cart-sync-url"]')?.content;
+    const checkoutUrl = document.querySelector('meta[name="checkout-url"]')?.content || '/checkout';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    if (!syncUrl || !csrfToken) {
+        setCartMessage('Unable to prepare checkout because secure cart sync is unavailable.', 'error');
+        alert('Unable to prepare checkout. Please try again.');
+        return;
+    }
+
+    const items = selectedItems.map((item) => {
+        const qty = Math.max(1, parseInt(item.qty, 10) || 1);
+        const lineTotal = Number(item.price) || 0;
+
+        return {
+            name: item.name,
+            qty: qty,
+            unit_price: item.unitPrice || (lineTotal / qty),
+            line_total: lineTotal,
+            service_code: item.serviceCode || '',
+            price_type: item.priceType || 'retail',
+        };
+    });
+
+    const formData = new FormData();
+    items.forEach((item, index) => {
+        formData.append(`items[${index}][name]`, item.name);
+        formData.append(`items[${index}][qty]`, item.qty);
+        formData.append(`items[${index}][unit_price]`, item.unit_price);
+        formData.append(`items[${index}][line_total]`, item.line_total);
+        formData.append(`items[${index}][service_code]`, item.service_code);
+        formData.append(`items[${index}][price_type]`, item.price_type);
+        formData.append(`items[${index}][attached_file_name]`, selectedItems[index].fileName || '');
+        if (cartFileStore.has(selectedItems[index].id)) {
+            formData.append(`items[${index}][print_file]`, cartFileStore.get(selectedItems[index].id));
+        }
+    });
+
+    try {
+        const response = await fetch(syncUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            let message = 'Unable to prepare checkout. Please try again.';
+            try {
+                const errorPayload = await response.json();
+                const firstError = errorPayload?.errors
+                    ? Object.values(errorPayload.errors).flat()[0]
+                    : errorPayload?.message;
+                if (firstError) message = firstError;
+            } catch (parseError) {
+                // Keep the generic message if the server did not return JSON.
+            }
+            throw new Error(message);
+        }
+
+        selectedItems.forEach((selected) => {
+            selected.serverCartSynced = true;
+            selected.hasAttachment = true;
+        });
+        persistCart();
+        setCartMessage(`Checkout ready for ${selectedItems.length} item(s).`, 'success');
+        window.location.href = checkoutUrl;
+    } catch (error) {
+        const message = error?.message || 'Unable to prepare checkout. Please try again.';
+        setCartMessage(message, 'error');
+        alert(message);
+    }
 }
 
-function placeOrderNow() {
-    const fileInput = document.getElementById('fileUploadInput');
-    if (!fileInput || !fileInput.files || !fileInput.files.length) {
-        alert('Attach a file before placing your order.');
-        return;
-    }
-
+async function placeOrderNow() {
     const cartItem = buildCurrentCartItem();
     if (!cartItem) return;
 
     const wasEditing = Boolean(currentEditingCartId);
-    addOrUpdateCartItem(cartItem);
+    cart.forEach((item) => {
+        item.checked = false;
+    });
+    await addOrUpdateCartItem(cartItem);
     persistCart();
     updateCartBadge();
     resetDetailOrderingState();
     renderCart();
-    setCartOpen(true);
+    setCartOpen(false);
     setCartMessage(
         wasEditing
-            ? 'Cart item updated. Review your cart before checkout.'
-            : 'Order item added. Review your cart before checkout.',
+            ? 'Cart item updated. Preparing checkout review.'
+            : 'Order item added. Preparing checkout review.',
         'success'
     );
+    await checkoutSelected();
 }
 
 // --- FORMS & EXTERNAL APIS ---
@@ -2262,6 +2471,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHero();
     handleContactForm();
     initMap();
+    hydrateCartFiles()
+        .then(() => {
+            persistCart();
+            renderCart();
+            updateCartBadge();
+        })
+        .catch(() => {});
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => { 

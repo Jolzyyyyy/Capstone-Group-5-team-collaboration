@@ -27,6 +27,17 @@ class AdminMiddleware
         }
 
         $currentRoute = $request->route()->getName();
+        $user = Auth::user();
+
+        if (!$user->requiresStaffPortalOtp()) {
+            $request->session()->put('staff_otp_passed', true);
+            $request->session()->forget([
+                'admin_auth_passed',
+                'needs_email_otp',
+                'admin_verified',
+                '2fa_passed',
+            ]);
+        }
 
         if (!$request->session()->has('staff_otp_passed')) {
             $allowedOtpRoutes = [

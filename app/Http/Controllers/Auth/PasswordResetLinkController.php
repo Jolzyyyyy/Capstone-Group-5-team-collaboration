@@ -59,11 +59,8 @@ class PasswordResetLinkController extends Controller
             'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ])->save();
 
-        // 6. Send OTP email notification
+        // 6. Queue OTP email notification so Gmail SMTP does not block this request.
         try {
-            /** * IMPORTANT: Siguraduhin na ang SendOTP notification mo ay 
-             * walang 'implements ShouldQueue' para mag-send agad.
-             */
             $user->notify(new SendOTP($otp));
             RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
             

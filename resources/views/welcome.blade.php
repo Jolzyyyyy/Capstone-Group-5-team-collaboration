@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="cart-sync-url" content="{{ route('cart.sync') }}">
+    <meta name="checkout-url" content="{{ route('checkout.index') }}">
     <title>Printing Business Solution | Printify & Co.</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -54,7 +57,11 @@
 @endphp
 
 <header class="top-nav-bar" id="mainHeader">
-    <div class="nav-spacer" aria-hidden="true"></div>
+    <div class="nav-spacer">
+        <a href="#home" class="site-logo-link" aria-label="Printify & Co. home" onclick="jumpTo('home'); return false;">
+            <img src="{{ asset('images/printify-co-logo.png') }}" alt="Printify & Co." class="site-logo">
+        </a>
+    </div>
     <nav class="nav-horizontal">
     <a href="#home" data-section="home" class="nav-link is-active" onclick="jumpTo('home'); return false;">Home</a>
     <a href="#about" data-section="about" class="nav-link" onclick="jumpTo('about'); return false;">About Us</a>
@@ -104,6 +111,7 @@
             </div>
 
             <div class="hero-text animate" id="homeText">
+                <img src="{{ asset('images/printify-co-logo.png') }}" alt="Printify & Co." class="hero-brand-logo">
                 <h1>Printify & Co.</h1>
                 <p class="hero-tagline">
                     Crafting Your Vision into Reality
@@ -347,12 +355,7 @@
 
             <div class="detail-inline-note">
                 <span class="detail-inline-label">Reminder:</span>
-                <p>Please double-check your selected quantity, selected service option, and uploaded file before submitting your order.</p>
-            </div>
-
-            <div class="custom-option-group stacked-group" id="fileUploadGroup">
-                <label>File Upload</label>
-                <input type="file" id="fileUploadInput" class="custom-file-input">
+                <p>Please double-check your selected quantity and service option before submitting your order.</p>
             </div>
 
             <div class="detail-options-grid detail-secondary-grid">
@@ -373,6 +376,12 @@
                         <option value="docx">DOCX</option>
                         <option value="psd">PSD</option>
                     </select>
+                </div>
+
+                <div class="custom-option-group" id="fileUploadGroup">
+                    <label>Upload File</label>
+                    <input type="file" class="custom-file-input" id="fileUploadInput" required>
+                    <p class="file-upload-note">Required before Add to Cart or Place Order Now. Upload the exact final file to print; saved cart items keep their attachment.</p>
                 </div>
             </div>
 
@@ -410,7 +419,7 @@
                     <span style="font-size: 13px; color: #666;">Total Amount:</span>
                     <h3 class="total-price" style="color: #d35400;">PHP <span id="totalAmount">0.00</span></h3>
                 </div>
-                <p id="bulkThresholdNote" class="bulk-threshold-note">Bulk pricing is available for 100+ pages. Upload a print-ready file and confirm the final page count before checkout.</p>
+                <p id="bulkThresholdNote" class="bulk-threshold-note">Bulk pricing is available for 100+ pages. Confirm the final quantity before checkout.</p>
             </div>
 
             <div class="btn-row">
@@ -465,7 +474,7 @@
     </div>
 </div>
 
-<script src="{{ asset('webproj.js') }}"></script>
+<script src="{{ asset('webproj.js') }}?v={{ filemtime(public_path('webproj.js')) }}"></script>
 
 </body>
 </html>

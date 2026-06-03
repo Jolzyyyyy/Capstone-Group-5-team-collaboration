@@ -103,14 +103,6 @@ class GoogleAuthController extends Controller
             'otp_passed',
         ]);
 
-        if (!is_null($user->email_verified_at)) {
-            request()->session()->put('customer_otp_passed', true);
-            request()->session()->forget(['otp_email', 'auth_type']);
-
-            return redirect()->route('dashboard')
-                ->with('status', 'Signed in with Google.');
-        }
-
         $otp = sprintf('%06d', mt_rand(0, 999999));
         $user->forceFill([
             'otp_code' => $otp,

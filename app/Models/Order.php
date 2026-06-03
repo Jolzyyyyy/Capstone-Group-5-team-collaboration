@@ -10,13 +10,33 @@ class Order extends Model
 {
     use HasFactory;
 
+    public const PAYMENT_UNPAID = 'unpaid';
+    public const PAYMENT_PENDING = 'pending';
+    public const PAYMENT_PAID = 'paid';
+    public const PAYMENT_FAILED = 'failed';
+    public const PAYMENT_CANCELLED = 'cancelled';
+
     protected $fillable = [
         'user_id',
         'admin_client_id',
         'customer_name',
         'customer_email',
+        'customer_phone',
+        'fulfillment_method',
+        'delivery_address',
+        'customer_note',
         'status',
+        'payment_status',
+        'payment_method',
+        'paymongo_checkout_session_id',
+        'payment_reference',
+        'paid_at',
         'total_price',
+    ];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
+        'total_price' => 'decimal:2',
     ];
 
     public function user()

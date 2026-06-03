@@ -1,15 +1,164 @@
-<x-app-layout>
-    @php
-        $money = fn ($value) => 'PHP ' . number_format((float) $value, 2);
-        $customer = auth()->user();
-        $serviceSubtotal = (float) ($summary['total'] ?? 0);
-        $releaseFee = 0;
-        $grandTotal = $serviceSubtotal + $releaseFee;
-        $itemCount = (int) ($summary['items_count'] ?? count($cart));
-        $releaseWindow = now()->addDay()->format('M d') . ' - ' . now()->addDays(2)->format('M d');
-    @endphp
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="n3PEWK1bn3DbKdTcMZnwNkUSL51wcfdxHzHizbc6">
 
-    <style>
+        <title>Printify &amp; Co.</title>
+
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+        <!-- Scripts -->
+        <script type="module" src="http://127.0.0.1:5173/@vite/client"></script><link rel="stylesheet" href="http://127.0.0.1:5173/resources/css/app.css" /><script type="module" src="http://127.0.0.1:5173/resources/js/app.js"></script>    </head>
+    <body class="font-sans antialiased">
+        <div class="min-h-screen bg-gray-100">
+            <nav x-data="{ open: false }" class="border-b border-white/10 bg-[#1f1d1c] shadow-lg shadow-black/15">
+    <!-- Primary Navigation Menu -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex">
+                <!-- Logo -->
+                <div class="shrink-0 flex items-center">
+                    <a href="http://127.0.0.1:8000/dashboard">
+                        <img
+    src="http://127.0.0.1:8000/images/printify-co-logo.png"
+    alt="Printify &amp; Co."
+    class="object-contain block h-9 w-auto fill-current text-white"
+>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                            <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-bold leading-5 text-white/75 hover:text-white hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/dashboard">
+    Dashboard
+</a>
+                                            <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-bold leading-5 text-white/75 hover:text-white hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/services">
+    Services
+</a>
+                                            <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-bold leading-5 text-white/75 hover:text-white hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/my-orders">
+    My Orders
+</a>
+                                            <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-bold leading-5 text-white/75 hover:text-white hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/cart">
+    Cart
+</a>
+                                            <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-bold leading-5 text-white/75 hover:text-white hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/notifications">
+    Updates
+</a>
+                                            <a class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-bold leading-5 text-white/75 hover:text-white hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/help-center">
+    Help
+</a>
+                                    </div>
+            </div>
+
+            <!-- Settings Dropdown -->
+            <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <div class="relative" x-data="{ open: false }" @click.outside="open = false" @close.stop="open = false">
+    <div @click="open = ! open">
+        <button class="inline-flex items-center rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold leading-4 text-white/85 transition duration-150 ease-in-out hover:bg-white/10 hover:text-white focus:outline-none">
+                            <div>Checkout Preview Customer</div>
+
+                            <div class="ms-1">
+                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </button>
+    </div>
+
+    <div x-show="open"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            class="absolute z-50 mt-2 w-48 rounded-md shadow-lg ltr:origin-top-right rtl:origin-top-left end-0"
+            style="display: none;"
+            @click="open = false">
+        <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
+            <!-- Authentication -->
+                                                    <a class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/profile">Profile</a>
+                        
+                        <form method="POST" action="http://127.0.0.1:8000/logout">
+                            <input type="hidden" name="_token" value="n3PEWK1bn3DbKdTcMZnwNkUSL51wcfdxHzHizbc6" autocomplete="off">
+                            <a class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out" href="http://127.0.0.1:8000/logout" onclick="event.preventDefault();
+                                                this.closest('form').submit();">Log Out</a>
+                        </form>
+        </div>
+    </div>
+</div>
+            </div>
+
+            <!-- Hamburger -->
+            <div class="-me-2 flex items-center sm:hidden">
+                <button @click="open = ! open" class="inline-flex items-center justify-center rounded-md p-2 text-white/70 transition duration-150 ease-in-out hover:bg-white/10 hover:text-white focus:bg-white/10 focus:text-white focus:outline-none">
+                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Responsive Navigation Menu -->
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+                            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/dashboard">
+    Dashboard
+</a>
+                            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/services">
+    Services
+</a>
+                            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/my-orders">
+    My Orders
+</a>
+                            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/cart">
+    Cart
+</a>
+                            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/notifications">
+    Updates
+</a>
+                            <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/help-center">
+    Help
+</a>
+                    </div>
+
+        <!-- Responsive Settings Options -->
+        <div class="border-t border-white/10 pb-1 pt-4">
+            <div class="px-4">
+                <div class="text-base font-semibold text-white">Checkout Preview Customer</div>
+                <div class="text-sm font-medium text-white/60">checkout.preview@example.com</div>
+            </div>
+
+            <div class="mt-3 space-y-1">
+                                    <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/profile">
+    Profile
+</a>
+                
+                <!-- Authentication -->
+                <form method="POST" action="http://127.0.0.1:8000/logout">
+                    <input type="hidden" name="_token" value="n3PEWK1bn3DbKdTcMZnwNkUSL51wcfdxHzHizbc6" autocomplete="off">
+                    <a class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-bold text-white/75 hover:text-white hover:bg-white/10 hover:border-[#ff8d2a] focus:outline-none focus:text-white focus:bg-white/10 focus:border-[#ff8d2a] transition duration-150 ease-in-out" href="http://127.0.0.1:8000/logout" onclick="event.preventDefault();
+                                        this.closest('form').submit();">
+    Log Out
+</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
+
+            <!-- Page Heading -->
+            
+            <!-- Page Content -->
+            <main>
+                <style>
         .checkout-page {
             min-height: calc(100vh - 4rem);
             background: #f7f4ef;
@@ -537,35 +686,19 @@
                 </div>
 
                 <div class="checkout-actions">
-                    <a href="{{ route('cart.index') }}" class="checkout-btn secondary">Back to Cart</a>
-                    <a href="{{ route('services.index') }}" class="checkout-btn secondary">Add Services</a>
+                    <a href="http://127.0.0.1:8000/cart" class="checkout-btn secondary">Back to Cart</a>
+                    <a href="http://127.0.0.1:8000/services" class="checkout-btn secondary">Add Services</a>
                 </div>
             </div>
         </header>
 
         <div class="checkout-shell checkout-body">
             <div class="checkout-stack">
-                @if (session('success'))
-                    <div class="message success">{{ session('success') }}</div>
-                @endif
-
-                @if (session('error'))
-                    <div class="message error">{{ session('error') }}</div>
-                @endif
-
-                @if ($errors->any())
-                    <div class="message error">
-                        <ul class="list-inside list-disc space-y-1">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <form id="checkoutForm" method="POST" action="{{ route('checkout.place') }}" class="checkout-stack">
-                    @csrf
-
+                
+                
+                
+                <form id="checkoutForm" method="POST" action="http://127.0.0.1:8000/checkout/place" class="checkout-stack">
+                    <input type="hidden" name="_token" value="n3PEWK1bn3DbKdTcMZnwNkUSL51wcfdxHzHizbc6" autocomplete="off">
                     <section class="checkout-card">
                         <div class="card-head">
                             <div>
@@ -579,24 +712,24 @@
                             <div class="field-grid">
                                 <div class="field">
                                     <label for="customer_name">Full Name</label>
-                                    <input id="customer_name" name="customer_name" value="{{ old('customer_name', $customer?->name) }}" required class="checkout-input" autocomplete="name">
+                                    <input id="customer_name" name="customer_name" value="Checkout Preview Customer" required class="checkout-input" autocomplete="name">
                                 </div>
 
                                 <div class="field">
                                     <label for="customer_email">Email</label>
-                                    <input id="customer_email" type="email" name="customer_email" value="{{ old('customer_email', $customer?->email) }}" required class="checkout-input" autocomplete="email">
+                                    <input id="customer_email" type="email" name="customer_email" value="checkout.preview@example.com" required class="checkout-input" autocomplete="email">
                                 </div>
 
                                 <div class="field">
                                     <label for="customer_phone">Phone Number</label>
-                                    <input id="customer_phone" name="customer_phone" value="{{ old('customer_phone') }}" required class="checkout-input" autocomplete="tel" placeholder="+63 9XX XXX XXXX">
+                                    <input id="customer_phone" name="customer_phone" value="" required class="checkout-input" autocomplete="tel" placeholder="+63 9XX XXX XXXX">
                                 </div>
 
                                 <div class="field">
                                     <span class="choice-label">Release Option</span>
                                     <div class="choice-grid">
                                         <label class="choice-card">
-                                            <input type="radio" name="fulfillment_method" value="pickup" @checked(old('fulfillment_method', 'pickup') === 'pickup')>
+                                            <input type="radio" name="fulfillment_method" value="pickup" checked>
                                             <span>
                                                 <strong>Pickup</strong>
                                                 <span>Claim at store after staff review.</span>
@@ -604,7 +737,7 @@
                                         </label>
 
                                         <label class="choice-card">
-                                            <input type="radio" name="fulfillment_method" value="delivery" @checked(old('fulfillment_method') === 'delivery')>
+                                            <input type="radio" name="fulfillment_method" value="delivery" >
                                             <span>
                                                 <strong>Delivery</strong>
                                                 <span>Address is required for delivery.</span>
@@ -615,12 +748,12 @@
 
                                 <div class="field full">
                                     <label for="delivery_address">Pickup / Delivery Address</label>
-                                    <textarea id="delivery_address" name="delivery_address" class="checkout-textarea" placeholder="For delivery, enter house/building, street, barangay, city, and landmark. For pickup, you may leave release instructions.">{{ old('delivery_address') }}</textarea>
+                                    <textarea id="delivery_address" name="delivery_address" class="checkout-textarea" placeholder="For delivery, enter house/building, street, barangay, city, and landmark. For pickup, you may leave release instructions."></textarea>
                                 </div>
 
                                 <div class="field full">
                                     <label for="customer_note">Order Note</label>
-                                    <textarea id="customer_note" name="customer_note" class="checkout-textarea" placeholder="Add printing instructions, release schedule, or admin-client reminders.">{{ old('customer_note') }}</textarea>
+                                    <textarea id="customer_note" name="customer_note" class="checkout-textarea" placeholder="Add printing instructions, release schedule, or admin-client reminders."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -637,29 +770,41 @@
 
                         <div class="card-body">
                             <div class="service-list">
-                                @foreach ($cart as $item)
-                                    @php
-                                        $attachedName = $item['attached_file']['original_name'] ?? 'Print file';
-                                    @endphp
-
+                                                                    
                                     <article class="service-row">
                                         <div>
-                                            <p class="eyebrow">{{ $item['category'] ?: 'Print Service' }}</p>
-                                            <h3 class="service-name">{{ $item['name'] }}</h3>
-                                            <p class="service-meta">{{ $item['variation_label'] ?: $item['service_item_id'] }}</p>
+                                            <p class="eyebrow">Marketing Prints</p>
+                                            <h3 class="service-name">A4 Brochure Printing</h3>
+                                            <p class="service-meta">Glossy full color, 100 pcs</p>
                                             <p class="service-meta">
-                                                {{ strtoupper($item['price_type']) }} / {{ $money($item['unit_price']) }} per {{ $item['unit'] ?: 'item' }} / Qty {{ $item['qty'] }}
+                                                RETAIL / PHP 450.00 per set / Qty 1
                                             </p>
-                                            <p class="file-pill">Attached file: {{ $attachedName }}</p>
+                                            <p class="file-pill">Attached file: brochure-final.pdf</p>
                                         </div>
 
                                         <div class="line-total">
                                             <span>Line Total</span>
-                                            <strong>{{ $money($item['subtotal']) }}</strong>
+                                            <strong>PHP 450.00</strong>
                                         </div>
                                     </article>
-                                @endforeach
-                            </div>
+                                                                    
+                                    <article class="service-row">
+                                        <div>
+                                            <p class="eyebrow">Reviewed Cart Item</p>
+                                            <h3 class="service-name">Scanning</h3>
+                                            <p class="service-meta">Image Only / Standard Scan</p>
+                                            <p class="service-meta">
+                                                RETAIL / PHP 40.00 per item / Qty 4
+                                            </p>
+                                            <p class="file-pill">Attached file: scanning-final.jpg</p>
+                                        </div>
+
+                                        <div class="line-total">
+                                            <span>Line Total</span>
+                                            <strong>PHP 160.00</strong>
+                                        </div>
+                                    </article>
+                                                            </div>
 
                             <div class="notice-box">
                                 <strong>Print file reminder</strong>
@@ -667,7 +812,7 @@
                             </div>
 
                             <label class="confirmation-card">
-                                <input type="checkbox" name="print_file_confirmed" value="1" required @checked(old('print_file_confirmed'))>
+                                <input type="checkbox" name="print_file_confirmed" value="1" required >
                                 <span>
                                     <strong>I confirm the attached file is final and print-ready.</strong>
                                     I understand Printify &amp; Co. is not liable for customer-uploaded file errors after checkout and place order.
@@ -687,7 +832,7 @@
 
                         <div class="card-body">
                             <div class="release-box">
-                                <strong>Ready window: {{ $releaseWindow }}</strong>
+                                <strong>Ready window: May 28 - May 29</strong>
                                 Final schedule depends on file verification, production queue, and payment confirmation.
                             </div>
                         </div>
@@ -710,7 +855,7 @@
 
                             <div class="choice-grid" style="margin-top:14px;">
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="gcash" @checked(old('payment_method', 'gcash') === 'gcash')>
+                                    <input type="radio" name="payment_method" value="gcash" checked>
                                     <span>
                                         <strong>GCash</strong>
                                         <span>Pay through PayMongo hosted checkout.</span>
@@ -718,7 +863,7 @@
                                 </label>
 
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="card" @checked(old('payment_method') === 'card')>
+                                    <input type="radio" name="payment_method" value="card" >
                                     <span>
                                         <strong>Credit / Debit Card</strong>
                                         <span>Card details are handled by PayMongo.</span>
@@ -726,7 +871,7 @@
                                 </label>
 
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="paymaya" @checked(old('payment_method') === 'paymaya')>
+                                    <input type="radio" name="payment_method" value="paymaya" >
                                     <span>
                                         <strong>Maya</strong>
                                         <span>Use Maya wallet through PayMongo.</span>
@@ -734,7 +879,7 @@
                                 </label>
 
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="grab_pay" @checked(old('payment_method') === 'grab_pay')>
+                                    <input type="radio" name="payment_method" value="grab_pay" >
                                     <span>
                                         <strong>GrabPay</strong>
                                         <span>Use GrabPay through PayMongo.</span>
@@ -755,14 +900,14 @@
                     <div class="card-head">
                         <div>
                             <p class="card-kicker">Order Summary</p>
-                            <h2 class="card-title">Total ({{ $itemCount }} item{{ $itemCount === 1 ? '' : 's' }})</h2>
+                            <h2 class="card-title">Total (5 items)</h2>
                         </div>
                     </div>
 
                     <div class="summary-body">
                         <div class="summary-row">
                             <span>Product subtotal</span>
-                            <strong>{{ $money($serviceSubtotal) }}</strong>
+                            <strong>PHP 610.00</strong>
                         </div>
                         <div class="summary-row">
                             <span>File verification</span>
@@ -770,7 +915,7 @@
                         </div>
                         <div class="summary-row">
                             <span>Release coordination</span>
-                            <strong>{{ $money($releaseFee) }}</strong>
+                            <strong>PHP 0.00</strong>
                         </div>
                         <div class="summary-row">
                             <span>Payment</span>
@@ -778,7 +923,7 @@
                         </div>
                         <div class="summary-total">
                             <span>Total</span>
-                            <strong>{{ $money($grandTotal) }}</strong>
+                            <strong>PHP 610.00</strong>
                         </div>
 
                         <button type="submit" form="checkoutForm" class="checkout-btn">Place Order &amp; Pay with PayMongo</button>
@@ -789,4 +934,7 @@
             </aside>
         </div>
     </div>
-</x-app-layout>
+            </main>
+        </div>
+    </body>
+</html>

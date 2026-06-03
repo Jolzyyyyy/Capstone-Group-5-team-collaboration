@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <title>Payment Cancelled</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; }
-        .wrap { max-width: 800px; margin: 70px auto; text-align: center; }
+        body { font-family: Arial, sans-serif; background: #f7f4ef; color: #22201f; }
+        .wrap { max-width: 820px; margin: 70px auto; padding: 0 18px; text-align: center; }
         .card {
             background: #fff;
-            border: 1px solid #e5e5e5;
+            border: 1px solid #eadfd2;
             border-radius: 10px;
-            padding: 28px;
+            padding: 30px;
             box-shadow: 0 8px 22px rgba(0,0,0,.06);
         }
         .icon {
@@ -21,28 +21,32 @@
             justify-content: center;
             background: #fff0f0;
             color: #b00020;
-            font-size: 34px;
+            font-size: 28px;
+            font-weight: 800;
             margin-bottom: 14px;
         }
         h1 { margin: 8px 0 6px; }
-        p { margin: 0 0 18px; color: #444; }
+        p { margin: 0 0 18px; color: #6f675f; }
         .btnrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
         a.btn {
             display: inline-block;
-            background: #111;
+            background: #ff8d2a;
             color: #fff;
             text-decoration: none;
-            padding: 10px 14px;
-            border-radius: 6px;
+            padding: 11px 16px;
+            border-radius: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 12px;
         }
         a.btn.secondary {
             background: #fff;
-            color: #111;
-            border: 1px solid #111;
+            color: #22201f;
+            border: 1px solid #eadfd2;
         }
         .note {
-            margin-top: 14px;
-            color: #666;
+            margin-top: 16px;
+            color: #6f675f;
             font-size: 13px;
         }
     </style>
@@ -50,17 +54,26 @@
 <body>
 <div class="wrap">
     <div class="card">
-        <div class="icon">×</div>
+        <div class="icon">X</div>
         <h1>Payment Cancelled</h1>
-        <p>You cancelled the payment. Your items are still available for checkout.</p>
+        <p>
+            @if($order)
+                Order #{{ $order->id }} is still saved. You can retry PayMongo payment anytime.
+            @else
+                You cancelled the payment.
+            @endif
+        </p>
 
         <div class="btnrow">
-            <a class="btn" href="{{ route('payment.checkout') }}">Try Again</a>
-            <a class="btn secondary" href="{{ url('/') }}">Back to Home</a>
+            @if($order)
+                <a class="btn" href="{{ route('payment.checkout', $order) }}">Try Again</a>
+                <a class="btn secondary" href="{{ route('orders.my.show', $order) }}">View Order</a>
+            @endif
+            <a class="btn secondary" href="{{ route('services.index') }}">Back to Services</a>
         </div>
 
         <div class="note">
-            You can return to checkout anytime and choose another payment method.
+            The order payment status is marked as cancelled until a new PayMongo attempt is started.
         </div>
     </div>
 </div>

@@ -82,7 +82,7 @@
                                 No active variants are available for this service right now.
                             </div>
                         @else
-                            <form method="POST" action="{{ route('cart.add', $service) }}" class="space-y-5">
+                            <form method="POST" action="{{ route('cart.add', $service) }}" enctype="multipart/form-data" class="space-y-5">
                                 @csrf
 
                                 <div>
@@ -123,10 +123,6 @@
                                         </div>
                                     </div>
 
-                                    <div class="grid grid-cols-2 gap-3 items-center">
-                                        <label class="text-sm font-semibold text-gray-700">File Upload</label>
-                                        <input type="text" class="rounded-xl border-gray-300 bg-gray-50" value="Upload during checkout" readonly>
-                                    </div>
                                 </div>
 
                                 <div class="space-y-3">
@@ -146,6 +142,14 @@
 
                                         <p class="mt-3 text-lg">Unit Price: <span class="font-bold text-red-600" x-text="formatMoney(unitPrice())"></span></p>
                                         <p class="text-4xl font-black mt-1 text-red-700" x-text="formatMoney(totalPrice())"></p>
+                                    </div>
+
+                                    <div class="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                                        <label for="print_file" class="text-sm font-bold text-gray-800">Attach print-ready file</label>
+                                        <p class="mt-1 text-xs font-semibold text-gray-600">Required the first time this service is added. If the same saved cart item already has a file, you can update quantity/package without uploading again.</p>
+                                        <p class="mt-2 text-xs font-bold text-orange-800">Upload the exact final file to print. Please check spelling, size, layout, colors, and resolution before checkout.</p>
+                                        <input id="print_file" type="file" name="print_file" class="mt-3 block w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-orange-100 file:px-3 file:py-2 file:text-sm file:font-bold file:text-orange-700 hover:file:bg-orange-200">
+                                        <x-input-error :messages="$errors->get('print_file')" class="mt-2" />
                                     </div>
                                 </div>
 

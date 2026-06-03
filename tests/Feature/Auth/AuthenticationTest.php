@@ -21,6 +21,8 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
+        Notification::fake();
+
         $user = User::factory()->create();
 
         $response = $this->post('/login', [
@@ -29,7 +31,16 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        Notification::assertSentTo($user, SendOTP::class);
+        $this->assertNotNull($user->fresh()->otp_code);
+
+        $response
+            ->assertRedirect(route('otp.verify', [
+                'email' => $user->email,
+            ], false))
+            ->assertSessionHas('otp_email', $user->email)
+            ->assertSessionHas('auth_type', 'account_verification')
+            ->assertSessionMissing('customer_otp_passed');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

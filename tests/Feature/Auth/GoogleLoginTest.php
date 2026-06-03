@@ -40,6 +40,35 @@ class GoogleLoginTest extends TestCase
         Notification::assertSentTo($user, SendOTP::class);
     }
 
+    public function test_google_login_requires_email_otp_for_existing_verified_customer(): void
+    {
+        Notification::fake();
+        $this->configureGoogle();
+        $this->fakeGoogleUser('google-verified', 'verified.google@example.com', 'Verified Google');
+
+        $user = User::factory()->create([
+            'email' => 'verified.google@example.com',
+            'google_id' => 'google-verified',
+            'role' => User::ROLE_CUSTOMER,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->get(route('google.callback', absolute: false));
+
+        $response
+            ->assertRedirect(route('otp.verify', [
+                'email' => 'verified.google@example.com',
+            ], false))
+            ->assertSessionHas('otp_email', 'verified.google@example.com')
+            ->assertSessionHas('auth_type', 'account_verification')
+            ->assertSessionMissing('customer_otp_passed');
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->otp_code);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+        Notification::assertSentTo($user, SendOTP::class);
+    }
+
     public function test_google_login_rejects_staff_and_developer_accounts(): void
     {
         $this->configureGoogle();
