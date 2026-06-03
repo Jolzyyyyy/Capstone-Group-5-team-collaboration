@@ -12,7 +12,7 @@
     <link rel="preload" as="image" href="{{ asset('images/optimized/Document PrintingS.webp') }}" type="image/webp">
     <link rel="preload" as="image" href="{{ asset('images/optimized/PhotocopyS.webp') }}" type="image/webp">
     <link rel="preload" as="image" href="{{ asset('images/optimized/Photo IDS.webp') }}" type="image/webp">
-    <link rel="stylesheet" href="{{ asset('webproj.css') }}">
+    <link rel="stylesheet" href="{{ asset('webproj.css') }}?v={{ filemtime(public_path('webproj.css')) }}">
 </head>
 <body>
 
