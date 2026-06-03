@@ -254,11 +254,11 @@
 
             .auth-stage.is-flipping {
                 pointer-events: none;
-                animation: authSwitchOut 0.28s cubic-bezier(.2,.8,.2,1) both;
+                animation: authSwitchOut 0.56s cubic-bezier(.2,.8,.2,1) both;
             }
 
             .auth-stage.is-flipping .auth-flip-panel {
-                animation: authFlipPanelExit 0.28s cubic-bezier(.2,.8,.2,1) both;
+                animation: authFlipPanelExit 0.56s cubic-bezier(.2,.8,.2,1) both;
             }
 
             .auth-stage.auth-mode-register.is-flipping .auth-flip-panel {
@@ -659,7 +659,7 @@
                 text-transform: none;
             }
 
-            @media (max-width: 860px) {
+            @media (max-width: 760px) {
                 .auth-page-shell {
                     align-items: flex-start;
                     padding: 14px;
@@ -795,9 +795,10 @@
 
                     event.preventDefault();
                     stage.classList.add('is-flipping');
+                    link.setAttribute('aria-disabled', 'true');
                     window.setTimeout(() => {
                         window.location.assign(target);
-                    }, 260);
+                    }, 540);
                 });
             });
         </script>
