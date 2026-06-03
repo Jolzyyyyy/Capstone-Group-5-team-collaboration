@@ -35,6 +35,7 @@
             <tr>
                 <th>Order #</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Total</th>
                 <th>Date</th>
                 <th>Action</th>
@@ -46,6 +47,7 @@
             <tr>
                 <td>{{ $order->id }}</td>
                 <td>{{ $order->status }}</td>
+                <td>{{ str_replace('_', ' ', $order->payment_status ?? 'unpaid') }}</td>
                 <td>₱{{ number_format($order->total_price, 2) }}</td>
                 <td>{{ $order->created_at->format('M d, Y h:i A') }}</td>
                 <td>
@@ -63,4 +65,3 @@
 
 </body>
 </html>
-

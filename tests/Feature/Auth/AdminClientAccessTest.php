@@ -9,6 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AdminClientAccessTest extends TestCase
@@ -130,7 +132,7 @@ class AdminClientAccessTest extends TestCase
         Mail::assertSent(OTPVerificationMail::class);
     }
 
-    public function test_verified_developer_login_still_requires_email_otp_each_session(): void
+    public function test_developer_login_bypasses_email_otp_and_opens_dashboard(): void
     {
         Mail::fake();
 
@@ -147,31 +149,42 @@ class AdminClientAccessTest extends TestCase
         ]);
 
         $response
-            ->assertRedirect(route('admin.otp.verify', absolute: false))
-            ->assertSessionHas('needs_email_otp', true)
-            ->assertSessionMissing('staff_otp_passed');
+            ->assertRedirect(route('admin.dashboard', absolute: false))
+            ->assertSessionHas('staff_otp_passed', true)
+            ->assertSessionMissing('needs_email_otp');
 
         $this->assertAuthenticatedAs($developer);
-        $this->assertNotNull($developer->fresh()->otp_code);
-        Mail::assertSent(OTPVerificationMail::class);
+        $this->assertNull($developer->fresh()->otp_code);
+        Mail::assertNothingSent();
     }
 
-    public function test_staff_email_otp_grants_dashboard_access_without_authenticator_app(): void
+    public function test_admin_client_email_otp_grants_dashboard_access_without_authenticator_app(): void
     {
-        $developer = User::factory()->create([
-            'role' => User::ROLE_DEVELOPER,
-            'email' => 'developer@example.com',
+        $developer = User::factory()->create(['role' => User::ROLE_DEVELOPER]);
+        $adminClient = User::factory()->create([
+            'role' => User::ROLE_ADMIN_CLIENT,
+            'email' => 'approved-client@example.com',
             'password' => Hash::make('Password1!'),
-            'email_verified_at' => now(),
+            'approved_at' => now(),
+            'approved_by' => $developer->id,
+            'invitation_accepted_at' => now(),
             'otp_code' => '123456',
             'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
+        $adminClient->adminClientProfile()->create([
+            'business_name' => 'Approved Studio',
+            'contact_person' => 'Approved Owner',
+            'contact_number' => '09171111111',
+            'business_address' => '456 Approved Street',
+            'profile_completed_at' => now(),
+        ]);
+
         $response = $this
-            ->actingAs($developer)
+            ->actingAs($adminClient)
             ->withSession([
                 'admin_auth_passed' => true,
-                'admin_email' => $developer->email,
+                'admin_email' => $adminClient->email,
                 'needs_email_otp' => true,
             ])
             ->post(route('admin.otp.submit', absolute: false), [
@@ -184,8 +197,60 @@ class AdminClientAccessTest extends TestCase
             ->assertSessionMissing('admin_verified')
             ->assertSessionMissing('2fa_passed');
 
-        $this->assertAuthenticatedAs($developer);
-        $this->assertNull($developer->fresh()->otp_code);
+        $this->assertAuthenticatedAs($adminClient);
+        $this->assertNull($adminClient->fresh()->otp_code);
+    }
+
+    public function test_admin_client_otp_uses_customer_three_attempt_lockout(): void
+    {
+        $developer = User::factory()->create(['role' => User::ROLE_DEVELOPER]);
+        $adminClient = User::factory()->create([
+            'role' => User::ROLE_ADMIN_CLIENT,
+            'email' => 'otp-lockout-client@example.com',
+            'password' => Hash::make('Password1!'),
+            'approved_at' => now(),
+            'approved_by' => $developer->id,
+            'invitation_accepted_at' => now(),
+            'otp_code' => '123456',
+            'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
+        ]);
+
+        $adminClient->adminClientProfile()->create([
+            'business_name' => 'Lockout Studio',
+            'contact_person' => 'Lockout Owner',
+            'contact_number' => '09171111111',
+            'business_address' => '789 Lockout Street',
+            'profile_completed_at' => now(),
+        ]);
+
+        $session = [
+            'admin_auth_passed' => true,
+            'admin_email' => $adminClient->email,
+            'needs_email_otp' => true,
+        ];
+
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            $this
+                ->actingAs($adminClient)
+                ->withSession($session)
+                ->post(route('admin.otp.submit', absolute: false), [
+                    'otp' => '000000',
+                ])
+                ->assertSessionHasErrors('otp');
+        }
+
+        $this
+            ->actingAs($adminClient)
+            ->withSession($session)
+            ->post(route('admin.otp.submit', absolute: false), [
+                'otp' => '000000',
+            ])
+            ->assertSessionHasErrors('otp');
+
+        $throttleKey = 'staff-otp:' . Str::transliterate(Str::lower($adminClient->email . '|127.0.0.1'));
+
+        $this->assertTrue(RateLimiter::tooManyAttempts($throttleKey, 3));
+        $this->assertGreaterThan(0, RateLimiter::availableIn($throttleKey));
     }
 
     public function test_suspending_admin_client_revokes_email_verification_and_2fa(): void

@@ -819,12 +819,22 @@
 </head>
 
 <body>
+@php
+    $paymentOrder = $order ?? null;
+    $isOrderPayment = (bool) $paymentOrder;
+@endphp
 <div class="wrap">
 
     <div class="header-row">
         <div>
             <h1 class="page-title">Checkout</h1>
-            <p class="page-subtitle">Review your order then click Pay Now.</p>
+            <p class="page-subtitle">
+                @if($paymentOrder)
+                    Payment for Order #{{ $paymentOrder->id }}
+                @else
+                    Review your order then click Pay Now.
+                @endif
+            </p>
         </div>
 
         {{-- Stepper UI --}}
@@ -992,11 +1002,13 @@
         <div class="card">
             <div class="card-title">
                 <h3>Order Summary</h3>
-                <div class="hint" style="display:none;">Cart summary</div>
+                <div class="hint">{{ $paymentOrder ? 'Order #'.$paymentOrder->id : 'Cart summary' }}</div>
             </div>
 
             @if(empty($cartItems))
                 <p class="empty">No items to checkout.</p>
+            @elseif(!$paymentOrder)
+                <p class="empty">Please place the order before opening PayMongo checkout.</p>
             @else
                 @php
                     $shippingSubtotal = 0;
@@ -1032,9 +1044,13 @@
 
                             <div class="item-right">
                                 <div class="qty-wrap">
-                                    <button type="button" class="qty-btn" data-action="dec" data-index="{{ $index }}">−</button>
-                                    <span class="qty-num" id="qtyNum{{ $index }}">{{ $qty }}</span>
-                                    <button type="button" class="qty-btn" data-action="inc" data-index="{{ $index }}">+</button>
+                                    @if($isOrderPayment)
+                                        <span class="qty-num" id="qtyNum{{ $index }}">{{ $qty }}</span>
+                                    @else
+                                        <button type="button" class="qty-btn" data-action="dec" data-index="{{ $index }}">−</button>
+                                        <span class="qty-num" id="qtyNum{{ $index }}">{{ $qty }}</span>
+                                        <button type="button" class="qty-btn" data-action="inc" data-index="{{ $index }}">+</button>
+                                    @endif
                                 </div>
 
                                 <span class="line-total" id="lineTotal{{ $index }}">₱{{ number_format($lineTotal, 2) }}</span>
@@ -1043,8 +1059,9 @@
                     @endforeach
                 </div>
 
-                <form method="POST" action="{{ route('payment.pay') }}" id="payForm">
+                <form method="POST" action="{{ route('payment.pay', $paymentOrder) }}" id="payForm">
                     @csrf
+                    <input type="hidden" name="order_id" value="{{ $paymentOrder->id }}">
 
                     @foreach($cartItems as $index => $item)
                         <input type="hidden" name="cart_items[{{ $index }}][name]" value="{{ $item['name'] }}">
@@ -1057,7 +1074,6 @@
                         <option value="card">Card</option>
                         <option value="grab_pay">GrabPay</option>
                         <option value="paymaya">PayMaya</option>
-                        <option value="bank">Online Banking</option>
                     </select>
 
                     <div class="pm-wrap" aria-label="Payment method">
@@ -1100,7 +1116,6 @@
                             <div class="pm-left">
                                 <div class="pm-mini-icons">
                                     <span class="mini maya">maya</span>
-                                    <span class="mini bank">🏦</span>
                                 </div>
                             </div>
                             <div class="pm-right">
@@ -1127,17 +1142,6 @@
                                     <div class="pm-text">
                                         <p class="pm-name">GrabPay</p>
                                         <p class="pm-sub">Pay via GrabPay</p>
-                                    </div>
-                                </div>
-                                <div class="pm-right"><span class="pm-radio"></span></div>
-                            </div>
-
-                            <div class="pm-row" data-method="bank" role="button" tabindex="0">
-                                <div class="pm-left">
-                                    <div class="pm-icon bank">🏦</div>
-                                    <div class="pm-text">
-                                        <p class="pm-name">Online Banking</p>
-                                        <p class="pm-sub">Choose your bank on redirect</p>
                                     </div>
                                 </div>
                                 <div class="pm-right"><span class="pm-radio"></span></div>
@@ -1199,6 +1203,11 @@
                             <span class="v">₱{{ number_format($shippingSubtotal, 2) }}</span>
                         </div>
 
+                        <div class="rowline">
+                            <span class="k">Order Reference</span>
+                            <span class="v">ORDER-{{ $paymentOrder->id }}</span>
+                        </div>
+
                         <div class="rowline neg">
                             <span class="k">Shipping Discount Subtotal</span>
                             <span class="v">-₱{{ number_format($shippingDiscount, 2) }}</span>
@@ -1220,7 +1229,7 @@
                     </div>
 
                     <div class="powered">
-                        <span class="muted">You will be redirected to PayMongo to complete payment.</span>
+                        <span class="muted">Order #{{ $paymentOrder->id }} is saved. You will be redirected to PayMongo to complete payment.</span>
                         <span class="badge">Powered by PayMongo</span>
                     </div>
                 </form>

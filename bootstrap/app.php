@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
          */
         $middleware->redirectUsersTo(fn (Request $request) => route('dashboard.redirect'));
 
+        $middleware->validateCsrfTokens(except: [
+            'paymongo/webhook',
+        ]);
+
         /**
          * 3. MIDDLEWARE ALIASES:
          */

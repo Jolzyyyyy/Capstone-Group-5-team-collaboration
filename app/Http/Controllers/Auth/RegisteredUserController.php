@@ -69,12 +69,8 @@ class RegisteredUserController extends Controller
             'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
-        // 4. Send the OTP Notification immediately
+        // 4. Queue the OTP notification so Gmail SMTP does not block the page redirect.
         try {
-            /** * IMPORTANT: Kung hindi nag-send ang email, check your .env 
-             * at siguraduhin na ang SendOTP notification ay walang 'implements ShouldQueue' 
-             * kung wala kang running queue worker.
-             */
             $user->notify(new SendOTP($otp));
             RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
             

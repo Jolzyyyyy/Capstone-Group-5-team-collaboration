@@ -13,7 +13,7 @@
                     <p class="text-xs font-black uppercase text-[#ff8d2a]">{{ $isAdminView ? 'Order Database' : 'My Order' }}</p>
                     <h1 class="mt-2 text-3xl font-black text-[#22201f]">Order #{{ $order->id }}</h1>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-[#6f675f]">
-                        {{ $isAdminView ? 'Review customer information, order items, files, and fulfillment status.' : 'Review your order details, uploaded file, and current status.' }}
+                        {{ $isAdminView ? 'Review customer information, order items, files, and fulfillment status.' : 'Review your order details and current status.' }}
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-3">
@@ -44,6 +44,22 @@
                                 <span class="font-black text-[#22201f]">{{ $order->status }}</span>
                             </div>
                             <div class="flex justify-between gap-4">
+                                <span class="text-[#6f675f]">Payment</span>
+                                <span class="font-black uppercase text-[#22201f]">{{ str_replace('_', ' ', $order->payment_status ?? 'unpaid') }}</span>
+                            </div>
+                            @if ($order->payment_method)
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-[#6f675f]">Method</span>
+                                    <span class="font-black uppercase text-[#22201f]">{{ str_replace('_', ' ', $order->payment_method) }}</span>
+                                </div>
+                            @endif
+                            @if ($order->paid_at)
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-[#6f675f]">Paid</span>
+                                    <span class="font-black text-[#22201f]">{{ $order->paid_at->format('M d, Y h:i A') }}</span>
+                                </div>
+                            @endif
+                            <div class="flex justify-between gap-4">
                                 <span class="text-[#6f675f]">Total</span>
                                 <span class="font-black text-[#22201f]">{{ $money($order->total_price) }}</span>
                             </div>
@@ -59,6 +75,14 @@
                         <div class="mt-4 space-y-2 text-sm text-[#6f675f]">
                             <p><span class="font-black text-[#22201f]">Name:</span> {{ $order->customer_name }}</p>
                             <p><span class="font-black text-[#22201f]">Email:</span> {{ $order->customer_email ?? '-' }}</p>
+                            <p><span class="font-black text-[#22201f]">Phone:</span> {{ $order->customer_phone ?? '-' }}</p>
+                            <p><span class="font-black text-[#22201f]">Release:</span> {{ ucfirst($order->fulfillment_method ?? 'pickup') }}</p>
+                            @if ($order->delivery_address)
+                                <p><span class="font-black text-[#22201f]">Address:</span> {{ $order->delivery_address }}</p>
+                            @endif
+                            @if ($order->customer_note)
+                                <p><span class="font-black text-[#22201f]">Note:</span> {{ $order->customer_note }}</p>
+                            @endif
                             @if ($isAdminView)
                                 <p><span class="font-black text-[#22201f]">Account:</span> {{ $order->user?->name ?? 'N/A' }}</p>
                                 <p><span class="font-black text-[#22201f]">Admin Client:</span> {{ $order->adminClient?->name ?? 'Unassigned' }}</p>
@@ -67,14 +91,14 @@
                     </div>
 
                     <div class="rounded-lg border border-[#eadfd2] bg-white p-5 shadow-sm">
-                        <p class="text-xs font-black uppercase text-[#ff8d2a]">Attached Files</p>
+                        <p class="text-xs font-black uppercase text-[#ff8d2a]">Files</p>
                         <div class="mt-4 space-y-3">
                             @forelse ($order->files as $file)
                                 <a href="{{ \Illuminate\Support\Facades\Storage::url($file->path) }}" target="_blank" class="block rounded-lg border border-[#eadfd2] px-4 py-3 text-sm font-black text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
                                     {{ $file->original_name }}
                                 </a>
                             @empty
-                                <p class="text-sm font-semibold text-[#6f675f]">No ZIP file attached.</p>
+                                <p class="text-sm font-semibold text-[#6f675f]">No file attached.</p>
                             @endforelse
                         </div>
                     </div>

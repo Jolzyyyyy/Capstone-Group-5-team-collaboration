@@ -79,13 +79,6 @@ Route::middleware('auth')->group(function () {
                 : redirect()->route('admin.otp.verify');
         }
 
-        if ($user->isCustomer() && !is_null($user->email_verified_at)) {
-            session(['customer_otp_passed' => true]);
-            session()->forget('otp_email');
-
-            return redirect()->route('dashboard');
-        }
-        
         // Check kung nakapasa na sa OTP ang customer
         return session('customer_otp_passed') === true 
             ? redirect()->route('dashboard') 

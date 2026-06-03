@@ -14,7 +14,9 @@
             ['label' => __('Orders'), 'href' => route('admin.orders.index'), 'active' => request()->routeIs('admin.orders.*')],
             ['label' => __('Customers'), 'href' => route('admin.customers.index'), 'active' => request()->routeIs('admin.customers.*')],
             ['label' => __('Services'), 'href' => route('admin.services.index'), 'active' => request()->routeIs('admin.services.*')],
+            ['label' => __('Analytics'), 'href' => route('admin.analytics.index'), 'active' => request()->routeIs('admin.analytics.*')],
             ['label' => __('Reports'), 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*')],
+            ['label' => __('Settings'), 'href' => route('admin.settings.index'), 'active' => request()->routeIs('admin.settings.*')],
             ['label' => __('Help'), 'href' => route('admin.help.index'), 'active' => request()->routeIs('admin.help.*')],
         ]
         : [
@@ -27,11 +29,11 @@
         ];
 
     if ($currentUser && $currentUser->canManageAdminClients()) {
-        $navLinks[] = [
+        array_splice($navLinks, 3, 0, [[
             'label' => __('Admin Clients'),
             'href' => route('developer.admin-clients.index'),
             'active' => request()->routeIs('developer.admin-clients.*'),
-        ];
+        ]]);
     }
 
     if ($currentUser && $currentUser->isAdminClient()) {

@@ -20,15 +20,13 @@
     </div>
 
     @if (Route::has('google.login'))
-        <a href="{{ route('google.login') }}" class="mb-6 flex min-h-[3rem] w-full items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-800 shadow-sm transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-base font-black text-[#ff8d2a]">G</span>
+        <a href="{{ route('google.login') }}" class="auth-google-btn mb-5">
+            <span class="auth-google-mark">G</span>
             {{ __('Continue with Google') }}
         </a>
 
-        <div class="mb-6 flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-            <span class="h-px flex-1 bg-slate-200"></span>
+        <div class="auth-divider mb-5">
             <span>{{ __('or') }}</span>
-            <span class="h-px flex-1 bg-slate-200"></span>
         </div>
     @endif
 
@@ -101,7 +99,7 @@
         <div class="auth-inline-switch">
             <p>
                 {{ __("Don't have an account yet?") }}
-                <a href="{{ route('register') }}" class="auth-link hover:underline">
+                <a href="{{ route('register') }}" class="auth-link hover:underline" data-auth-switch>
                     {{ __('Create one here') }}
                 </a>
             </p>

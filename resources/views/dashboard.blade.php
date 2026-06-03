@@ -86,6 +86,7 @@
                                     </div>
                                     <div class="text-left sm:text-right">
                                         <p class="text-xs font-black uppercase text-[#8a6d52]">{{ $order->status }}</p>
+                                        <p class="text-xs font-black uppercase text-[#2563eb]">{{ str_replace('_', ' ', $order->payment_status ?? 'unpaid') }}</p>
                                         <p class="text-sm font-black text-[#22201f]">{{ $money($order->total_price) }}</p>
                                     </div>
                                 </div>

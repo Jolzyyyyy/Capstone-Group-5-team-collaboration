@@ -29,13 +29,6 @@ class EnsureCustomerOtpIsVerified
             return $next($request);
         }
 
-        if ($user->isCustomer() && !is_null($user->email_verified_at)) {
-            $request->session()->put('customer_otp_passed', true);
-            $request->session()->forget('otp_email');
-
-            return $next($request);
-        }
-
         /**
          * 3. OTP VERIFICATION CHECK
          * Ginagamit natin ang 'customer_otp_passed' flag na sineset natin 

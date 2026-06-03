@@ -16,6 +16,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->get('/profile');
 
         $response->assertOk();
@@ -27,6 +28,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->patch('/profile', [
                 'first_name' => 'Test',
                 'last_name' => 'User',
@@ -50,6 +52,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->patch('/profile', [
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
@@ -69,6 +72,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->patch('/profile/backup-email', [
                 'backup_email' => 'backup@example.com',
             ]);
@@ -88,6 +92,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->from('/profile')
             ->patch('/profile/backup-email', [
                 'backup_email' => 'primary@example.com',
@@ -104,6 +109,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->delete('/profile', [
                 'password' => 'password',
             ]);
@@ -122,6 +128,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->from('/profile')
             ->delete('/profile', [
                 'password' => 'wrong-password',
