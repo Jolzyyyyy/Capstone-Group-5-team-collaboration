@@ -33,6 +33,10 @@ Route::get('/', function () {
     return view('welcome', compact('services'));
 })->name('home');
 
+Route::redirect('/home', '/')->name('landing.home');
+Route::redirect('/products', '/services')->name('landing.products');
+Route::redirect('/about', '/#about')->name('landing.about');
+Route::redirect('/contact', '/#contact')->name('landing.contact');
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
 Route::post('/paymongo/webhook', [PaymongoCheckoutController::class, 'webhook'])->name('payment.webhook');

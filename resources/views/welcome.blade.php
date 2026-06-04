@@ -9,7 +9,10 @@
     <title>Printing Business Solution | Printify & Co.</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('webproj.css') }}">
+    <link rel="preload" as="image" href="{{ asset('images/optimized/Document PrintingS.webp') }}" type="image/webp">
+    <link rel="preload" as="image" href="{{ asset('images/optimized/PhotocopyS.webp') }}" type="image/webp">
+    <link rel="preload" as="image" href="{{ asset('images/optimized/Photo IDS.webp') }}" type="image/webp">
+    <link rel="stylesheet" href="{{ asset('webproj.css') }}?v={{ filemtime(public_path('webproj.css')) }}">
 </head>
 <body>
 
@@ -47,12 +50,12 @@
     };
 
     $serviceCards = [
-        ['key' => 'doc', 'title' => 'DOCUMENT PRINTING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'photo', 'title' => 'PHOTOCOPY & SCANNING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'id', 'title' => 'ID & PHOTO SERVICES', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'bind', 'title' => 'LAMINATION & BINDING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'largeformat', 'title' => 'LARGE FORMAT PRINTING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
-        ['key' => 'special', 'title' => 'CUSTOM SPECIAL PRINTING', 'image' => $resolveImageUrl('images/Prdcts1.jpg')],
+        ['key' => 'doc', 'title' => 'DOCUMENT PRINTING', 'image' => $resolveImageUrl('images/optimized/Document PrintingS.webp')],
+        ['key' => 'photo', 'title' => 'PHOTOCOPY & SCANNING', 'image' => $resolveImageUrl('images/optimized/PhotocopyS.webp')],
+        ['key' => 'id', 'title' => 'ID & PHOTO SERVICES', 'image' => $resolveImageUrl('images/optimized/Photo IDS.webp')],
+        ['key' => 'bind', 'title' => 'LAMINATION & BINDING', 'image' => $resolveImageUrl('images/optimized/Lamination & BindingS.webp')],
+        ['key' => 'largeformat', 'title' => 'LARGE FORMAT PRINTING', 'image' => $resolveImageUrl('images/optimized/Large FormatingS.webp')],
+        ['key' => 'special', 'title' => 'CUSTOM SPECIAL PRINTING', 'image' => $resolveImageUrl('images/optimized/Custom SpecialS.webp')],
     ];
 @endphp
 
