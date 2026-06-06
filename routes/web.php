@@ -22,8 +22,13 @@ use App\Models\Service;
 
 /*
 |--------------------------------------------------------------------------
-| 1. PUBLIC ROUTES (Storefront)
+| Public Storefront Routes
 |--------------------------------------------------------------------------
+|
+| These routes are open to guests and signed-in users. They render the
+| customer-facing storefront, service catalog, cart entry points, and payment
+| webhook endpoint. Keep auth/session-sensitive customer portal routes below.
+|
 */
 Route::get('/', function () {
     $services = Service::where('is_active', 1)
@@ -41,6 +46,16 @@ Route::get('/services', [ServiceController::class, 'index'])->name('services.ind
 Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
 Route::post('/paymongo/webhook', [PaymongoCheckoutController::class, 'webhook'])->name('payment.webhook');
 
+/*
+|--------------------------------------------------------------------------
+| Public Cart Routes
+|--------------------------------------------------------------------------
+|
+| Cart routes are intentionally available before checkout authentication so
+| visitors can build a cart first. Checkout/order creation remains protected
+| in the authenticated customer section below.
+|
+*/
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::post('/add/{service}', [CartController::class, 'add'])->name('add');
@@ -53,8 +68,13 @@ Route::prefix('cart')->name('cart.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| 2. ADMIN SECTION (Secret Routes: p-co-2026)
+| Staff Portal Guest Routes
 |--------------------------------------------------------------------------
+|
+| The staff portal uses a protected URL prefix for admin, admin-client, and
+| developer entry points. Keep this block limited to unauthenticated staff
+| login, registration, and admin-client invitation acceptance.
+|
 */
 Route::middleware('guest')->prefix('p-co-2026')->group(function () {
     Route::get('/login-7b5e93-adm-key', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -65,21 +85,50 @@ Route::middleware('guest')->prefix('p-co-2026')->group(function () {
     Route::post('/admin-client-invite/{token}', [AdminClientInvitationController::class, 'store'])->name('admin-client-invitations.store');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Staff Portal Authenticated Routes
+|--------------------------------------------------------------------------
+|
+| Staff users enter here after credentials are accepted. OTP verification is
+| exposed before the protected admin area; role, admin, and profile middleware
+| gate the operational dashboard and management routes.
+|
+*/
 Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Staff OTP Verification
+    |--------------------------------------------------------------------------
+    */
     Route::get('/verify-access', [AdminAuthController::class, 'showOtpForm'])->name('admin.otp.verify');
     Route::post('/verify-access', [AdminAuthController::class, 'verifyOtp'])->name('admin.otp.submit');
     Route::post('/verify-access/resend', [AdminAuthController::class, 'resendOtp'])->name('admin.otp.resend');
-    
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin And Admin-Client Operations
+    |--------------------------------------------------------------------------
+    */
     Route::middleware(['role:admin_client,developer,admin', 'admin', 'admin.client.profile'])->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Staff Security And Profile
+        |--------------------------------------------------------------------------
+        */
         Route::get('/security/2fa', [SecurityController::class, 'show2faForm'])->name('admin.security.2fa');
         Route::post('/security/2fa/activate', [SecurityController::class, 'activate2fa'])->name('admin.security.2fa.activate');
 
         Route::get('/reference-profile', [AdminClientProfileController::class, 'edit'])->name('admin.admin-client-profile.edit');
         Route::put('/reference-profile', [AdminClientProfileController::class, 'update'])->name('admin.admin-client-profile.update');
 
-        // Admin services
+        /*
+        |--------------------------------------------------------------------------
+        | Staff Service Catalog
+        |--------------------------------------------------------------------------
+        */
         Route::get('/services', [ServiceController::class, 'adminIndex'])->name('admin.services.index');
         Route::middleware('role:developer,admin')->group(function () {
             Route::get('/services/create', [ServiceController::class, 'create'])->name('admin.services.create');
@@ -90,13 +139,22 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
             Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('admin.services.toggle');
         });
 
-        // Admin orders
+        /*
+        |--------------------------------------------------------------------------
+        | Staff Order Management
+        |--------------------------------------------------------------------------
+        */
         Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('admin.orders.show');
         Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('admin.orders.edit');
         Route::put('/orders/{order}', [OrderController::class, 'update'])->name('admin.orders.update');
         Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('admin.orders.destroy');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Staff Section Pages
+        |--------------------------------------------------------------------------
+        */
         Route::get('/customers', [AdminSectionController::class, 'customers'])->name('admin.customers.index');
         Route::get('/analytics', [AdminSectionController::class, 'analytics'])->name('admin.analytics.index');
         Route::get('/reports', [AdminSectionController::class, 'reports'])->name('admin.reports.index');
@@ -107,6 +165,15 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
     });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Developer Owner Routes
+|--------------------------------------------------------------------------
+|
+| Developer routes are intentionally isolated from regular staff operations.
+| They manage admin-client accounts and customer assignment controls.
+|
+*/
 Route::middleware(['auth', 'role:developer', 'admin'])->prefix('p-co-2026/developer')->name('developer.')->group(function () {
     Route::get('/admin-clients', [DeveloperAdminClientController::class, 'index'])->name('admin-clients.index');
     Route::post('/admin-clients', [DeveloperAdminClientController::class, 'store'])->name('admin-clients.store');
@@ -117,11 +184,21 @@ Route::middleware(['auth', 'role:developer', 'admin'])->prefix('p-co-2026/develo
 
 /*
 |--------------------------------------------------------------------------
-| Customer routes
+| Authenticated Customer Portal Routes
 |--------------------------------------------------------------------------
+|
+| Customer portal routes require a signed-in customer with OTP already
+| verified. Keep checkout, payment continuation, orders, portal pages, and
+| profile management in this block.
+|
 */
 Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Customer Dashboard
+    |--------------------------------------------------------------------------
+    */
     Route::get('/dashboard', function () {
         $user = request()->user();
         $orderQuery = $user->orders();
@@ -137,10 +214,12 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
         ]);
     })->name('dashboard');
 
-    // Checkout page
+    /*
+    |--------------------------------------------------------------------------
+    | Customer Checkout And Payments
+    |--------------------------------------------------------------------------
+    */
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-
-    // Place order
     Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
 
     Route::get('/payment/checkout/{order?}', [PaymongoCheckoutController::class, 'checkout'])->name('payment.checkout');
@@ -148,7 +227,11 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
     Route::get('/payment/success/{order}', [PaymongoCheckoutController::class, 'success'])->name('payment.success');
     Route::get('/payment/cancel/{order}', [PaymongoCheckoutController::class, 'cancel'])->name('payment.cancel');
 
-    // Customer: My Orders pages
+    /*
+    |--------------------------------------------------------------------------
+    | Customer Orders And Portal Pages
+    |--------------------------------------------------------------------------
+    */
     Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my.index');
     Route::get('/my-orders/{order}', [OrderController::class, 'myShow'])->name('orders.my.show');
 
@@ -157,6 +240,11 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
     Route::get('/settings', [CustomerPortalController::class, 'settings'])->name('customer.settings');
     Route::get('/help-center', [CustomerPortalController::class, 'help'])->name('customer.help');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Customer Profile
+    |--------------------------------------------------------------------------
+    */
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/backup-email', [ProfileController::class, 'updateBackupEmail'])->name('profile.backup-email.update');
@@ -165,7 +253,11 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
 
 /*
 |--------------------------------------------------------------------------
-| Auth routes (login/register/logout)
+| Customer Auth Routes
 |--------------------------------------------------------------------------
+|
+| Customer login, registration, password reset, email verification, and OTP
+| routes live in routes/auth.php.
+|
 */
 require __DIR__ . '/auth.php';
