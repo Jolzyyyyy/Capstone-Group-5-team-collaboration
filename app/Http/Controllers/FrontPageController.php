@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Throwable;
 
 class FrontPageController extends Controller
@@ -57,6 +58,53 @@ class FrontPageController extends Controller
             $services = collect();
         }
 
-        return view('welcome', compact('services', 'activeSection'));
+        $serviceCards = $this->serviceCards();
+
+        return view('welcome', compact('services', 'activeSection', 'serviceCards'));
+    }
+
+    private function serviceCards(): array
+    {
+        return [
+            ['key' => 'doc', 'title' => 'DOCUMENT PRINTING', 'image' => $this->publicImageUrl('images/optimized/Document PrintingS.webp')],
+            ['key' => 'photo', 'title' => 'PHOTOCOPY & SCANNING', 'image' => $this->publicImageUrl('images/optimized/PhotocopyS.webp')],
+            ['key' => 'id', 'title' => 'ID & PHOTO SERVICES', 'image' => $this->publicImageUrl('images/optimized/Photo IDS.webp')],
+            ['key' => 'bind', 'title' => 'LAMINATION & BINDING', 'image' => $this->publicImageUrl('images/optimized/Lamination & BindingS.webp')],
+            ['key' => 'largeformat', 'title' => 'LARGE FORMAT PRINTING', 'image' => $this->publicImageUrl('images/optimized/Large FormatingS.webp')],
+            ['key' => 'special', 'title' => 'CUSTOM SPECIAL PRINTING', 'image' => $this->publicImageUrl('images/optimized/Custom SpecialS.webp')],
+        ];
+    }
+
+    private function publicImageUrl(?string $path): string
+    {
+        $fallback = asset('images/Prdcts1.jpg');
+
+        if (empty($path)) {
+            return $fallback;
+        }
+
+        $normalizedPath = ltrim(trim($path), '/');
+
+        if (Str::startsWith($normalizedPath, ['http://', 'https://'])) {
+            return $normalizedPath;
+        }
+
+        if (Str::startsWith($normalizedPath, 'public/')) {
+            $normalizedPath = Str::after($normalizedPath, 'public/');
+        }
+
+        if (Str::startsWith($normalizedPath, ['images/', 'img/'])) {
+            return file_exists(public_path($normalizedPath)) ? asset($normalizedPath) : $fallback;
+        }
+
+        if (file_exists(public_path('images/' . $normalizedPath))) {
+            return asset('images/' . $normalizedPath);
+        }
+
+        if (file_exists(public_path($normalizedPath))) {
+            return asset($normalizedPath);
+        }
+
+        return $fallback;
     }
 }

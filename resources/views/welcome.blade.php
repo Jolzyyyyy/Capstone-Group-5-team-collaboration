@@ -16,49 +16,6 @@
 </head>
 <body>
 
-@php
-    $resolveImageUrl = function (?string $path): string {
-        $fallback = asset('images/Prdcts1.jpg');
-
-        if (empty($path)) {
-            return $fallback;
-        }
-
-        $normalizedPath = ltrim(trim($path), '/');
-
-        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['http://', 'https://'])) {
-            return $normalizedPath;
-        }
-
-        if (\Illuminate\Support\Str::startsWith($normalizedPath, 'public/')) {
-            $normalizedPath = \Illuminate\Support\Str::after($normalizedPath, 'public/');
-        }
-
-        if (\Illuminate\Support\Str::startsWith($normalizedPath, ['images/', 'img/'])) {
-            return file_exists(public_path($normalizedPath)) ? asset($normalizedPath) : $fallback;
-        }
-
-        if (file_exists(public_path('images/' . $normalizedPath))) {
-            return asset('images/' . $normalizedPath);
-        }
-
-        if (file_exists(public_path($normalizedPath))) {
-            return asset($normalizedPath);
-        }
-
-        return $fallback;
-    };
-
-    $serviceCards = [
-        ['key' => 'doc', 'title' => 'DOCUMENT PRINTING', 'image' => $resolveImageUrl('images/optimized/Document PrintingS.webp')],
-        ['key' => 'photo', 'title' => 'PHOTOCOPY & SCANNING', 'image' => $resolveImageUrl('images/optimized/PhotocopyS.webp')],
-        ['key' => 'id', 'title' => 'ID & PHOTO SERVICES', 'image' => $resolveImageUrl('images/optimized/Photo IDS.webp')],
-        ['key' => 'bind', 'title' => 'LAMINATION & BINDING', 'image' => $resolveImageUrl('images/optimized/Lamination & BindingS.webp')],
-        ['key' => 'largeformat', 'title' => 'LARGE FORMAT PRINTING', 'image' => $resolveImageUrl('images/optimized/Large FormatingS.webp')],
-        ['key' => 'special', 'title' => 'CUSTOM SPECIAL PRINTING', 'image' => $resolveImageUrl('images/optimized/Custom SpecialS.webp')],
-    ];
-@endphp
-
 <x-storefront.header />
 
 <div class="main-content" id="pageWrapper">
