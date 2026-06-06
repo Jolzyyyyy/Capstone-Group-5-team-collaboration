@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
-use App\Services\ServiceItemIdGenerator;
+use App\Services\ServiceCatalogManager;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ServiceController extends Controller
 {
-    public function __construct(private ServiceItemIdGenerator $serviceItemIdGenerator)
+    public function __construct(private ServiceCatalogManager $serviceCatalogManager)
     {
     }
 
@@ -109,53 +108,7 @@ class ServiceController extends Controller
             'variation_images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
-        DB::transaction(function () use ($request, $validated) {
-            $imagePath = null;
-
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('services', 'public');
-            }
-
-            $service = Service::create([
-                'name' => $validated['name'],
-                'category' => $validated['category'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'image_path' => $imagePath,
-                'is_active' => (bool) ($validated['is_active'] ?? true),
-
-                // temporary compatibility with old public/admin screens
-                'retail_price' => $validated['variations'][0]['retail_price'],
-                'bulk_price' => $validated['variations'][0]['bulk_price'],
-                'unit' => null,
-            ]);
-
-            foreach ($validated['variations'] as $index => $variation) {
-                $variationImagePath = null;
-                if ($request->hasFile("variation_images.$index")) {
-                    $variationImagePath = $request->file("variation_images.$index")->store('service-variations', 'public');
-                }
-
-                $service->variations()->create([
-                    'service_item_id' => $this->serviceItemIdGenerator->generate(
-                        $service->category,
-                        $variation['printing_category'] ?? null,
-                        $variation['finish_type'] ?? null,
-                        $variation['color_mode'] ?? null,
-                        $variation['product_size'] ?? null,
-                        $variation['package_type'] ?? null
-                    ),
-                    'variation_image_path' => $variationImagePath,
-                    'printing_category' => $variation['printing_category'] ?? null,
-                    'color_mode' => $variation['color_mode'] ?? null,
-                    'product_size' => $variation['product_size'] ?? null,
-                    'finish_type' => $variation['finish_type'] ?? null,
-                    'package_type' => $variation['package_type'] ?? null,
-                    'retail_price' => $variation['retail_price'],
-                    'bulk_price' => $variation['bulk_price'],
-                    'is_active' => (bool) ($variation['is_active'] ?? true),
-                ]);
-            }
-        });
+        $this->serviceCatalogManager->createService($request, $validated);
 
         return redirect()->route('admin.services.index')
             ->with('success', 'Service created successfully.');
@@ -199,62 +152,7 @@ class ServiceController extends Controller
             'variation_images.*' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
 
-        DB::transaction(function () use ($request, $validated, $service) {
-            $imagePath = $service->image_path;
-
-            if ($request->hasFile('image')) {
-                if ($service->image_path) {
-                    Storage::disk('public')->delete($service->image_path);
-                }
-
-                $imagePath = $request->file('image')->store('services', 'public');
-            }
-
-            $service->update([
-                'name' => $validated['name'],
-                'category' => $validated['category'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'image_path' => $imagePath,
-                'is_active' => (bool) ($validated['is_active'] ?? $service->is_active),
-                'retail_price' => $validated['variations'][0]['retail_price'],
-                'bulk_price' => $validated['variations'][0]['bulk_price'],
-            ]);
-
-            foreach ($service->variations as $existingVariation) {
-                if ($existingVariation->variation_image_path) {
-                    Storage::disk('public')->delete($existingVariation->variation_image_path);
-                }
-            }
-
-            $service->variations()->delete();
-
-            foreach ($validated['variations'] as $index => $variation) {
-                $variationImagePath = null;
-                if ($request->hasFile("variation_images.$index")) {
-                    $variationImagePath = $request->file("variation_images.$index")->store('service-variations', 'public');
-                }
-
-                $service->variations()->create([
-                    'service_item_id' => $this->serviceItemIdGenerator->generate(
-                        $service->category,
-                        $variation['printing_category'] ?? null,
-                        $variation['finish_type'] ?? null,
-                        $variation['color_mode'] ?? null,
-                        $variation['product_size'] ?? null,
-                        $variation['package_type'] ?? null
-                    ),
-                    'variation_image_path' => $variationImagePath,
-                    'printing_category' => $variation['printing_category'] ?? null,
-                    'color_mode' => $variation['color_mode'] ?? null,
-                    'product_size' => $variation['product_size'] ?? null,
-                    'finish_type' => $variation['finish_type'] ?? null,
-                    'package_type' => $variation['package_type'] ?? null,
-                    'retail_price' => $variation['retail_price'],
-                    'bulk_price' => $variation['bulk_price'],
-                    'is_active' => (bool) ($variation['is_active'] ?? true),
-                ]);
-            }
-        });
+        $this->serviceCatalogManager->updateService($request, $service, $validated);
 
         return redirect()->route('admin.services.index')
             ->with('success', 'Service updated successfully.');
