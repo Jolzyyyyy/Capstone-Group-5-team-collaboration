@@ -4,457 +4,348 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>
-        Printify.co |
-        @if(auth()->user()?->isDeveloper() || request()->is('p-co-2026/developer*'))
-            Developer Portal
-        @elseif(auth()->user()?->canAccessAdminPortal() || request()->is('p-co-2026/admin*'))
-            Admin Portal
-        @else
-            Client Portal
-        @endif
-    </title>
-
-    <!-- Dependencies -->
+    <title>Printify.co | Customer Dashboard</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    @php
+        $user = auth()->user();
+        $displayName = $user->name ?? 'Customer';
+        $displayEmail = $user->email ?? 'customer@printify.co';
+        $profilePhoto = $user->profile_photo ?? $user->avatar ?? null;
+        $profilePhotoUrl = $user->profile_photo_url ?? null;
+        if (!$profilePhotoUrl && $profilePhoto) {
+            $profilePhotoUrl = preg_match('/^(https?:\/\/|\/|data:image\/)/', $profilePhoto) ? $profilePhoto : asset('storage/' . $profilePhoto);
+        }
+        if (!$profilePhotoUrl && !empty($user->profile_photo_path)) {
+            $profilePhotoUrl = asset('storage/' . $user->profile_photo_path);
+        }
+        $profileInitial = strtoupper(substr($displayName, 0, 1));
+        $homeRoute = Route::has('customer.home') ? route('customer.home') : '#';
+        $dashboardRoute = Route::has('dashboard') ? route('dashboard') : '#';
+        $profileRoute = Route::has('profile.edit') ? route('profile.edit') : '#';
+        $ordersRoute = Route::has('my-orders') ? route('my-orders') : (Route::has('customer.orders.index') ? route('customer.orders.index') : (Route::has('orders.index') ? route('orders.index') : '#'));
+        $orderCreateRoute = Route::has('services.index') ? route('services.index') : (Route::has('customer.orders.create') ? route('customer.orders.create') : (Route::has('orders.create') ? route('orders.create') : '#'));
+        $uploadRoute = Route::has('customer.uploads.create') ? route('customer.uploads.create') : '#';
+        $supportRoute = Route::has('customer.support.index') ? route('customer.support.index') : (Route::has('help-center') ? route('help-center') : '#');
+        $securityRoute = Route::has('security') ? route('security') : '#';
+        $notificationRoute = Route::has('notifications') ? route('notifications') : '#';
+        $settingsRoute = Route::has('settings') ? route('settings') : '#';
+        $logoutRoute = Route::has('logout') ? route('logout') : '#';
+        $searchRoute = Route::has('customer.search') ? route('customer.search') : '';
+        $supportThreadRoute = Route::has('customer.support.threads.store') ? route('customer.support.threads.store') : '';
+        $supportMessageRoute = Route::has('customer.support.messages.store') ? route('customer.support.messages.store') : '';
+        $supportMessagesFetchRoute = Route::has('customer.support.messages.index') ? route('customer.support.messages.index') : '';
+        $adminStatusRoute = Route::has('customer.support.admin-status') ? route('customer.support.admin-status') : (Route::has('support.admin-status') ? route('support.admin-status') : '');
+        $notificationReadRoute = Route::has('customer.notifications.mark-read') ? route('customer.notifications.mark-read') : '';
+        $notificationReadAllRoute = Route::has('customer.notifications.mark-all-read') ? route('customer.notifications.mark-all-read') : '';
+        $navItems = [
+            ['label'=>'Home','icon'=>'home','route'=>$homeRoute,'active'=>request()->routeIs('customer.home')],
+            ['label'=>'Dashboard','icon'=>'layout-dashboard','route'=>$dashboardRoute,'active'=>request()->routeIs('dashboard')],
+            ['label'=>'My Profile','icon'=>'user','route'=>$profileRoute,'active'=>request()->routeIs('profile.edit')],
+            ['label'=>'My Orders','icon'=>'shopping-cart','route'=>$ordersRoute,'active'=>request()->routeIs('my-orders') || request()->routeIs('my-orders.*') || request()->routeIs('customer.orders.*')],
+            ['label'=>'Security & Privacy','icon'=>'shield-check','route'=>$securityRoute,'active'=>request()->routeIs('security')],
+            ['label'=>'Notification','icon'=>'bell','route'=>$notificationRoute,'active'=>request()->routeIs('notifications')],
+            ['label'=>'Help Center','icon'=>'help-circle','route'=>$supportRoute,'active'=>request()->routeIs('help-center') || request()->routeIs('customer.support.*')],
+            ['label'=>'Settings','icon'=>'settings','route'=>$settingsRoute,'active'=>request()->routeIs('settings')],
+        ];
+    @endphp
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-        
-        :root {
-            --sidebar-wide: 250px; 
-            --sidebar-mini: 80px;
-            --primary-purple: #6366F1;
-            --bg-light: #F8FAFC; 
-            --text-main: #1E293B;
-            --border-color: #E2E8F0;
-            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        :root{--side:260px;--side-sm:85px;--orange:#FF6B00;--yellow:#FFB000;--bg:#F8FAFC;--muted:#64748B;--line:#E2E8F0;--soft:#FFF4E8;--gray:#F1F5F9;--dark:#111827;--panel-w:335px;--panel-h:430px;--icon:38px;--search-h:34px;--tr:all .25s ease}
+        *{box-sizing:border-box;margin:0;padding:0}[x-cloak]{display:none!important}body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#1E293B;overflow-x:hidden}body.load-fade{opacity:0;transform:translateY(8px);transition:opacity .48s ease,transform .48s ease}body.load-fade.loaded{opacity:1;transform:none}a{text-decoration:none;color:inherit}button,input{font-family:inherit}.no-move,.no-move:hover,.no-move:focus{transform:none!important}
+        .sidebar{position:fixed;inset:0 auto 0 0;width:var(--side);height:100vh;background:#fff;border-right:1px solid var(--line);z-index:1000;display:flex;flex-direction:column;transition:var(--tr);box-shadow:4px 0 24px rgba(0,0,0,.025);overflow:hidden}.sidebar.closed{width:var(--side-sm)}.sidebar-header{padding:1.5rem;display:flex;align-items:center;gap:15px;border-bottom:1px solid #F1F5F9}.menu-toggle{width:42px;height:42px;cursor:pointer;border-radius:12px;display:grid;place-items:center;color:#64748B;background:#F8FAFC}.menu-toggle:hover{background:#F1F5F9;color:#334155}.brand-name{font-weight:900;font-size:1.3rem;color:#0F172A;font-style:italic;letter-spacing:-1px;white-space:nowrap}.nav-menu{flex:1;padding:14px;overflow-y:auto;overflow-x:hidden}.sidebar-link{position:relative;display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;margin-bottom:5px;padding:11px 16px;border-radius:12px;color:#64748B;font-weight:800;font-size:10px;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:background .18s,color .18s}.sidebar-link i{width:19px;height:19px;min-width:19px}.sidebar.closed .sidebar-link{justify-content:center;padding:11px 0}.sidebar.closed .sidebar-link.active:after{display:none}.sidebar-link:not(.active):hover{background:#F1F5F9;color:#334155}.sidebar-link.active{background:var(--soft);color:var(--orange)}.sidebar-link.active:before{content:'';position:absolute;left:0;top:25%;bottom:25%;width:4px;background:var(--orange);border-radius:0 4px 4px 0}.sidebar-link.active:after{content:'›';margin-left:auto;color:var(--orange);font-size:16px;font-weight:950}.logout-wrap{padding:20px;border-top:1px solid #F1F5F9}.logout-link{color:var(--orange)!important;background:var(--soft)!important}.logout-link:hover{background:#F1F5F9!important;color:#334155!important}
+        .admin-main-shell{margin-left:var(--side);min-height:100vh;transition:var(--tr)}.admin-main-shell.expanded{margin-left:var(--side-sm)}.hero-banner{height:300px;background-size:cover;background-position:center;background-repeat:no-repeat;padding:5px 60px;color:white;position:relative;display:flex;flex-direction:column;justify-content:space-between;z-index:1;overflow:visible;transition:background-image 1s ease-in-out;border-radius:0;box-shadow:none}.hero-banner:before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,rgba(15,23,42,.78),rgba(15,23,42,.24));z-index:-2}.hero-banner:after{content:'';position:absolute;right:-80px;bottom:-130px;width:330px;height:330px;border-radius:999px;background:rgba(255,255,255,.1);z-index:-1}.top-nav{height:44px;margin-top:7px;display:flex;justify-content:flex-end;align-items:center;gap:10px;position:relative;z-index:1000;flex-wrap:nowrap}.top-action-wrap{position:relative;flex:0 0 auto}.top-search-wrap{position:relative;width:270px;min-width:270px;flex:0 0 auto}.top-search-form{height:var(--search-h);width:100%;display:flex;align-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.20);border-radius:999px;box-shadow:0 10px 28px rgba(0,0,0,.18);overflow:hidden;backdrop-filter:blur(10px)}.top-search-input{flex:1;min-width:0;height:100%;border:0;background:transparent;outline:0;padding:0 11px 0 14px;color:#fff;font-size:11px;font-weight:700}.top-search-input::placeholder{color:rgba(255,255,255,.74)}.top-search-button{width:var(--icon);min-width:var(--icon);height:var(--search-h);border:0;background:var(--orange);color:white;display:grid;place-items:center;cursor:pointer}.top-search-button:hover{background:#111827}.top-search-button [data-lucide],.header-icon-no-box [data-lucide]{width:20px!important;height:20px!important;stroke-width:2.25}.header-icon-no-box{position:relative;width:var(--icon);height:var(--icon);border:1px solid transparent;border-radius:14px;background:transparent;color:rgba(255,255,255,.78);display:grid;place-items:center;cursor:pointer;transition:background .18s,color .18s,border-color .18s}.header-icon-no-box:hover,.header-icon-no-box.active{background:rgba(241,245,249,.24);border-color:rgba(255,255,255,.18);color:white}.badge-count{position:absolute;top:1px;right:-1px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--orange);color:white;border:2px solid rgba(15,23,42,.75);display:grid;place-items:center;font-size:8px;font-weight:950;line-height:1}.profile-area{display:flex;align-items:center;gap:10px;padding:0;background:transparent;border:0;border-radius:0;backdrop-filter:none;cursor:pointer;transition:color .18s}.profile-area:hover{background:transparent;border:0}.profile-pic-container{position:relative;width:40px;height:40px;flex:0 0 auto}.profile-pic{width:100%;height:100%;border-radius:50%;overflow:hidden;background:var(--orange);display:grid;place-items:center;color:white;font-weight:900;font-size:14px}.profile-pic img{width:100%;height:100%;object-fit:cover}.online-dot{position:absolute;right:3px;bottom:4px;width:8px;height:8px;background:#22C55E;border-radius:50%;box-shadow:0 0 0 3px rgba(34,197,94,.22)}
+        .hero-title-area{display:flex;flex-direction:column;justify-content:center;flex-grow:1;margin-top:20px;max-width:720px}.hero-title-area:before{content:'';width:74px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--yellow),var(--orange));margin-bottom:18px;box-shadow:0 8px 20px rgba(255,176,0,.35)}.hero-kicker{font-size:13px;color:white;opacity:.9;font-weight:700;margin-bottom:2px}.hero-kicker:before{content:'';display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:999px;background:var(--yellow);box-shadow:0 0 12px var(--yellow)}.hero-main-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(2.1rem,4.4vw,3.35rem);font-weight:700;color:#fff;letter-spacing:-1px;line-height:1;text-shadow:0 4px 12px rgba(0,0,0,.4);white-space:nowrap}.hero-subline{margin-top:16px;max-width:600px;font-size:13px;line-height:1.7;color:rgba(255,255,255,.78);font-weight:600}.dots-container{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}.dot{width:8px;height:8px;border:0;border-radius:50%;background:rgba(255,255,255,.42);cursor:pointer;transition:.2s}.dot.active{background:var(--orange);transform:scale(1.35)}.quick-actions-container{position:absolute;right:32px;bottom:58px;display:flex;align-items:center;gap:0;z-index:10;padding:12px 14px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:rgba(17,24,39,.42);box-shadow:0 18px 50px rgba(0,0,0,.22);backdrop-filter:blur(12px)}.action-circle-group{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;min-width:88px;border-right:1px solid rgba(255,255,255,.12)}.action-circle-group:last-child{border-right:0}.action-circle{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:white;box-shadow:0 4px 15px rgba(0,0,0,.25);transition:transform .2s}.action-circle-group:hover .action-circle{transform:translateY(-4px) scale(1.04)}.circle-purple{background:linear-gradient(135deg,#8B5CF6,#4F46E5)}.circle-green{background:linear-gradient(135deg,#22C55E,#15803D)}.circle-yellow{background:linear-gradient(135deg,#F59E0B,#D97706)}.circle-blue{background:linear-gradient(135deg,#0EA5E9,#2563EB)}.action-label{font-size:9px;font-weight:900;color:#E2E8F0;text-transform:capitalize;letter-spacing:.4px}.page-content-wrapper{padding:38px 60px 44px}.page-content-wrapper>*{margin-top:0!important}.page-content-wrapper>section,.page-content-wrapper>div{max-width:100%;margin-left:0;margin-right:0}
+        .search-popover{position:absolute;top:48px;right:0;width:var(--panel-w);min-width:0;background:white;color:#111827;border:1px solid rgba(226,232,240,.95);border-radius:22px;box-shadow:0 28px 80px rgba(15,23,42,.26);overflow:visible;z-index:9999;animation:panelIn .14s ease both}.search-popover:before{content:'';position:absolute;top:-9px;right:30px;width:18px;height:18px;background:#fff;border-left:1px solid rgba(226,232,240,.95);border-top:1px solid rgba(226,232,240,.95);transform:rotate(45deg);z-index:1}.notification-panel,.messenger-panel{position:absolute;top:48px;right:0;bottom:auto;width:var(--panel-w);height:var(--panel-h);background:#fff;color:#111827;border:1px solid rgba(226,232,240,.95);border-radius:20px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden;z-index:10050;display:flex;flex-direction:column;animation:panelIn .18s ease both;isolation:isolate}.messenger-panel.thread-mode{position:fixed;top:auto;right:18px;bottom:0;width:var(--panel-w);height:min(var(--panel-h),calc(100vh - 96px));border-radius:22px 22px 0 0;border-bottom:0;background:#fff;box-shadow:0 -8px 56px rgba(15,23,42,.28);z-index:2147483000;animation:panelDockIn .2s cubic-bezier(.2,.8,.2,1) both}.messenger-panel.chat-minimized{height:52px;overflow:visible}.messenger-panel.chat-minimized .messenger-chat-head{height:52px;border-radius:22px 22px 0 0}.panel-header{padding:16px 18px;border-bottom:1px solid #F1F5F9;display:flex;justify-content:space-between;align-items:center;gap:12px;flex:0 0 auto}.panel-title{font-size:15px;font-weight:950;color:#111827}.panel-subtitle{margin-top:3px;font-size:10px;font-weight:800;color:#64748B}.panel-action{border:0;background:#F8FAFC;color:#334155;border-radius:999px;padding:8px 12px;font-size:10px;font-weight:950;cursor:pointer;transition:background .18s}.panel-action:hover{background:#E5E7EB}.search-panel-inner{position:relative;z-index:2;background:#fff;border-radius:22px;overflow:hidden}.search-panel-query{height:42px;margin:12px;display:flex;align-items:center;gap:9px;padding:0 12px;border:1px solid #E2E8F0;border-radius:14px;background:#F8FAFC}.search-panel-query i{width:15px;height:15px;color:#64748B}.search-panel-query input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#111827;font-size:11px;font-weight:800}.search-panel-query span{padding:4px 7px;border:1px solid #E2E8F0;border-radius:8px;background:white;color:#64748B;font-size:9px;font-weight:950}.search-dashboard{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px}.search-section-label{margin:5px 0 7px;color:#475569;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.04em}.search-card-link,.search-activity-row,.search-suggestion-row{width:100%;border:1px solid transparent;background:transparent;border-radius:14px;padding:9px;color:#111827;display:flex;align-items:center;gap:9px;text-align:left;cursor:pointer;transition:background .18s,border-color .18s}.search-card-link{background:#FFF8F0;border-color:#FED7AA}.search-card-link:hover,.search-activity-row:hover,.search-suggestion-row:hover{background:#FFF4E8;border-color:#FDBA74}.search-card-link .search-icon-tile{background:white;color:var(--orange)}.search-suggestion-row .search-icon-tile,.search-activity-row .search-icon-tile{width:30px;height:30px}.search-mini-title{font-size:10.5px;font-weight:950;color:#111827;line-height:1.25}.search-mini-desc{display:block;margin-top:2px;font-size:9px;font-weight:750;color:#64748B;line-height:1.25}.search-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.search-quick-card{border:1px solid #E2E8F0;border-radius:12px;padding:8px;background:#fff;color:#111827;font-size:9.5px;font-weight:950;display:flex;align-items:center;gap:7px;transition:background .18s,border-color .18s}.search-quick-card:hover{background:#FFF4E8;border-color:#FDBA74}.search-quick-card i{width:14px;height:14px;color:var(--orange)}.search-panel-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-top:1px solid #F1F5F9;background:#F8FAFC;color:#64748B;font-size:9.5px;font-weight:800}.search-panel-footer a{color:var(--orange);font-weight:950}.search-panel-head{padding:15px 16px 10px;border-bottom:1px solid #F1F5F9}.search-panel-title{font-size:13px;font-weight:950}.search-panel-sub{margin-top:3px;font-size:11px;font-weight:700;color:#64748B}.search-results{padding:8px;max-height:290px;overflow-y:auto}.search-item{padding:11px;border-radius:14px;font-size:12px;font-weight:800;color:#374151;cursor:pointer;transition:background .18s;display:flex;justify-content:space-between;align-items:center;gap:12px}.search-item:hover{background:#F1F5F9;color:#111827}.search-item-left{display:flex;align-items:center;gap:10px;min-width:0}.search-icon-tile,.notif-icon,.topic-icon{display:grid;place-items:center;flex-shrink:0}.search-icon-tile{width:34px;height:34px;border-radius:12px;background:#F8FAFC;color:#64748B}.search-icon-tile [data-lucide]{width:16px;height:16px}.search-item-main{min-width:0}.search-item-title{font-size:12px;font-weight:950;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.search-item-desc{margin-top:2px;font-size:10px;font-weight:700;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.empty-state{padding:24px 18px;text-align:center;color:#64748B;font-size:12px;font-weight:700}
+        .notif-tabs{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid #F8FAFC;background:white;flex:0 0 auto}.notif-tab{border:0;background:#F8FAFC;color:#64748B;border-radius:999px;padding:8px 11px;font-size:10px;font-weight:950;cursor:pointer;transition:background .18s,color .18s}.notif-tab:hover{background:#E5E7EB;color:#334155}.notif-tab.active{background:var(--orange);color:white;box-shadow:0 8px 20px rgba(255,107,0,.18)}.notif-list{flex:1;overflow-y:auto;background:white}.notif-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid #F8FAFC;transition:background .18s;cursor:pointer;position:relative}.notif-item:hover{background:#F1F5F9}.notif-item.unread{background:#FFFBF7}.notif-item.unread:hover{background:#F1F5F9}.notif-item.unread:before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 999px 999px 0;background:var(--orange)}.notif-icon{width:38px;height:38px;border-radius:15px;background:#FFF4E8;color:var(--orange)}.notif-icon.green{background:#ECFDF5;color:#16A34A}.notif-icon.blue{background:#EFF6FF;color:#2563EB}.notif-icon.purple{background:#F5F3FF;color:#7C3AED}.notif-icon [data-lucide]{width:17px;height:17px}.notif-body{min-width:0;flex:1}.notif-title{font-size:12px;font-weight:950;color:#111827;line-height:1.35}.notif-copy{margin-top:3px;font-size:11px;font-weight:700;color:#64748B;line-height:1.45}.notif-time{font-size:10px;color:#94A3B8;margin-top:5px;font-weight:800}.notif-footer{padding:12px 15px;border-top:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;background:white;flex:0 0 auto}.notif-footer a{color:var(--orange);font-size:11px;font-weight:950}
+        .messenger-menu-body{flex:1;padding:12px;overflow-y:auto;background:#fff}.messenger-topic{width:100%;border:1px solid #F1F5F9;background:white;border-radius:18px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s;text-align:left}.messenger-topic:hover{border-color:#E5E7EB;background:#F1F5F9;box-shadow:0 10px 24px rgba(15,23,42,.06)}.topic-left{display:flex;align-items:center;gap:12px;min-width:0}.topic-icon{width:42px;height:42px;border-radius:16px;background:#FFF4E8;color:var(--orange)}.topic-icon.green{background:#ECFDF5;color:#16A34A}.topic-icon.blue{background:#EFF6FF;color:#2563EB}.topic-icon.purple{background:#F5F3FF;color:#7C3AED}.topic-icon [data-lucide]{width:18px;height:18px}.topic-title{font-size:13px;font-weight:950;color:#111827}.topic-desc{margin-top:3px;font-size:11px;font-weight:700;color:#64748B;line-height:1.35}.topic-arrow{color:#CBD5E1}.messenger-chat-head{position:relative;padding:8px 10px;border-bottom:1px solid #111827;display:flex;align-items:center;gap:8px;background:#18191A;flex-shrink:0;z-index:4}.chat-back{width:32px;height:32px;border:0;border-radius:12px;background:#242526;color:#E4E6EB;display:grid;place-items:center;cursor:pointer}.chat-back:hover{background:#3A3B3C;color:#fff}.chat-agent-avatar{position:relative;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--chat-accent,#FF6B00),var(--chat-accent-2,#F59E0B));color:white;display:grid;place-items:center;font-weight:950;flex-shrink:0;box-shadow:0 8px 20px var(--chat-ring,rgba(255,107,0,.22))}.agent-status-dot{position:absolute;right:0;bottom:2px;width:9px;height:9px;border-radius:50%;background:#22C55E;border:2px solid #18191A}.admin-presence{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:900;color:#16A34A}.admin-presence:before{content:'';width:7px;height:7px;border-radius:50%;background:#22C55E}.chat-head-text{min-width:0;flex:1}.chat-head-name{font-size:13px;font-weight:950;color:#F5F6F7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-head-status{margin-top:2px;font-size:10px;font-weight:850;color:#D1D5DB}.chat-actions{display:flex;align-items:center;gap:4px;margin-left:auto}.chat-control,.chat-close{width:29px;height:29px;border:0;border-radius:50%;background:#242526;color:#E4E6EB;display:grid;place-items:center;cursor:pointer;transition:background .16s,color .16s}.chat-more-btn{width:23px!important;height:23px!important;border-radius:50%!important}.chat-more-btn i{width:13px!important;height:13px!important}.chat-control:hover,.chat-close:hover{background:#3A3B3C;color:#fff}.theme-strip{display:none}.theme-dot{width:20px;height:20px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #E5E7EB;cursor:pointer;transition:transform .15s,box-shadow .15s}.theme-dot.active{transform:scale(1.12);box-shadow:0 0 0 2px var(--chat-accent,#FF6B00),0 6px 15px var(--chat-ring,rgba(255,107,0,.18))}.chat-body{flex:1;background:#fff;padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}.chat-day-pill{align-self:center;padding:6px 10px;border-radius:999px;background:white;color:#94A3B8;font-size:9px;font-weight:950;box-shadow:0 6px 18px rgba(15,23,42,.07)}.chat-bubble-row{display:flex;width:100%}.chat-bubble-row.me{justify-content:flex-end}.chat-bubble-row.admin{justify-content:flex-start}.chat-bubble{max-width:78%;border-radius:18px;padding:10px 12px;font-size:12px;line-height:1.5;font-weight:700;box-shadow:0 8px 20px rgba(15,23,42,.06)}.chat-bubble-row.me .chat-bubble{background:var(--chat-accent,var(--orange));color:white;border-bottom-right-radius:6px}.chat-bubble-row.admin .chat-bubble{background:white;color:#334155;border:1px solid #F1F5F9;border-bottom-left-radius:6px}.chat-attachment{margin-top:7px;padding:8px 10px;border-radius:12px;background:rgba(15,23,42,.06);display:flex;align-items:center;gap:7px;font-size:10px;font-weight:900}.chat-attachment [data-lucide]{width:14px;height:14px}.chat-time{display:block;margin-top:5px;font-size:8px;opacity:.72;font-weight:900}.quick-replies{flex-shrink:0;padding:8px 12px;display:flex;gap:8px;overflow-x:auto;border-top:1px solid #F8FAFC;background:white}.quick-reply{border:1px solid #E5E7EB;background:#F8FAFC;color:#334155;padding:8px 10px;border-radius:999px;font-size:10px;font-weight:950;cursor:pointer;white-space:nowrap}.quick-reply:hover{background:#E5E7EB}.pending-attachment{flex-shrink:0;margin:0 12px 8px;padding:8px 10px;border:1px solid #E5E7EB;border-radius:14px;background:#F8FAFC;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;color:#334155}.pending-attachment span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pending-attachment button,.chat-tool{border:0;background:#F8FAFC;color:#64748B;display:grid;place-items:center;cursor:pointer}.pending-attachment button{width:22px;height:22px;border-radius:50%}.chat-composer{flex-shrink:0;padding:8px 10px 10px;border-top:1px solid #F1F5F9;background:white;display:flex;align-items:center;gap:6px}.chat-tool{width:30px;height:30px;border-radius:50%;border:1px solid #E5E7EB}.chat-tool:hover{background:#E5E7EB;color:var(--chat-accent,#FF6B00)}.chat-tool [data-lucide]{width:16px;height:16px}.chat-composer input[type=text]{flex:1;height:38px;border:1px solid #E5E7EB;border-radius:999px;padding:0 14px;outline:none;font-size:12px;font-weight:700;color:#111827}.chat-composer input[type=text]:focus{border-color:var(--chat-accent,var(--orange));box-shadow:0 0 0 4px var(--chat-ring,rgba(255,107,0,.1))}.chat-send{width:38px;height:38px;border:0;border-radius:50%;background:var(--chat-accent,var(--orange));color:white;display:grid;place-items:center;cursor:pointer;flex-shrink:0}.chat-send:hover{filter:brightness(.94)}.chat-options-menu{position:absolute;top:46px;right:10px;width:210px;background:#242526;color:#E4E6EB;border:1px solid rgba(255,255,255,.08);border-radius:12px;box-shadow:0 18px 42px rgba(0,0,0,.34);padding:6px;z-index:12;transform-origin:top right}.chat-option-muted,.chat-option-row{width:100%;display:flex;align-items:center;gap:8px;padding:8px 8px;border:0;border-radius:9px;background:transparent;color:#E4E6EB;text-align:left;font-size:11px;font-weight:850;cursor:pointer}.chat-option-muted{cursor:default;color:#DADDE1;border-bottom:1px solid rgba(255,255,255,.12);border-radius:0;margin-bottom:5px}.chat-option-row:hover{background:#3A3B3C}.chat-option-row.danger{color:#FFB4B4}.chat-option-row i,.chat-option-muted i{width:16px!important;height:16px!important}.option-swatches{display:flex;gap:7px;padding:6px 8px 8px 31px;border-bottom:1px solid rgba(255,255,255,.10);margin-bottom:5px}.option-swatch{width:19px;height:19px;border:2px solid #242526;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.28);cursor:pointer}.option-swatch.active{box-shadow:0 0 0 2px #fff;transform:scale(1.08)}.chat-typing{display:flex;align-items:center;gap:4px;padding:9px 12px;border:1px solid #F1F5F9;background:white;border-radius:18px;width:max-content;box-shadow:0 8px 20px rgba(15,23,42,.05)}.chat-typing span{width:6px;height:6px;border-radius:50%;background:#CBD5E1;animation:typingPulse 1s infinite ease-in-out}.chat-typing span:nth-child(2){animation-delay:.12s}.chat-typing span:nth-child(3){animation-delay:.24s}
+        .search-popover,.notification-panel,.messenger-panel:not(.thread-mode){width:var(--panel-w);height:var(--panel-h);border-radius:22px;border:1px solid rgba(226,232,240,.95);box-shadow:0 28px 80px rgba(15,23,42,.26);overflow:visible}.search-popover{height:var(--panel-h)}.search-panel-inner{height:100%;display:flex;flex-direction:column}.search-dashboard{flex:1;min-height:0;overflow-y:auto}.search-popover:before,.notification-panel:before,.messenger-panel:not(.thread-mode):before{content:'';position:absolute;top:-9px;right:31px;width:18px;height:18px;background:#fff;border-left:1px solid rgba(226,232,240,.95);border-top:1px solid rgba(226,232,240,.95);transform:rotate(45deg);z-index:1}.notification-panel:before{right:54px}.messenger-panel:not(.thread-mode):before{right:20px}.notification-panel>.panel-header,.notification-panel>.notif-tabs,.notification-panel>.notif-list,.notification-panel>.notif-footer,.messenger-panel:not(.thread-mode)>template+*,.messenger-panel:not(.thread-mode)>div{position:relative;z-index:2}.notification-panel .panel-header{background:#fff;border-bottom:0;padding:16px 16px 8px}.notification-panel .panel-title{display:flex;align-items:center;gap:6px;font-size:16px;font-weight:950}.panel-count{min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:950;display:inline-grid;place-items:center}.notification-panel .panel-subtitle{display:none}.notification-panel .panel-action{background:#F8FAFC;border:1px solid #E2E8F0;color:#111827;padding:8px 10px}.notification-panel .panel-action:hover{background:#111827;color:white}.notification-panel .notif-tabs{padding:5px 16px 10px;border-bottom:0;gap:8px}.notification-panel .notif-tab{padding:7px 12px;background:#F8FAFC;border:1px solid transparent;color:#64748B}.notification-panel .notif-tab.active{background:var(--orange);color:white;box-shadow:none}.notification-panel .notif-list{padding:0 10px 10px;background:#fff}.notif-section-label{padding:7px 6px 8px;color:#64748B;font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.04em}.notification-panel .notif-item{margin-bottom:8px;padding:11px 10px;border:1px solid #E2E8F0;border-radius:14px;background:#fff;align-items:center}.notification-panel .notif-item:hover{background:#FFF8F0;border-color:#FDBA74}.notification-panel .notif-item.unread{background:#fff}.notification-panel .notif-item.unread:before{display:none}.notification-panel .notif-icon{width:34px;height:34px;border-radius:12px}.notification-panel .notif-title{font-size:11px}.notification-panel .notif-copy{font-size:9.5px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.notification-panel .notif-time{width:55px;text-align:right;margin-top:0;font-size:8.5px}.notification-panel .notif-footer{padding:10px 15px;border-top:1px solid #F1F5F9}.messenger-panel.thread-mode{right:18px;bottom:0;width:var(--panel-w);height:min(var(--panel-h),calc(100vh - 96px));border-radius:20px 20px 0 0}.messenger-panel.thread-mode .messenger-chat-head{min-height:58px;padding:9px 11px;background:#111827;border-bottom:1px solid rgba(255,255,255,.08)}.messenger-panel.thread-mode .chat-agent-avatar:before{content:'';position:absolute;left:-23px;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#E2E8F0,#94A3B8);box-shadow:-18px 0 0 #CBD5E1}.messenger-panel.thread-mode .chat-body{background:linear-gradient(180deg,#F8FAFC 0%,#fff 100%);padding:14px 14px 12px}.messenger-panel.thread-mode .chat-day-pill{background:#fff;border:1px solid #E2E8F0;box-shadow:none}.messenger-panel.thread-mode .chat-bubble-row.admin .chat-bubble{background:#fff;border-color:#E2E8F0}.messenger-panel.thread-mode .chat-bubble-row.me .chat-bubble{background:#0F172A;color:#fff}.messenger-panel.thread-mode .quick-replies{padding:8px 10px;background:#fff;border-top:1px solid #E2E8F0}.messenger-panel.thread-mode .quick-reply{background:#fff;border-color:#E2E8F0;color:#334155}.messenger-panel.thread-mode .quick-reply:hover{background:#FFF4E8;border-color:#FDBA74;color:#111827}.messenger-panel.thread-mode .chat-composer{padding:9px 10px 12px;background:#fff;box-shadow:0 -10px 26px rgba(15,23,42,.05)}.messenger-panel.thread-mode .chat-composer input[type=text]{height:36px;background:#F8FAFC}.messenger-panel.thread-mode .chat-send{background:var(--orange);color:#111827}.messenger-panel.thread-mode .chat-send:hover{background:#111827;color:white;filter:none}.messenger-panel:not(.thread-mode){background:#fff}.messenger-panel:not(.thread-mode) .panel-header{background:#fff;border-bottom:0;padding:16px 16px 8px}.messenger-panel:not(.thread-mode) .panel-title{color:#111827;font-size:15px}.messenger-panel:not(.thread-mode) .panel-title:before{content:'How can we help you today?';display:block;margin-bottom:2px;font-size:13px;color:#111827}.messenger-panel:not(.thread-mode) .panel-title{font-size:0}.messenger-panel:not(.thread-mode) .admin-presence{margin-top:4px;width:max-content;padding:5px 9px;border-radius:999px;background:#ECFDF5;color:#16A34A;font-size:9px}.messenger-panel:not(.thread-mode) .panel-header a{color:var(--orange)!important}.messenger-panel:not(.thread-mode) .messenger-menu-body{background:#fff;padding:8px 14px 12px}.messenger-panel:not(.thread-mode) .messenger-menu-body:before{content:'Quick Help';display:block;margin:2px 0 9px;font-size:10px;font-weight:950;color:#64748B;text-transform:uppercase}.messenger-panel:not(.thread-mode) .messenger-topic{border-color:#E2E8F0;background:#fff;border-radius:14px;padding:10px;margin-bottom:8px}.messenger-panel:not(.thread-mode) .messenger-topic:hover{background:#FFF4E8;border-color:#FDBA74}.messenger-panel:not(.thread-mode) .topic-icon{width:34px;height:34px;border-radius:12px}.messenger-panel:not(.thread-mode) .topic-title{font-size:11px}.messenger-panel:not(.thread-mode) .topic-desc{font-size:9px}.messenger-panel:not(.thread-mode) .messenger-menu-body:after{content:'Start Live Chat';display:grid;place-items:center;height:42px;margin-top:8px;border-radius:13px;background:var(--orange);color:#111827;font-size:11px;font-weight:950;box-shadow:0 10px 22px rgba(255,107,0,.22)}@keyframes panelIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes panelDockIn{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes typingPulse{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}.nav-menu::-webkit-scrollbar,.search-results::-webkit-scrollbar,.notif-list::-webkit-scrollbar,.messenger-menu-body::-webkit-scrollbar,.chat-body::-webkit-scrollbar,.quick-replies::-webkit-scrollbar,.search-dashboard::-webkit-scrollbar{width:6px;height:6px}.nav-menu::-webkit-scrollbar-thumb,.search-results::-webkit-scrollbar-thumb,.notif-list::-webkit-scrollbar-thumb,.messenger-menu-body::-webkit-scrollbar-thumb,.chat-body::-webkit-scrollbar-thumb,.quick-replies::-webkit-scrollbar-thumb,.search-dashboard::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:999px}.menu-toggle:focus-visible,.header-icon-no-box:focus-visible,.dot:focus-visible,.action-circle-group:focus-visible,.sidebar-link:focus-visible,.profile-area:focus-visible,.panel-action:focus-visible,.notif-tab:focus-visible,.messenger-topic:focus-visible,.chat-back:focus-visible,.chat-send:focus-visible,.chat-tool:focus-visible{outline:3px solid rgba(255,107,0,.42);outline-offset:3px}
+        .messenger-menu-shell{height:100%;display:flex;flex-direction:column;position:relative;z-index:2;background:#fff;border-radius:22px;overflow:hidden}.messenger-panel:not(.thread-mode) .messenger-menu-body{flex:1;min-height:0;overflow-y:auto}.messenger-panel:not(.thread-mode) .messenger-menu-body:after{content:none!important;display:none!important}.messenger-recent{margin-top:10px;padding-top:10px;border-top:1px solid #F1F5F9}.messenger-recent-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:10px;font-weight:950;color:#111827}.messenger-recent-head a{color:var(--orange);font-size:9px}.messenger-recent-row{width:100%;border:0;background:#fff;border-radius:12px;padding:8px;display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:8px;text-align:left;cursor:pointer}.messenger-recent-row:hover{background:#FFF4E8}.recent-dot{width:7px;height:7px;border-radius:50%;display:block}.recent-dot.orange{background:var(--orange)}.recent-dot.purple{background:#7C3AED}.messenger-recent-row b{display:block;font-size:10px;color:#111827}.messenger-recent-row small{display:block;margin-top:2px;font-size:8.5px;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.messenger-recent-row em{font-style:normal;font-size:8px;color:#94A3B8}.messenger-menu-actions{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:10px 12px 12px;border-top:1px solid #F1F5F9;background:#fff}.messenger-primary,.messenger-secondary{height:39px;border-radius:12px;border:1px solid var(--orange);display:flex;align-items:center;justify-content:center;gap:7px;font-size:10px;font-weight:950;cursor:pointer}.messenger-primary{background:var(--orange);color:#111827}.messenger-secondary{background:#fff;color:#111827}.messenger-primary:hover,.messenger-secondary:hover{background:#111827;border-color:#111827;color:#fff}.messenger-primary i,.messenger-secondary i{width:14px;height:14px}
+        @media(max-width:1024px){.admin-main-shell,.admin-main-shell.expanded{margin-left:var(--side-sm)}.sidebar{width:var(--side-sm)}.brand-name,.sidebar-link span,.sidebar-link.active:after{display:none}.hero-banner{padding:5px 28px}.top-search-wrap{width:225px;min-width:225px}.quick-actions-container{right:28px}.action-circle-group{min-width:82px}}
+        @media(max-width:760px){.admin-main-shell,.admin-main-shell.expanded{margin-left:0}.sidebar{transform:translateX(-100%)}.sidebar.mobile-open{transform:translateX(0);width:var(--side)}.hero-banner{height:390px;padding:16px}.top-nav{justify-content:flex-start;flex-wrap:wrap;height:auto}.top-search-wrap{order:10;width:100%;min-width:0;flex-basis:100%;margin-top:8px}.search-popover{left:0;right:auto;min-width:0;width:100%}.notification-panel,.messenger-panel,.messenger-panel.thread-mode{position:fixed;top:auto;left:12px;right:12px;bottom:0;width:auto;height:min(var(--panel-h),calc(100vh - 92px));border-radius:22px 22px 0 0}.messenger-panel.chat-minimized{height:56px}.quick-actions-container{left:16px;right:16px;bottom:28px;justify-content:space-between;gap:10px;padding:12px}.action-circle-group{min-width:auto;border-right:0}.hero-main-title{white-space:normal}.page-content-wrapper{padding:20px 16px}}
+        /* Unified customer dashboard/system styling */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&family=Poppins:wght@500;600;700&display=swap');
+        :root{--orange:#ff7a00;--customer-orange:#ff7a00;--customer-dark:#111827;--customer-green:#16a34a;--customer-hover:rgba(17,24,39,.10);--customer-font:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--customer-head:'Playfair Display',Georgia,serif;--customer-title:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+        body,.customer-dashboard-v2,.profile-page,.page-content-wrapper{font-family:var(--customer-font)!important;font-weight:400;letter-spacing:0}
+        .hero-main-title,.dashboard-main-title,.profile-title,.page-title,h1.customer-title{font-family:var(--customer-head)!important;font-weight:700!important;letter-spacing:0!important}
+        .card-title,.panel-title,.prof-card-title,.prof-widget-title,.sidebar-link,.search-mini-title,.notif-title,.topic-title,.card h2,.card h3,.prof-card h2,.prof-card h3{font-family:var(--customer-title)!important;font-weight:600!important;letter-spacing:0!important}
+        .page-content-wrapper{padding:32px 70px 70px;max-width:none;margin:0}
+        .page-content-wrapper .card,.dashboard-board .card,.prof-card,.latest-card,.recent-card,.account-card,.notification-card,.quick-actions-card,.chart-card,.stat-card,.dashboard-calendar-modal,.search-popover,.notification-panel,.messenger-panel{border-color:var(--customer-dark)!important;box-shadow:none!important}
+        .page-content-wrapper .card:hover,.dashboard-board .card:hover,.prof-card:hover,.latest-card:hover,.recent-card:hover,.account-card:hover,.notification-card:hover,.quick-actions-card:hover,.chart-card:hover,.stat-card:hover,.account-row:hover,.notification-row:hover,.orders-table tbody tr:hover,.search-card-link:hover,.search-activity-row:hover,.search-suggestion-row:hover,.messenger-topic:hover,.notif-item:hover{background:var(--customer-hover)!important;border-color:var(--customer-dark)!important;box-shadow:none!important;transform:none!important}
+        .primary-button,.light-button,.tiny-button,.view-button,.clear-filter-btn,.edit-profile-button,.prof-btn,.prof-mini,.prof-link,.calendar-save-btn,.calendar-action-btn,.calendar-icon-btn,.calendar-mini-btn,.messenger-primary,.messenger-secondary,.panel-action,.notif-tab.active,.top-search-button,.chat-send{height:38px;min-width:116px;border:0!important;border-radius:10px!important;background:var(--customer-orange)!important;color:#111827!important;box-shadow:none!important;font-family:var(--customer-title)!important;font-size:11px!important;font-weight:600!important;letter-spacing:0!important}
+        .primary-button:hover,.light-button:hover,.tiny-button:hover,.view-button:hover,.clear-filter-btn:hover,.edit-profile-button:hover,.prof-btn:hover,.prof-mini:hover,.prof-link:hover,.calendar-save-btn:hover,.calendar-action-btn:hover,.calendar-icon-btn:hover,.calendar-mini-btn:hover,.messenger-primary:hover,.messenger-secondary:hover,.panel-action:hover,.top-search-button:hover,.chat-send:hover{background:var(--customer-dark)!important;color:#fff!important;box-shadow:none!important;transform:none!important}
+        .row-icon,.stat-icon,.quick-icon,.notif-icon,.topic-icon,.search-icon-tile,.pfy-card-icon{background:transparent!important;box-shadow:none!important}
+        .prof-toggle.is-on,.online-dot,.tracking-line::before,.timeline-node.done .timeline-dot{background:var(--customer-green)!important;border-color:var(--customer-green)!important}
+        .prof-pref-state.on,.prof-pref-state.off,.prof-badge,.status-delivered,.status-shipped,.payment-total strong,.revenue-total strong{color:var(--customer-green)!important}
+        .sidebar-link.active{background:var(--soft)!important;color:var(--orange)!important}
+        .sidebar-link:not(.active):hover{background:#F1F5F9!important;color:#334155!important}
+        .sidebar-link.active:before{background:var(--orange)!important}
+        .sidebar-link.active:after{background:transparent!important;color:var(--orange)!important}
+        .profile-area,.profile-area:hover{background:transparent!important;border:0!important;box-shadow:none!important}
+        .profile-pic{background:var(--orange)!important;color:#fff!important;box-shadow:none!important}
+        .prof-camera-btn{background:var(--p-orange,#ff7a00)!important;color:#fff!important;box-shadow:none!important}
+        .prof-camera-btn:hover,.prof-camera-btn:focus{background:#111827!important;color:#fff!important;box-shadow:none!important;transform:none!important}
+        .prof-btn:not(.prof-primary):not(.prof-link-primary),.prof-mini,.prof-link:not(.prof-link-primary),.messenger-secondary,.panel-action,.calendar-icon-btn,.calendar-mini-btn{background:#fff!important;color:#111827!important;border:1px solid #dfe3ea!important;box-shadow:none!important}
+        .prof-btn:not(.prof-primary):not(.prof-link-primary):hover,.prof-mini:hover,.prof-link:not(.prof-link-primary):hover,.messenger-secondary:hover,.panel-action:hover,.calendar-icon-btn:hover,.calendar-mini-btn:hover{background:#F1F5F9!important;color:#334155!important;border-color:#cbd5e1!important;box-shadow:none!important;transform:none!important}
+        .prof-toast{left:50%!important;right:auto!important;top:96px!important;bottom:auto!important;transform:translateX(-50%)!important;background:var(--customer-dark)!important;color:#fff!important;box-shadow:none!important;text-align:center}
+        /* Header popover alignment and wider search */
+        .top-search-wrap{width:360px!important;min-width:360px!important}
+        .top-search-wrap .search-popover:before,
+        .top-action-wrap .notification-panel:before,
+        .top-action-wrap .messenger-panel:not(.thread-mode):before{
+            top:-8px!important;
+            right:calc((var(--icon) - 15px) / 2)!important;
+            width:15px!important;
+            height:15px!important;
+            background:#fff!important;
+            border-left:1px solid rgba(226,232,240,.95)!important;
+            border-top:1px solid rgba(226,232,240,.95)!important;
+            border-radius:3px 0 0 0!important;
+            clip-path:none!important;
+            transform:rotate(45deg)!important;
+            box-shadow:none!important;
         }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-light); 
-            margin: 0; 
-            color: var(--text-main);
-            overflow-x: hidden;
+        @media(max-width:1024px){.top-search-wrap{width:310px!important;min-width:310px!important}}
+        @media(max-width:760px){.page-content-wrapper{padding:20px 12px}}
+        @media(max-width:760px){.top-search-wrap{width:100%!important;min-width:0!important}}
+        /* Shared UI balance across customer backend */
+        .page-content-wrapper{padding:32px 70px 70px!important}
+        .page-content-wrapper,.page-content-wrapper *{letter-spacing:0!important}
+        .primary-button,.edit-profile-button,.prof-primary,.prof-link-primary,.calendar-save-btn,.messenger-primary,.top-search-button,.chat-send{
+            background:var(--customer-orange)!important;
+            color:#111827!important;
+            border:0!important;
+            box-shadow:none!important;
         }
-
-        /* --- SIDEBAR --- */
-        .fixed-sidebar {
-            position: fixed; top: 0; left: 0; height: 100vh;
-            background: #FFFFFF; border-right: 1px solid var(--border-color);
-            z-index: 1000; display: flex; flex-direction: column;
-            transition: var(--transition-smooth); overflow: hidden;
+        .light-button,.tiny-button,.view-button,.clear-filter-btn,.prof-mini,.prof-link:not(.prof-link-primary),.calendar-action-btn,.calendar-icon-btn,.calendar-mini-btn,.messenger-secondary,.panel-action{
+            background:#fff!important;
+            color:#111827!important;
+            border:0!important;
+            box-shadow:none!important;
         }
-
-        .sidebar-header {
-            padding: 2rem 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-height: 100px;
+        .primary-button:hover,.edit-profile-button:hover,.prof-primary:hover,.prof-link-primary:hover,.calendar-save-btn:hover,.messenger-primary:hover,.top-search-button:hover,.chat-send:hover,
+        .light-button:hover,.tiny-button:hover,.view-button:hover,.clear-filter-btn:hover,.prof-mini:hover,.prof-link:not(.prof-link-primary):hover,.calendar-action-btn:hover,.calendar-icon-btn:hover,.calendar-mini-btn:hover,.messenger-secondary:hover,.panel-action:hover{
+            background:#111827!important;
+            color:#fff!important;
+            border:0!important;
+            box-shadow:none!important;
+            transform:none!important;
         }
-
-        .sidebar-header h2 {
-            font-weight: 900; font-style: italic; font-size: 1.15rem;
-            letter-spacing: -0.05em; color: #1E293B; line-height: 1;
-            margin: 0; white-space: nowrap;
+        .page-content-wrapper .card,.dashboard-board .card,.prof-card,.latest-card,.recent-card,.account-card,.notification-card,.quick-actions-card,.chart-card,.stat-card{
+            border:1px solid #111827!important;
         }
-        .sub-logo { font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
-
-        .nav-list { flex: 1; margin-top: 1rem; }
-        
-        .sidebar-link {
-            display: flex; align-items: center; 
-            padding: 0.7rem 1.25rem; margin: 0.2rem 1rem;
-            font-size: 10px; font-weight: 700; text-transform: uppercase; 
-            letter-spacing: 0.05em; color: #64748B; text-decoration: none; 
-            gap: 15px; border-radius: 8px; transition: all 0.2s ease;
+        .page-content-wrapper .card:hover,.dashboard-board .card:hover,.prof-card:hover,.latest-card:hover,.recent-card:hover,.account-card:hover,.notification-card:hover,.quick-actions-card:hover,.chart-card:hover,.stat-card:hover{
+            background:rgba(17,24,39,.10)!important;
         }
-
-        .sidebar-link i, .sidebar-link svg { 
-            width: 20px !important; 
-            height: 20px !important; 
-            min-width: 20px !important; 
-            stroke-width: 2.5px; 
-            opacity: 0.8; 
-            flex-shrink: 0;
+        [data-lucide="shield"],[data-lucide="shield-check"],[data-lucide="lock"],[data-lucide="key"],.fa-shield-halved,.fa-shield,.fa-lock,.fa-key{color:#dc2626!important}
+        [data-lucide="mail"],[data-lucide="mail-check"],.fa-envelope{color:#111827!important}
+        [data-lucide="phone"],[data-lucide="smartphone"],.fa-mobile-screen{color:#2563eb!important}
+        [data-lucide="map-pin"],.fa-location-dot{color:#16a34a!important}
+        [data-lucide="bell"]{color:#f59e0b!important}
+        [data-lucide="shopping-cart"]{color:#ff7a00!important}
+        .prof-toggle.is-on,.online-dot,input[type="checkbox"]:checked{accent-color:#16a34a!important}
+        .top-nav .header-icon-no-box,
+        .top-nav .header-icon-no-box [data-lucide]{
+            color:rgba(255,255,255,.78)!important;
+            stroke:currentColor!important;
         }
-
-        .sidebar-link:hover { color: var(--primary-purple); background: #F1F5F9; }
-        .sidebar-link.active { color: var(--primary-purple); background: #EEF2FF; }
-
-        /* --- HEADER --- */
-        .main-header {
-            height: 80px; position: fixed; top: 0; right: 0; z-index: 500;
-            background: rgba(248, 250, 252, 0.8); backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: flex-end;
-            padding: 1.5rem 4rem 1.5rem 2rem;
-            transition: var(--transition-smooth);
+        .top-nav .header-icon-no-box:hover,
+        .top-nav .header-icon-no-box.active,
+        .top-nav .header-icon-no-box:hover [data-lucide],
+        .top-nav .header-icon-no-box.active [data-lucide]{
+            color:#fff!important;
+            stroke:currentColor!important;
         }
-
-        .header-right-actions { display: flex; align-items: center; gap: 1.2rem; }
-        .icon-group { display: flex; align-items: center; gap: 0.3rem; color: #94A3B8; }
-
-        .icon-btn { 
-            position: relative; width: 38px; height: 38px; 
-            display: flex; align-items: center; justify-content: center;
-            color: #64748B; cursor: pointer; border-radius: 50%; border: none; background: none; transition: 0.3s;
-        }
-        .icon-btn i, .icon-btn svg { width: 20px; height: 20px; stroke-width: 2.5px; opacity: 0.8; }
-        .icon-btn:hover { background: #F1F5F9; color: var(--primary-purple); }
-
-        .toggle-btn-sidebar {
-            background: transparent;
-            border: none;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #64748B;
-            flex-shrink: 0;
-            padding: 0;
-        }
-        .toggle-btn-sidebar:hover { color: var(--primary-purple); }
-
-        .notif-dot {
-            position: absolute; top: 6px; right: 6px;
-            width: 10px; height: 10px; background: #EF4444; 
-            border-radius: 50%; border: 2px solid white; z-index: 10;
-        }
-
-        /* --- PROFILE SECTION --- */
-        .profile-wrapper-right { 
-            display: flex; align-items: center; gap: 1rem; 
-            padding-left: 1.5rem; border-left: 1px solid var(--border-color);
-            cursor: pointer; position: relative;
-        }
-        
-        .avatar-circle {
-            position: relative; width: 50px; height: 50px;
-            background: var(--primary-purple); border-radius: 50% !important; 
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: 900; font-size: 18px; flex-shrink: 0;
-            overflow: hidden;
-        }
-
-        .status-dot {
-            position: absolute; bottom: 2px; right: 2px;
-            width: 12px; height: 12px; background: #22C55E; 
-            border-radius: 50%; border: 2px solid white;
-        }
-
-        .user-text-box { display: flex; flex-direction: column; text-align: left; }
-        .text-name-bold { font-size: 14px; font-weight: 900; color: #1E293B; text-transform: uppercase; line-height: 1.2; }
-        .text-role-gray { font-size: 11px; font-weight: 700; color: #94A3B8; text-transform: uppercase; }
-
-        /* --- DROPDOWN MENUS --- */
-        .dropdown-panel {
-            position: absolute; top: 60px; right: 0;
-            background: white; border-radius: 12px; width: 260px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            padding: 1.5rem; border: 1px solid #F1F5F9; z-index: 600;
-        }
-        .dropdown-header { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; margin-bottom: 1rem; display: block; }
-        .dropdown-item { font-size: 12px; font-weight: 700; color: #1E293B; padding: 10px 0; border-bottom: 1px solid #F8FAFC; display: block; text-decoration: none; transition: 0.2s; }
-        .dropdown-item:hover { color: var(--primary-purple); padding-left: 5px; }
-
-        /* --- MAIN CONTENT AREA --- */
-        .content-area { 
-            transition: var(--transition-smooth); 
-            min-height: 100vh;
-        }
-
-        /* Separate padding for customer only */
-        .customer-padding { padding: 100px 4rem 4rem; }
-        .developer-padding { padding: 100px 4rem 4rem; }
-
-        .search-box-inner {
-            background: #F1F5F9; border-radius: 8px; padding: 8px 12px;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .search-box-inner input {
-            background: transparent; border: none; outline: none; font-size: 12px; width: 100%; color: var(--text-main);
+        .sidebar .sidebar-link i,
+        .sidebar .sidebar-link [data-lucide],
+        .sidebar .logout-link i,
+        .sidebar .logout-link [data-lucide]{
+            color:inherit!important;
+            stroke:currentColor!important;
         }
     </style>
 </head>
 
-<body x-data="{ 
-    isCollapsed: false, 
-    profileOpen: false, 
-    notifOpen: false, 
-    msgOpen: false,
-    searchOpen: false
-}">
+@php
+    $isStaffPortalShell = request()->is('p-co-2026/admin*') || request()->is('p-co-2026/developer*');
+@endphp
 
-    @if(!request()->is('p-co-2026/admin*') && !request()->is('p-co-2026/developer*'))
-        <!-- SIDEBAR (Customer Only) -->
-        <aside class="fixed-sidebar" :style="isCollapsed ? 'width: var(--sidebar-mini)' : 'width: var(--sidebar-wide)'">
-            <div class="sidebar-header">
-                <button @click="isCollapsed = !isCollapsed" class="toggle-btn-sidebar">
-                    <i data-lucide="menu"></i>
-                </button>
+<body class="{{ $isStaffPortalShell ? '' : 'load-fade' }}" @unless($isStaffPortalShell) x-data="customerShell()" x-init="init()" @endunless>
+    @if($isStaffPortalShell)
+        {{ $slot }}
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            });
+        </script>
+    @else
+    <aside class="sidebar" :class="{ 'closed': !sidebarOpen, 'mobile-open': mobileSidebarOpen }">
+        <div class="sidebar-header">
+            <div class="menu-toggle no-move" @click="toggleSidebar()"><i data-lucide="menu"></i></div>
+            <span class="brand-name" x-show="sidebarOpen" x-transition>Printify Co.</span>
+        </div>
+        <nav class="nav-menu">
+            @foreach($navItems as $item)
+                <a href="{{ $item['route'] }}" class="sidebar-link no-move {{ $item['active'] ? 'active' : '' }}" @click="setSection('{{ strtoupper($item['label']) }}')">
+                    <i data-lucide="{{ $item['icon'] }}"></i><span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+                </a>
+            @endforeach
+        </nav>
+        <div class="logout-wrap">
+            <form method="POST" action="{{ $logoutRoute }}">@csrf
+                <button type="submit" class="sidebar-link logout-link no-move"><i data-lucide="log-out"></i><span x-show="sidebarOpen">Logout Session</span></button>
+            </form>
+        </div>
+    </aside>
 
-                <template x-if="!isCollapsed">
-                    <div x-transition:enter.duration.300ms>
-                        <h2>PRINTIFY & CO.</h2>
-                        <p class="sub-logo">Client Portal</p>
-                    </div>
-                </template>
-            </div>
-
-            <nav class="nav-list">
-                <a href="{{ route('customer.home') }}" class="sidebar-link {{ request()->routeIs('customer.home') ? 'active' : '' }}">
-                    <i data-lucide="home"></i>
-                    <span x-show="!isCollapsed" x-transition>Home</span>
-                </a>
-                
-                <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <i data-lucide="layout-dashboard"></i>
-                    <span x-show="!isCollapsed" x-transition>Dashboard</span>
-                </a>
-                
-                <a href="{{ route('profile.edit') }}" class="sidebar-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
-                    <i data-lucide="user"></i>
-                    <span x-show="!isCollapsed" x-transition>My Profile</span>
-                </a>
-                
-                <a href="{{ route('orders.index') }}" class="sidebar-link {{ request()->routeIs('orders.index') ? 'active' : '' }}">
-                    <i data-lucide="shopping-cart"></i>
-                    <span x-show="!isCollapsed" x-transition>My Orders</span>
-                </a>
-                
-                <a href="{{ route('security') }}" class="sidebar-link {{ request()->routeIs('security') ? 'active' : '' }}">
-                    <i data-lucide="shield-check"></i>
-                    <span x-show="!isCollapsed" x-transition>Security</span>
-                </a>
-                
-                <a href="{{ route('notifications') }}" class="sidebar-link {{ request()->routeIs('notifications') ? 'active' : '' }}">
-                    <i data-lucide="bell"></i>
-                    <span x-show="!isCollapsed" x-transition>Notification</span>
-                </a>
-                
-                <a href="{{ route('help-center') }}" class="sidebar-link {{ request()->routeIs('help-center') ? 'active' : '' }}">
-                    <i data-lucide="help-circle"></i>
-                    <span x-show="!isCollapsed" x-transition>Help Center</span>
-                </a>
-                
-                <a href="{{ route('settings') }}" class="sidebar-link {{ request()->routeIs('settings') ? 'active' : '' }}">
-                    <i data-lucide="settings"></i>
-                    <span x-show="!isCollapsed" x-transition>Settings</span>
-                </a>
-            </nav>
-
-            <div class="p-6">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="sidebar-link text-red-500 bg-transparent border-none w-full text-left cursor-pointer m-0 p-[0.7rem_1.25rem]">
-                        <i data-lucide="log-out"></i>
-                        <span x-show="!isCollapsed" x-transition>Logout Session</span>
-                    </button>
-                </form>
-            </div>
-        </aside>
-    @elseif(request()->is('p-co-2026/developer*'))
-        <!-- SIDEBAR (Developer Only) -->
-        <aside class="fixed-sidebar" :style="isCollapsed ? 'width: var(--sidebar-mini)' : 'width: var(--sidebar-wide)'">
-            <div class="sidebar-header">
-                <button @click="isCollapsed = !isCollapsed" class="toggle-btn-sidebar">
-                    <i data-lucide="menu"></i>
-                </button>
-
-                <template x-if="!isCollapsed">
-                    <div x-transition:enter.duration.300ms>
-                        <h2>PRINTIFY & CO.</h2>
-                        <p class="sub-logo">Developer Portal</p>
-                    </div>
-                </template>
-            </div>
-
-            <nav class="nav-list">
-                <a href="{{ route('home') }}" class="sidebar-link">
-                    <i data-lucide="external-link"></i>
-                    <span x-show="!isCollapsed" x-transition>Go to Home</span>
-                </a>
-
-                <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                    <i data-lucide="layout-dashboard"></i>
-                    <span x-show="!isCollapsed" x-transition>Dashboard</span>
-                </a>
-
-                <a href="{{ route('developer.admin-clients.index') }}" class="sidebar-link {{ request()->routeIs('developer.admin-clients.*') ? 'active' : '' }}">
-                    <i data-lucide="shield-check"></i>
-                    <span x-show="!isCollapsed" x-transition>Manage Admin Clients</span>
-                </a>
-
-                <a href="{{ route('developer.orders.index') }}" class="sidebar-link {{ request()->routeIs('developer.orders.*') ? 'active' : '' }}">
-                    <i data-lucide="shopping-cart"></i>
-                    <span x-show="!isCollapsed" x-transition>Orders</span>
-                </a>
-
-                <a href="{{ route('developer.services.index') }}" class="sidebar-link {{ request()->routeIs('developer.services.*') ? 'active' : '' }}">
-                    <i data-lucide="package"></i>
-                    <span x-show="!isCollapsed" x-transition>Services</span>
-                </a>
-
-                <a href="{{ route('developer.customers.index') }}" class="sidebar-link {{ request()->routeIs('developer.customers.*') ? 'active' : '' }}">
-                    <i data-lucide="users"></i>
-                    <span x-show="!isCollapsed" x-transition>Customers</span>
-                </a>
-
-                <a href="{{ route('developer.reports.index') }}" class="sidebar-link {{ request()->routeIs('developer.reports.*') ? 'active' : '' }}">
-                    <i data-lucide="file-text"></i>
-                    <span x-show="!isCollapsed" x-transition>Reports</span>
-                </a>
-
-                <a href="{{ route('developer.analytics.index') }}" class="sidebar-link {{ request()->routeIs('developer.analytics.*') ? 'active' : '' }}">
-                    <i data-lucide="bar-chart-3"></i>
-                    <span x-show="!isCollapsed" x-transition>Analytics</span>
-                </a>
-
-                <a href="{{ route('developer.settings.index') }}" class="sidebar-link {{ request()->routeIs('developer.settings.*') ? 'active' : '' }}">
-                    <i data-lucide="settings"></i>
-                    <span x-show="!isCollapsed" x-transition>Settings</span>
-                </a>
-            </nav>
-
-            <div class="p-6">
-                <form method="POST" action="{{ route('admin.logout') }}">
-                    @csrf
-                    <button type="submit" class="sidebar-link text-red-500 bg-transparent border-none w-full text-left cursor-pointer m-0 p-[0.7rem_1.25rem]">
-                        <i data-lucide="log-out"></i>
-                        <span x-show="!isCollapsed" x-transition>Logout Session</span>
-                    </button>
-                </form>
-            </div>
-        </aside>
-    @endif
-
-    <!-- MAIN AREA -->
-    <div class="content-area {{ request()->is('p-co-2026/developer*') ? 'developer-padding' : ((!request()->is('p-co-2026/admin*') && !request()->is('p-co-2026/developer*')) ? 'customer-padding' : '') }}" 
-         :style="(!window.location.pathname.includes('/admin') || window.location.pathname.includes('/developer')) ? (isCollapsed ? 'margin-left: var(--sidebar-mini)' : 'margin-left: var(--sidebar-wide)') : 'margin-left: 0'">
-        
-        @if(!request()->is('p-co-2026/admin*') && !request()->is('p-co-2026/developer*'))
-            <!-- HEADER (Customer Only) -->
-            <header class="main-header" :style="isCollapsed ? 'width: calc(100% - var(--sidebar-mini))' : 'width: calc(100% - var(--sidebar-wide))'">
-                <div class="header-right-actions">
-                    <div class="icon-group">
-                        <div class="relative">
-                            <button class="icon-btn" @click="searchOpen = !searchOpen; notifOpen = false; msgOpen = false; profileOpen = false;">
+    <div class="admin-main-shell" :class="!sidebarOpen ? 'expanded' : ''">
+        <header class="hero-banner" :style="'background-image:url(' + slides[activeSlide] + ')'">
+            <div class="top-nav">
+                <div class="top-search-wrap" @click.away="searchOpen=false">
+                    <form class="top-search-form no-move" @submit.prevent="runSearch()" role="search">
+                        <input x-model="searchQuery" @focus="openSearchPanel()" @input.debounce.120ms="openSearchPanel()" type="text" placeholder="Search for products, orders, articles..." class="top-search-input" aria-label="Search dashboard">
+                        <button type="submit" class="top-search-button no-move" aria-label="Submit search"><i data-lucide="search"></i></button>
+                    </form>
+                    <div x-cloak x-show="searchOpen" x-transition.opacity.scale.origin.top.right class="search-popover">
+                        <div class="search-panel-inner">
+                            <div class="search-panel-query">
                                 <i data-lucide="search"></i>
-                            </button>
-                            <div x-show="searchOpen" @click.away="searchOpen = false" class="dropdown-panel" x-transition>
-                                <span class="dropdown-header">Quick Search</span>
-                                <div class="search-box-inner">
-                                    <i data-lucide="search" style="width:14px; color:#94A3B8;"></i>
-                                    <input type="text" placeholder="Type to search...">
+                                <input x-model="searchQuery" @input.debounce.120ms="refreshIcons()" @keydown.enter.prevent="runSearch()" type="text" placeholder="Search orders, files, settings, help...">
+                                <span>Ctrl K</span>
+                            </div>
+                            <template x-if="filteredSearchItems().length">
+                                <div class="search-dashboard">
+                                    <div>
+                                        <div class="search-section-label">Top Result</div>
+                                        <a :href="filteredSearchItems()[0].route" class="search-card-link no-move" @click="selectSearchItem(filteredSearchItems()[0])">
+                                            <div class="search-icon-tile"><i :data-lucide="filteredSearchItems()[0].icon"></i></div>
+                                            <div><div class="search-mini-title" x-text="filteredSearchItems()[0].label"></div><span class="search-mini-desc" x-text="filteredSearchItems()[0].desc"></span></div>
+                                            <i data-lucide="chevron-right" style="width:14px;height:14px;margin-left:auto;color:#CBD5E1"></i>
+                                        </a>
+                                        <div class="search-section-label">Recent Activity</div>
+                                        <a href="{{ $ordersRoute }}" class="search-activity-row no-move"><div class="search-icon-tile"><i data-lucide="file-text"></i></div><div><div class="search-mini-title">Invoice #INV-55210</div><span class="search-mini-desc">Payment record updated</span></div></a>
+                                        <a href="{{ $uploadRoute }}" class="search-activity-row no-move"><div class="search-icon-tile"><i data-lucide="image-up"></i></div><div><div class="search-mini-title">Artwork upload</div><span class="search-mini-desc">Review latest print file</span></div></a>
+                                    </div>
+                                    <div>
+                                        <div class="search-section-label">Smart Suggestions</div>
+                                        <template x-for="item in filteredSearchItems().slice(1,5)" :key="item.label">
+                                            <a :href="item.route" class="search-suggestion-row no-move" @click="selectSearchItem(item)"><div class="search-icon-tile"><i :data-lucide="item.icon"></i></div><div><div class="search-mini-title" x-text="item.label"></div><span class="search-mini-desc" x-text="item.desc"></span></div></a>
+                                        </template>
+                                        <div class="search-section-label">Quick Access</div>
+                                        <div class="search-quick-grid">
+                                            <a href="{{ $ordersRoute }}" class="search-quick-card no-move"><i data-lucide="shopping-cart"></i><span>My Orders</span></a>
+                                            <a href="{{ $uploadRoute }}" class="search-quick-card no-move"><i data-lucide="folder-open"></i><span>My Files</span></a>
+                                            <a href="{{ $notificationRoute }}" class="search-quick-card no-move"><i data-lucide="bell"></i><span>Messages</span></a>
+                                            <a href="{{ $supportRoute }}" class="search-quick-card no-move"><i data-lucide="headphones"></i><span>Help Center</span></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="!filteredSearchItems().length"><div class="empty-state">No result found. Try searching order, upload, payment, support, or notification.</div></template>
+                            <div class="search-panel-footer"><span>Press Enter to search anytime</span><a href="{{ $ordersRoute }}">View all results</a></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="top-action-wrap" @click.away="notificationOpen=false">
+                    <button type="button" class="header-icon-no-box no-move" :class="notificationOpen ? 'active' : ''" @click="toggleDropdown('notification')" aria-label="Open notifications"><i data-lucide="bell"></i><template x-if="unreadNotificationsCount() > 0"><span class="badge-count" x-text="unreadNotificationsCount()"></span></template></button>
+                    <div x-cloak x-show="notificationOpen" x-transition.opacity.scale.origin.top.right class="notification-panel">
+                        <div class="panel-header"><div><div class="panel-title">Notifications <span class="panel-count" x-text="unreadNotificationsCount()"></span></div><div class="panel-subtitle" x-text="unreadNotificationsCount() + ' unread update(s)'"></div></div><button type="button" class="panel-action no-move" @click="markAllNotificationsRead()">Mark all as read</button></div>
+                        <div class="notif-tabs"><button type="button" class="notif-tab" :class="notificationFilter === 'all' ? 'active' : ''" @click="notificationFilter='all'">All</button><button type="button" class="notif-tab" :class="notificationFilter === 'unread' ? 'active' : ''" @click="notificationFilter='unread'">Unread</button><button type="button" class="notif-tab" :class="notificationFilter === 'orders' ? 'active' : ''" @click="notificationFilter='orders'">Orders</button><button type="button" class="notif-tab" :class="notificationFilter === 'system' ? 'active' : ''" @click="notificationFilter='system'">System</button></div>
+                        <div class="notif-list"><div class="notif-section-label" x-text="notificationFilter === 'system' ? 'System Alerts' : (notificationFilter === 'orders' ? 'Order Updates' : 'Today')"></div><template x-if="filteredNotifications().length"><template x-for="item in filteredNotifications()" :key="item.id"><div class="notif-item no-move" :class="item.unread ? 'unread' : ''" @click="openNotification(item)"><div class="notif-icon" :class="item.color"><i :data-lucide="item.icon"></i></div><div class="notif-body"><div class="notif-title" x-text="item.title"></div><div class="notif-copy" x-text="item.body"></div></div><div class="notif-time" x-text="item.time"></div></div></template></template><template x-if="!filteredNotifications().length"><div class="empty-state">No notification under this category.</div></template></div>
+                        <div class="notif-footer"><span style="font-size:10px;font-weight:800;color:#94A3B8">Shopee-style quick updates</span><a href="{{ $notificationRoute }}">View notification center</a></div>
+                    </div>
+                </div>
+
+                <div class="top-action-wrap" @click.away="messageOpen=false">
+                    <button type="button" class="header-icon-no-box no-move" :class="messageOpen ? 'active' : ''" @click="toggleDropdown('message')" aria-label="Open admin chat"><i data-lucide="mail"></i><template x-if="chatUnreadCount > 0"><span class="badge-count" x-text="chatUnreadCount"></span></template></button>
+                    <div x-cloak x-show="messageOpen" x-transition.opacity.scale.origin.top.right class="messenger-panel" :class="{ 'thread-mode': chatStage === 'thread', 'chat-minimized': chatMinimized }" :style="chatPanelStyle()">
+                        <template x-if="chatStage === 'menu'">
+                            <div class="messenger-menu-shell">
+                                <div class="panel-header">
+                                    <div><div class="panel-title">Chat with Printify Admin</div><template x-if="adminOnline"><div class="admin-presence">Admin online</div></template></div>
+                                    <a href="{{ $supportRoute }}" style="font-size:10px;font-weight:950;color:#FF6B00">Help Center</a>
+                                </div>
+                                <div class="messenger-menu-body">
+                                    <template x-for="topic in chatTopics" :key="topic.key">
+                                        <button type="button" class="messenger-topic no-move" @click="openChatTopic(topic)">
+                                            <div class="topic-left"><div class="topic-icon" :class="topic.color"><i :data-lucide="topic.icon"></i></div><div><div class="topic-title" x-text="topic.title"></div><div class="topic-desc" x-text="topic.desc"></div></div></div>
+                                            <div class="topic-arrow"><i data-lucide="chevron-right" style="width:18px;height:18px"></i></div>
+                                        </button>
+                                    </template>
+                                    <div class="messenger-recent">
+                                        <div class="messenger-recent-head"><span>Recent Messages</span><a href="{{ $supportRoute }}">View all</a></div>
+                                        <button type="button" class="messenger-recent-row no-move" @click="openChatTopic(chatTopics[0])"><span class="recent-dot orange"></span><span><b>Order update available</b><small>Your print job has moved to processing.</small></span><em>2m ago</em></button>
+                                        <button type="button" class="messenger-recent-row no-move" @click="openChatTopic(chatTopics[1])"><span class="recent-dot purple"></span><span><b>Upload reminder</b><small>Please double-check artwork size.</small></span><em>10m ago</em></button>
+                                    </div>
+                                </div>
+                                <div class="messenger-menu-actions">
+                                    <button type="button" class="messenger-primary no-move" @click="openChatTopic(chatTopics[3])"><i data-lucide="headphones"></i> Start Live Chat</button>
+                                    <a href="{{ $supportRoute }}" class="messenger-secondary no-move"><i data-lucide="user-round"></i> Contact Admin</a>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="relative">
-                            <button class="icon-btn" @click="notifOpen = !notifOpen; msgOpen = false; searchOpen = false; profileOpen = false;">
-                                <span class="notif-dot"></span>
-                                <i data-lucide="bell"></i>
-                            </button>
-                            <div x-show="notifOpen" @click.away="notifOpen = false" class="dropdown-panel" x-transition>
-                                <span class="dropdown-header">Recent Notifications</span>
-                                <a href="#" class="dropdown-item">Your order #1234 is now being processed.</a>
-                                <a href="#" class="dropdown-item">A new promo is available for you!</a>
-                                <hr class="border-slate-50 my-2">
-                                <a href="{{ route('notifications') }}" class="dropdown-item text-center text-primary-purple">View All</a>
-                            </div>
-                        </div>
-
-                        <div class="relative">
-                            <button class="icon-btn" @click="msgOpen = !msgOpen; notifOpen = false; searchOpen = false; profileOpen = false;">
-                                <span class="notif-dot"></span>
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px; height:20px;">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-width="2.5"></path>
-                                    <line x1="8" y1="9" x2="16" y2="9" stroke-linecap="round" stroke-width="2.5"></line>
-                                    <line x1="8" y1="13" x2="14" y2="13" stroke-linecap="round" stroke-width="2.5"></line>
-                                </svg>
-                            </button>
-                            <div x-show="msgOpen" @click.away="msgOpen = false" class="dropdown-panel" x-transition>
-                                <span class="dropdown-header">Messages</span>
-                                <a href="#" class="dropdown-item">Admin: Hello! How can we help?</a>
-                                <a href="#" class="dropdown-item">Support: Payment confirmed.</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="relative">
-                        <div class="profile-wrapper-right" @click="profileOpen = !profileOpen; notifOpen = false; msgOpen = false; searchOpen = false;">
-                            <div class="avatar-circle">
-                                {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                                <div class="status-dot"></div>
-                            </div>
-                            <div class="user-text-box">
-                                <span class="text-name-bold">{{ Auth::user()->name }}</span>
-                                <span class="text-role-gray">Customer</span>
-                            </div>
-                        </div>
-
-                        <div x-show="profileOpen" @click.away="profileOpen = false" class="dropdown-panel w-[200px]" x-transition>
-                            <span class="dropdown-header">Account Settings</span>
-                            <a href="{{ route('profile.edit') }}" class="dropdown-item">My Profile</a>
-                            <a href="{{ route('orders.index') }}" class="dropdown-item">Order History</a>
-                            <a href="{{ route('security') }}" class="dropdown-item">Security Settings</a>
-                            <hr class="border-slate-50 my-2">
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="w-full text-left bg-transparent border-none p-0 font-bold text-red-500 text-[12px] cursor-pointer">
-                                    Sign Out Account
-                                </button>
-                            </form>
-                        </div>
+                        </template>
+                        <template x-if="chatStage === 'thread'"><div style="height:100%;display:flex;flex-direction:column;position:relative;background:#fff"><div class="messenger-chat-head"><button type="button" class="chat-back no-move" @click="backToChatMenu()" aria-label="Back to chat topics"><i data-lucide="chevron-left" style="width:18px;height:18px"></i></button><div class="chat-agent-avatar">A<span x-show="adminOnline" class="agent-status-dot"></span></div><div class="chat-head-text"><div class="chat-head-name" x-text="selectedTopic ? selectedTopic.title : 'Admin Support'"></div><div class="chat-head-status" x-text="adminTyping ? 'Admin is typing...' : (adminOnline ? 'Admin online' : 'Admin currently offline')"></div></div><div class="chat-actions"><button type="button" class="chat-control chat-more-btn no-move" @click.stop="toggleChatOptions()" aria-label="Chat options"><i data-lucide="more-horizontal" style="width:13px;height:13px"></i></button><button type="button" class="chat-control no-move" @click="minimizeChat()" :aria-label="chatMinimized ? 'Restore chat' : 'Minimize chat'"><i :data-lucide="chatMinimized ? 'square' : 'minus'" style="width:15px;height:15px"></i></button><button type="button" class="chat-close no-move" @click="closeChatBox()" aria-label="Close chat"><i data-lucide="x" style="width:16px;height:16px"></i></button></div></div><div x-cloak x-show="chatOptionsOpen" x-transition.opacity.scale.origin.top.right class="chat-options-menu" @click.stop><div class="chat-option-muted"><i data-lucide="shield-check"></i><span>Customer support chat</span></div><button type="button" class="chat-option-row" @click="toggleThemeMenu()"><i data-lucide="palette"></i><span>Change theme</span></button><div x-cloak x-show="themeMenuOpen" x-transition.opacity class="option-swatches"><template x-for="(theme,index) in chatThemes" :key="theme.name"><button type="button" class="option-swatch no-move" :class="chatThemeIndex===index?'active':''" :style="'background:'+theme.accent" :title="theme.name" @click="setChatTheme(index);chatOptionsOpen=false;themeMenuOpen=false"></button></template></div><button type="button" class="chat-option-row" @click="messageDraft=(messageDraft?messageDraft+' ':'')+':)';chatOptionsOpen=false;refreshIcons()"><i data-lucide="smile"></i><span>Emoji</span></button><button type="button" class="chat-option-row" @click="archiveChat()"><i data-lucide="archive"></i><span>Archive chat</span></button><button type="button" class="chat-option-row danger" @click="deleteChat()"><i data-lucide="trash-2"></i><span>Delete chat</span></button></div><template x-if="!chatMinimized"><div style="min-height:0;flex:1;display:flex;flex-direction:column;background:#fff"><div class="chat-body" x-ref="chatScroll"><div class="chat-day-pill">Today</div><template x-for="msg in activeMessages" :key="msg.id"><div class="chat-bubble-row" :class="msg.from === 'me' ? 'me' : 'admin'"><div class="chat-bubble"><span x-text="msg.text"></span><template x-if="msg.attachment"><div class="chat-attachment"><i :data-lucide="msg.attachment.type === 'photo' ? 'image' : 'paperclip'"></i><span x-text="msg.attachment.name"></span></div></template><span class="chat-time" x-text="msg.time"></span></div></div></template><template x-if="adminTyping"><div class="chat-bubble-row admin"><div class="chat-typing"><span></span><span></span><span></span></div></div></template></div><div class="quick-replies"><template x-for="reply in quickReplies" :key="reply"><button type="button" class="quick-reply no-move" @click="useQuickReply(reply)" x-text="reply"></button></template></div><template x-if="pendingAttachment"><div class="pending-attachment"><i :data-lucide="pendingAttachment.type === 'photo' ? 'image' : 'paperclip'" style="width:15px;height:15px"></i><span x-text="pendingAttachment.name"></span><button type="button" @click="clearAttachment()" aria-label="Remove attachment"><i data-lucide="x" style="width:14px;height:14px"></i></button></div></template><div class="chat-composer"><button type="button" class="chat-tool no-move" @click="$refs.photoInput.click()" aria-label="Send photo"><i data-lucide="image"></i></button><button type="button" class="chat-tool no-move" @click="$refs.fileInput.click()" aria-label="Send file"><i data-lucide="paperclip"></i></button><button type="button" class="chat-tool no-move" @click="messageDraft=(messageDraft?messageDraft+' ':'')+':)';refreshIcons()" aria-label="Emoji"><i data-lucide="smile"></i></button><input x-ref="photoInput" type="file" accept="image/*" hidden @change="handleAttachment($event,'photo')"><input x-ref="fileInput" type="file" hidden @change="handleAttachment($event,'file')"><input x-model="messageDraft" @keydown.enter="sendMessage()" type="text" placeholder="Type your message..." aria-label="Type chat message"><button type="button" class="chat-send no-move" @click="sendMessage()" aria-label="Send chat message"><i data-lucide="send" style="width:17px;height:17px"></i></button></div></div></template></div></template>
                     </div>
                 </div>
-            </header>
-        @elseif(request()->is('p-co-2026/developer*'))
-            <!-- HEADER (Developer Only) -->
-            <header class="main-header" :style="isCollapsed ? 'width: calc(100% - var(--sidebar-mini))' : 'width: calc(100% - var(--sidebar-wide))'">
-                <div class="header-right-actions">
-                    <div class="icon-group">
-                        <button class="icon-btn">
-                            <span class="notif-dot"></span>
-                            <i data-lucide="bell"></i>
-                        </button>
-                        <button class="icon-btn">
-                            <i data-lucide="message-square"></i>
-                        </button>
-                    </div>
 
-                    <div class="profile-wrapper-right">
-                        <div class="avatar-circle">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                            <div class="status-dot"></div>
-                        </div>
-                        <div class="user-text-box">
-                            <span class="text-name-bold">{{ Auth::user()->name }}</span>
-                            <span class="text-role-gray">Developer</span>
-                        </div>
-                    </div>
-                </div>
-            </header>
-        @endif
+                <a href="{{ $profileRoute }}" class="profile-area no-move" @click="setSection('PROFILE')">
+                    <div class="profile-pic-container"><div class="profile-pic"><img data-profile-avatar id="headerProfileAvatar" src="{{ $profilePhotoUrl ?: '' }}" alt="{{ $displayName }}" style="{{ $profilePhotoUrl ? '' : 'display:none' }}"><span data-profile-initials id="headerProfileInitials" style="{{ $profilePhotoUrl ? 'display:none' : '' }}">{{ $profileInitial }}</span></div><div class="online-dot"></div></div>
+                    <div style="display:flex;flex-direction:column"><span data-profile-name id="headerProfileName" style="font-weight:900;font-size:10px;color:white;text-transform:uppercase">{{ $displayName }}</span><span style="font-size:9px;color:#E2E8F0;font-weight:800;text-transform:uppercase">CUSTOMER</span></div>
+                </a>
+            </div>
 
-        <main>
-            {{ $slot }}
-        </main>
+            <div class="hero-title-area"><p class="hero-kicker">Client Management Portal</p><h1 class="hero-main-title"><span>CUSTOMER</span> <span style="color:var(--yellow)">DASHBOARD</span></h1><p class="hero-subline">Manage orders, upload artwork, track progress, review notifications, and reach support from one upgraded customer workspace.</p></div>
+            <div class="dots-container"><template x-for="(slide,index) in slides" :key="index"><button type="button" class="dot no-move" :class="activeSlide === index ? 'active' : ''" @click="goToSlide(index)" aria-label="Change header slide"></button></template></div>
+            <div class="quick-actions-container">
+                <a href="{{ $orderCreateRoute }}" class="action-circle-group" @click="setSection('ORDERS')"><div class="action-circle circle-purple"><i data-lucide="file-plus-2" style="width:24px"></i></div><span class="action-label">New Print Job</span></a>
+                <a href="{{ $dashboardRoute }}" class="action-circle-group" @click="setSection('DASHBOARD')"><div class="action-circle circle-green"><i data-lucide="bar-chart-3" style="width:24px"></i></div><span class="action-label">System Status</span></a>
+                <a href="{{ $uploadRoute }}" class="action-circle-group" @click="setSection('UPLOAD')"><div class="action-circle circle-yellow"><i data-lucide="upload-cloud" style="width:24px"></i></div><span class="action-label">Upload Files</span></a>
+                <a href="{{ $supportRoute }}" class="action-circle-group" @click="setSection('SUPPORT')"><div class="action-circle circle-blue"><i data-lucide="headphones" style="width:24px"></i></div><span class="action-label">Support</span></a>
+            </div>
+        </header>
+        <main class="page-content-wrapper">{{ $slot }}</main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
-        document.addEventListener('alpine:initialized', () => {
-            lucide.createIcons();
-        });
+        function customerShell(){return{sidebarOpen:true,mobileSidebarOpen:false,searchOpen:false,notificationOpen:false,messageOpen:false,currentSection:'CUSTOMER',activeSlide:0,searchQuery:'',messageDraft:'',notificationFilter:'all',pendingAttachment:null,chatStage:'menu',selectedTopic:null,selectedThreadKey:null,activeMessages:[],adminTyping:false,adminOnline:false,chatOptionsOpen:false,themeMenuOpen:false,chatMinimized:false,chatUnreadCount:1,slideTimer:null,adminStatusTimer:null,chatThemeIndex:0,chatThemes:[{name:'Orange',accent:'#FF6B00',accent2:'#F59E0B',soft:'#FFF8F0',ring:'rgba(255,107,0,.14)'},{name:'Blue',accent:'#2563EB',accent2:'#0EA5E9',soft:'#EFF6FF',ring:'rgba(37,99,235,.14)'},{name:'Green',accent:'#16A34A',accent2:'#22C55E',soft:'#ECFDF5',ring:'rgba(22,163,74,.14)'},{name:'Purple',accent:'#7C3AED',accent2:'#A855F7',soft:'#F5F3FF',ring:'rgba(124,58,237,.14)'},{name:'Rose',accent:'#E11D48',accent2:'#FB7185',soft:'#FFF1F2',ring:'rgba(225,29,72,.14)'}],csrfToken:document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')||@json(csrf_token()),routes:{search:@json($searchRoute),support:@json($supportRoute),supportThreadStore:@json($supportThreadRoute),supportMessageStore:@json($supportMessageRoute),supportMessagesFetch:@json($supportMessagesFetchRoute),adminStatus:@json($adminStatusRoute),notificationRead:@json($notificationReadRoute),notificationReadAll:@json($notificationReadAllRoute)},slides:["{{ asset('images/Headerslides1.jpg') }}","{{ asset('images/Headerslide2.jpg') }}","{{ asset('images/Headerslides1.jpg') }}"],
+        searchItems:[{label:'My Orders',desc:'View order history, status, and job progress',keywords:'orders order history progress print job queue track',icon:'shopping-cart',route:@json($ordersRoute),section:'ORDERS'},{label:'Upload Files',desc:'Upload artwork, print files, and reference images',keywords:'upload files artwork image design print attachment',icon:'upload-cloud',route:@json($uploadRoute),section:'UPLOAD'},{label:'New Print Job',desc:'Create a new product or print request',keywords:'new print job create product order request',icon:'file-plus-2',route:@json($orderCreateRoute),section:'ORDERS'},{label:'Notifications',desc:'Read order updates, reminders, and account alerts',keywords:'notification alerts unread reminders update',icon:'bell',route:@json($notificationRoute),section:'NOTIFICATIONS'},{label:'Help Center',desc:'Contact support and open customer assistance',keywords:'support help center admin chat assistance message',icon:'headphones',route:@json($supportRoute),section:'SUPPORT'},{label:'Security & Privacy',desc:'Manage password, login security, privacy, and account safety',keywords:'security privacy password login account safety consent',icon:'shield-check',route:@json($securityRoute),section:'SECURITY'},{label:'My Profile',desc:'Update customer profile and contact details',keywords:'profile account name email details customer',icon:'user',route:@json($profileRoute),section:'PROFILE'},{label:'Settings',desc:'Adjust dashboard preferences',keywords:'settings preferences dashboard system',icon:'settings',route:@json($settingsRoute),section:'SETTINGS'}],
+        notifications:[{id:'notif-001',type:'orders',icon:'package-check',color:'green',title:'Order update available',body:'Your latest print job has moved to processing. Tap to review the order timeline.',time:'2 mins ago',unread:true,route:@json($ordersRoute)},{id:'notif-002',type:'system',icon:'printer',color:'blue',title:'Printer queue refreshed',body:'System status has been updated for today’s active production queue.',time:'10 mins ago',unread:true,route:@json($dashboardRoute)},{id:'notif-003',type:'orders',icon:'image-up',color:'purple',title:'Upload reminder',body:'Please double-check artwork size and file resolution before submitting revisions.',time:'1 hour ago',unread:true,route:@json($uploadRoute)},{id:'notif-004',type:'system',icon:'shield-check',color:'',title:'Account security notice',body:'Your customer session is active and protected.',time:'Today',unread:false,route:@json($securityRoute)}],
+        chatTopics:[{key:'order-concern',title:'Order Concern',desc:'Ask an admin about order status, production, pickup, or delivery.',icon:'package-search',color:'',greeting:@json("Hi {$displayName}! Please send your order number or describe your order concern so our admin can assist you.")},{key:'artwork-upload',title:'Artwork / Upload Help',desc:'Get help with file format, artwork size, quality, or upload errors.',icon:'image-up',color:'purple',greeting:'Hello! Please send the file concern or upload issue you are experiencing. You may also mention the product you are ordering.'},{key:'payment-billing',title:'Payment & Billing',desc:'Ask about payment confirmation, receipt, billing, or refund concerns.',icon:'wallet-cards',color:'green',greeting:'Hi! Our admin can help verify your payment or billing concern. Please share your order number and payment reference if available.'},{key:'talk-to-admin',title:'Talk to Admin',desc:'Open a direct customer-admin conversation.',icon:'messages-square',color:'blue',greeting:@json("Hi {$displayName}! You are now connected to Printify Admin. How can we help you today?")}],quickReplies:['Where is my order?','I need help uploading','Can I change details?','Payment concern'],
+        activeChatTheme(){return this.chatThemes[this.chatThemeIndex]||this.chatThemes[0]},chatPanelStyle(){const t=this.activeChatTheme();return `--chat-accent:${t.accent};--chat-accent-2:${t.accent2};--chat-soft:${t.soft};--chat-ring:${t.ring};`},setChatTheme(i){this.chatThemeIndex=i;try{localStorage.setItem('printify_chat_theme_{{ md5($displayEmail) }}',this.chatThemeIndex)}catch(e){}this.refreshIcons()},restoreChatTheme(){try{const v=localStorage.getItem('printify_chat_theme_{{ md5($displayEmail) }}');if(v!==null&&!Number.isNaN(parseInt(v)))this.chatThemeIndex=parseInt(v)%this.chatThemes.length}catch(e){}},init(){this.restoreChatTheme();this.restoreNotifications();this.refreshIcons();this.checkAdminOnline();this.adminStatusTimer=setInterval(()=>this.checkAdminOnline(),25000);this.slideTimer=setInterval(()=>this.nextSlide(),12000)},refreshIcons(){this.$nextTick(()=>{if(window.lucide)lucide.createIcons()})},toggleSidebar(){window.innerWidth<=760?this.mobileSidebarOpen=!this.mobileSidebarOpen:this.sidebarOpen=!this.sidebarOpen;this.refreshIcons()},closeDropdowns(){this.searchOpen=false;this.notificationOpen=false;this.messageOpen=false;this.chatOptionsOpen=false;this.themeMenuOpen=false},toggleDropdown(type){const key=type+'Open',value=!this[key];this.closeDropdowns();this[key]=value;if(type==='message'&&value){this.chatUnreadCount=0;this.checkAdminOnline();if(!this.selectedTopic)this.chatStage='menu'}if(type==='notification'&&value)this.notificationFilter='all';this.refreshIcons()},setSection(section){this.currentSection=section;this.closeDropdowns();this.refreshIcons()},nextSlide(){this.activeSlide=(this.activeSlide+1)%this.slides.length},goToSlide(index){this.activeSlide=index;clearInterval(this.slideTimer);this.slideTimer=setInterval(()=>this.nextSlide(),12000)},openSearchPanel(){this.searchOpen=true;this.notificationOpen=false;this.messageOpen=false;this.refreshIcons()},filteredSearchItems(){const q=this.searchQuery.trim().toLowerCase();return q?this.searchItems.filter(i=>i.label.toLowerCase().includes(q)||i.desc.toLowerCase().includes(q)||i.keywords.toLowerCase().includes(q)):this.searchItems.slice(0,5)},selectSearchItem(item){this.currentSection=item.section;this.searchOpen=false;this.refreshIcons()},runSearch(){const q=this.searchQuery.trim();if(!q){this.openSearchPanel();return}this.currentSection='SEARCH';if(this.routes.search){window.location.href=this.routes.search+(this.routes.search.includes('?')?'&':'?')+'q='+encodeURIComponent(q);return}this.openSearchPanel();this.refreshIcons()},unreadNotificationsCount(){return this.notifications.filter(i=>i.unread).length},filteredNotifications(){if(this.notificationFilter==='all')return this.notifications;if(this.notificationFilter==='unread')return this.notifications.filter(i=>i.unread);return this.notifications.filter(i=>i.type===this.notificationFilter)},restoreNotifications(){try{const s=localStorage.getItem('printify_customer_notifications_{{ md5($displayEmail) }}');if(s){const p=JSON.parse(s);if(Array.isArray(p)&&p.length)this.notifications=p}}catch(e){console.warn('Notification restore skipped.',e)}},persistNotifications(){try{localStorage.setItem('printify_customer_notifications_{{ md5($displayEmail) }}',JSON.stringify(this.notifications))}catch(e){console.warn('Notification persistence skipped.',e)}},async openNotification(item){item.unread=false;this.persistNotifications();this.currentSection='NOTIFICATIONS';this.refreshIcons();await this.postIfAvailable(this.routes.notificationRead,{notification_id:item.id});if(item.route&&item.route!=='#')window.location.href=item.route},async markAllNotificationsRead(){this.notifications=this.notifications.map(i=>({...i,unread:false}));this.persistNotifications();this.refreshIcons();await this.postIfAvailable(this.routes.notificationReadAll,{scope:'customer_dashboard'})},toggleChatOptions(){this.chatOptionsOpen=!this.chatOptionsOpen;this.themeMenuOpen=false;this.refreshIcons()},toggleThemeMenu(){this.themeMenuOpen=!this.themeMenuOpen;this.refreshIcons()},minimizeChat(){this.chatMinimized=!this.chatMinimized;this.chatOptionsOpen=false;this.themeMenuOpen=false;this.refreshIcons();if(!this.chatMinimized)this.scrollChatBottom()},closeChatBox(){this.messageOpen=false;this.chatStage='menu';this.messageDraft='';this.pendingAttachment=null;this.adminTyping=false;this.chatOptionsOpen=false;this.themeMenuOpen=false;this.chatMinimized=false;this.refreshIcons()},archiveChat(){this.chatOptionsOpen=false;this.themeMenuOpen=false;this.chatMinimized=true;this.refreshIcons()},deleteChat(){if(this.selectedThreadKey){try{localStorage.removeItem(this.threadStorageKey(this.selectedThreadKey))}catch(e){}}this.activeMessages=this.selectedTopic?[{id:'admin-'+Date.now(),from:'admin',text:this.selectedTopic.greeting,time:this.currentTime()}]:[];this.chatOptionsOpen=false;this.themeMenuOpen=false;this.persistThreadMessages();this.scrollChatBottom();this.refreshIcons()},backToChatMenu(){this.chatStage='menu';this.messageDraft='';this.adminTyping=false;this.chatOptionsOpen=false;this.themeMenuOpen=false;this.chatMinimized=false;this.refreshIcons()},openChatTopic(topic){this.selectedTopic=topic;this.selectedThreadKey=topic.key;this.chatStage='thread';this.messageDraft='';this.adminTyping=false;this.chatOptionsOpen=false;this.themeMenuOpen=false;this.chatMinimized=false;this.activeMessages=this.loadThreadMessages(topic);this.startBackendThread(topic);this.fetchThreadMessages(topic);this.scrollChatBottom();this.refreshIcons()},loadThreadMessages(topic){try{const s=localStorage.getItem(this.threadStorageKey(topic.key));if(s){const p=JSON.parse(s);if(Array.isArray(p)&&p.length)return p}}catch(e){console.warn('Chat restore skipped.',e)}return[{id:'admin-'+Date.now(),from:'admin',text:topic.greeting,time:this.currentTime()}]},persistThreadMessages(){if(!this.selectedThreadKey)return;try{localStorage.setItem(this.threadStorageKey(this.selectedThreadKey),JSON.stringify(this.activeMessages))}catch(e){console.warn('Chat persistence skipped.',e)}},threadStorageKey(key){return'printify_customer_chat_{{ md5($displayEmail) }}_'+key},useQuickReply(reply){this.messageDraft=reply;this.sendMessage()},handleAttachment(e,type){const file=e.target.files&&e.target.files[0];if(!file)return;if(file.size>8*1024*1024){alert('Maximum attachment size is 8MB.');e.target.value='';return}this.pendingAttachment={file,name:file.name,size:file.size,type:type==='photo'?'photo':'file'};e.target.value='';this.refreshIcons()},clearAttachment(){this.pendingAttachment=null;this.refreshIcons()},sendMessage(){let text=this.messageDraft.trim();const pa=this.pendingAttachment;if(!text&&!pa||!this.selectedTopic)return;const attachment=pa?{name:pa.name,type:pa.type,size:this.formatFileSize(pa.size)}:null;if(!text&&attachment)text=attachment.type==='photo'?'Sent a photo':'Sent a file';this.activeMessages.push({id:'me-'+Date.now(),from:'me',text,attachment,time:this.currentTime()});this.messageDraft='';this.pendingAttachment=null;this.persistThreadMessages();this.scrollChatBottom();this.refreshIcons();this.postChatMessage(text,pa?.file||null,attachment);this.simulateAdminReply(text)},async postChatMessage(text,file,attachment){if(!this.routes.supportMessageStore)return null;if(file){try{const fd=new FormData();fd.append('topic',this.selectedTopic.key);fd.append('message',text);fd.append('customer_name',@json($displayName));fd.append('customer_email',@json($displayEmail));fd.append('attachment',file);fd.append('attachment_type',attachment?.type||'file');const r=await fetch(this.routes.supportMessageStore,{method:'POST',headers:{'Accept':'application/json','X-CSRF-TOKEN':this.csrfToken},body:fd});return r.ok?await r.json().catch(()=>null):null}catch(e){console.warn('Attachment sync skipped.',e);return null}}return this.postIfAvailable(this.routes.supportMessageStore,{topic:this.selectedTopic.key,message:text,attachment,customer_name:@json($displayName),customer_email:@json($displayEmail)})},simulateAdminReply(text){this.adminTyping=true;this.scrollChatBottom();this.refreshIcons();setTimeout(()=>{this.activeMessages.push({id:'admin-'+Date.now(),from:'admin',text:this.buildAdminReply(text),time:this.currentTime()});this.adminTyping=false;this.persistThreadMessages();this.scrollChatBottom();this.refreshIcons()},900)},buildAdminReply(text){const s=text.toLowerCase();if(s.includes('order')||s.includes('status')||s.includes('where'))return'Thanks for reaching out. Please provide your order number so the admin can check the latest status and production movement.';if(s.includes('upload')||s.includes('file')||s.includes('artwork'))return'For upload concerns, please confirm the file type and size. Recommended formats are high-quality PDF, PNG, or JPG depending on the print requirement.';if(s.includes('payment')||s.includes('paid')||s.includes('billing'))return'For payment verification, kindly send your payment reference number and order number. The admin will validate it with billing records.';if(s.includes('change')||s.includes('edit')||s.includes('revise'))return'Changes may still be possible depending on the production stage. Please send the order number and the exact detail you want to revise.';return'Thank you. Your message has been received. An admin will review this conversation and assist you as soon as possible.'},async fetchThreadMessages(topic){if(!this.routes.supportMessagesFetch)return;try{const sep=this.routes.supportMessagesFetch.includes('?')?'&':'?';const r=await fetch(this.routes.supportMessagesFetch+sep+'topic='+encodeURIComponent(topic.key),{headers:{'Accept':'application/json'}});if(!r.ok)return;const d=await r.json().catch(()=>null);const rows=Array.isArray(d)?d:(Array.isArray(d?.messages)?d.messages:[]);if(!rows.length)return;this.activeMessages=rows.map((m,i)=>({id:m.id||('srv-'+i+'-'+Date.now()),from:(m.from==='customer'||m.sender==='customer'||m.is_customer)?'me':'admin',text:m.message||m.body||m.text||'',time:m.time||m.created_at||this.currentTime(),attachment:m.attachment?{name:m.attachment.name||m.attachment.filename||'Attachment',type:m.attachment.type||'file'}:null}));this.persistThreadMessages();this.scrollChatBottom();this.refreshIcons()}catch(e){console.warn('Message fetch skipped.',e)}},async checkAdminOnline(){if(!this.routes.adminStatus)return;try{const r=await fetch(this.routes.adminStatus,{headers:{'Accept':'application/json'}});if(!r.ok)return;const d=await r.json().catch(()=>null);this.adminOnline=!!(d?.online||d?.is_online||d?.active)}catch(e){this.adminOnline=false}},async startBackendThread(topic){await this.postIfAvailable(this.routes.supportThreadStore,{topic:topic.key,title:topic.title,customer_name:@json($displayName),customer_email:@json($displayEmail)})},async postIfAvailable(url,payload){if(!url||url==='#')return null;try{const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':this.csrfToken},body:JSON.stringify(payload)});return r.ok?await r.json().catch(()=>null):null}catch(e){console.warn('Backend sync skipped.',e);return null}},formatFileSize(bytes){if(!bytes)return'';return bytes<1048576?Math.ceil(bytes/1024)+' KB':(bytes/1048576).toFixed(1)+' MB'},currentTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})},scrollChatBottom(){this.$nextTick(()=>{if(this.$refs.chatScroll)this.$refs.chatScroll.scrollTop=this.$refs.chatScroll.scrollHeight})}}}
+        const customerProfileCacheKey='printify_customer_profile_{{ md5($displayEmail) }}';
+        const customerProfileServer={name:@json($displayName),photo:@json($profilePhotoUrl),initials:@json($profileInitial)};
+        function normalizeCustomerProfilePhoto(photo){
+            if(!photo)return photo;
+            const marker='data:image/';
+            const markerIndex=String(photo).indexOf(marker);
+            if(markerIndex>0)return String(photo).slice(markerIndex);
+            return photo;
+        }
+        function syncCustomerHeaderProfile(detail,persist=true){
+            detail=detail||{};
+            const cached=readCustomerProfileCache();
+            const name=detail.name||cached.name||customerProfileServer.name;
+            const photo=normalizeCustomerProfilePhoto(detail.photo||cached.photo||customerProfileServer.photo);
+            const initials=detail.initials||cached.initials||customerProfileServer.initials||(name?name.trim().split(/\s+/).map(p=>p[0]).join('').slice(0,2).toUpperCase():'{{ $profileInitial }}');
+            if(persist||photo!==cached.photo)writeCustomerProfileCache({name,photo,initials});
+            document.querySelectorAll('[data-profile-name],.header-profile-name,.user-name').forEach(el=>{if(name)el.textContent=name});
+            document.querySelectorAll('[data-profile-initials],.header-profile-initials,#headerProfileInitials').forEach(el=>{el.textContent=initials;el.style.display=photo?'none':''});
+            document.querySelectorAll('[data-profile-avatar],.header-profile-img,.profile-avatar-img,#headerProfileAvatar').forEach(el=>{
+                if(!photo)return;
+                if(el.tagName==='IMG'){el.src=photo;el.style.display='block'}else{el.style.backgroundImage=`url("${photo}")`;el.style.backgroundSize='cover';el.style.backgroundPosition='center'}
+            });
+        }
+        function readCustomerProfileCache(){try{return JSON.parse(localStorage.getItem(customerProfileCacheKey)||'{}')}catch(e){return {}}}
+        function writeCustomerProfileCache(data){try{localStorage.setItem(customerProfileCacheKey,JSON.stringify(data||{}))}catch(e){}}
+        window.addEventListener('printify-profile-updated',e=>syncCustomerHeaderProfile(e.detail||{},true));
+        document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.body.classList.add('loaded'),80);syncCustomerHeaderProfile({},false);if(window.lucide)lucide.createIcons()});
     </script>
+    @endif
 </body>
 </html>

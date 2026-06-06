@@ -17,7 +17,6 @@
         input { padding: 8px; width: 100%; max-width: 420px; }
         label { display:block; margin-top: 10px; }
         .box { border:1px solid #ddd; padding:16px; border-radius:10px; margin-top: 16px; }
-        .hint { font-size: 12px; color: #666; margin-top: 6px; }
     </style>
 </head>
 <body>

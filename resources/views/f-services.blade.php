@@ -1,538 +1,1301 @@
-<section id="products" class="pfsvc">
+
+@php
+  $serviceDesign = [
+    'Document Printing' => [
+      'key' => 'doc',
+      'icon' => 'fa-solid fa-print',
+      'img' => asset('images/Document PS.png'),
+      'time' => 'same-day',
+      'express' => true,
+      'order' => 1,
+      'desc' => 'High-quality black and white or color document printing for any need.',
+      'options' => [
+        ['slug' => 'text-only', 'name' => 'Text Only', 'desc' => 'Plain black and white document output.', 'price' => 'from <b>₱1.00/page</b>', 'icon' => 'fa-solid fa-file-lines', 'serviceId' => 'DOC-TX-001'],
+        ['slug' => 'text-graphics', 'name' => 'Text + Image', 'desc' => 'Documents with images, charts, and simple graphics.', 'price' => 'from <b>₱2.00/page</b>', 'icon' => 'fa-solid fa-chart-simple', 'serviceId' => 'DOC-TWI-004'],
+        ['slug' => 'full-color', 'name' => 'Full Color', 'desc' => 'Colored document printing for reports and handouts.', 'price' => 'from <b>₱5.00/page</b>', 'icon' => 'fa-solid fa-palette', 'serviceId' => 'DOC-TX-003'],
+      ],
+    ],
+    'Photocopy & Scanning' => [
+      'key' => 'photo',
+      'icon' => 'fa-solid fa-copy',
+      'img' => asset('images/Photocopy & ScanningS.png'),
+      'time' => 'same-day',
+      'express' => true,
+      'order' => 2,
+      'desc' => 'Clear photocopies and high-resolution scanning services.',
+      'options' => [
+        ['slug' => 'photocopy', 'name' => 'Photocopy', 'desc' => 'Fast and clean document copies.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-copy', 'serviceId' => 'DOC-PCPY-001'],
+        ['slug' => 'scanning', 'name' => 'Scanning', 'desc' => 'Digital scans for documents and records.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-magnifying-glass', 'serviceId' => 'DOC-SCN-001'],
+      ],
+    ],
+    'ID & Photo Services' => [
+      'key' => 'id',
+      'icon' => 'fa-solid fa-id-card',
+      'img' => asset('images/Photo IDS.png'),
+      'time' => 'same-day',
+      'express' => true,
+      'order' => 3,
+      'desc' => 'Professional ID pictures and photo printing services.',
+      'options' => [
+        ['slug' => 'visa-photo', 'name' => 'Visa Photo', 'desc' => 'Visa and passport photo preparation.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-passport', 'image' => asset('images/Photo ID (cover).png'), 'serviceId' => 'IDP-PKG-004'],
+        ['slug' => 'id-photo', 'name' => 'ID Photo', 'desc' => 'ID photo print package.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-id-card', 'image' => asset('images/Photo ID (cover).png'), 'serviceId' => 'IDP-PKG-001'],
+        ['slug' => '2x2-photo', 'name' => '2x2 Photo', 'desc' => '2x2 print photo package.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-image', 'image' => asset('images/Photo ID (cover).png'), 'serviceId' => 'IDP-SP-003'],
+      ],
+    ],
+    'Lamination & Binding' => [
+      'key' => 'bind',
+      'icon' => 'fa-solid fa-book-open',
+      'img' => asset('images/Lamination & BindingS.png'),
+      'time' => 'next-day',
+      'express' => false,
+      'order' => 4,
+      'desc' => 'Durable lamination and clean document binding solutions.',
+      'options' => [
+        ['slug' => 'lamination', 'name' => 'Lamination', 'desc' => 'Protective film for certificates and documents.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-layer-group', 'serviceId' => 'LAM-001'],
+        ['slug' => 'spiral-binding', 'name' => 'Spiral Binding', 'desc' => 'Bound reports, manuals, and booklets.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-book-open', 'serviceId' => 'BND-SPR-001'],
+      ],
+    ],
+    'Large Format Printing' => [
+      'key' => 'largeformat',
+      'icon' => 'fa-solid fa-image',
+      'img' => asset('images/Large FormatPS.png'),
+      'time' => 'next-day',
+      'express' => false,
+      'order' => 5,
+      'desc' => 'Banners, posters, tarpaulins, and oversized print output.',
+      'options' => [
+        ['slug' => 'sintra-board', 'name' => 'Sintra Board', 'desc' => 'Rigid signage and presentation board output.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-border-all', 'serviceId' => 'LF-SIN-001'],
+        ['slug' => 'tarpaulin', 'name' => 'Tarpaulin', 'desc' => 'Large outdoor and indoor tarpaulin printing.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-panorama', 'serviceId' => 'LFP-TARP-001'],
+      ],
+    ],
+    'Custom Special Printing' => [
+      'key' => 'special',
+      'icon' => 'fa-solid fa-star',
+      'img' => asset('images/Custom Special PS.png'),
+      'time' => 'custom',
+      'express' => false,
+      'order' => 6,
+      'desc' => 'Personalized printing for custom designs and special projects.',
+      'options' => [
+        ['slug' => 'custom-special-printing', 'name' => 'Custom Print', 'desc' => 'Special projects that need manual review.', 'price' => 'Available for <b>inquiry</b>', 'icon' => 'fa-solid fa-star', 'serviceId' => 'CSP-001'],
+      ],
+    ],
+  ];
+
+  $fallbackServices = collect($serviceDesign)->map(function ($meta, $title) {
+    return array_merge($meta, [
+      'title' => $title,
+      'price' => $meta['key'] === 'special' ? 20000 : ($meta['key'] === 'largeformat' ? 2500 : ($meta['key'] === 'bind' ? 500 : ($meta['key'] === 'id' ? 180 : ($meta['key'] === 'photo' ? 120 : 80)))),
+    ]);
+  })->values();
+
+  $frontServices = isset($services) && $services->count()
+    ? $services->values()->map(function ($service, $index) use ($serviceDesign) {
+      $meta = $serviceDesign[$service->name] ?? [];
+      $key = $meta['key'] ?? strtolower(preg_replace('/[^a-z0-9]+/i', '-', $service->name));
+      $fallbackOptions = $meta['options'] ?? [];
+      $variationOptions = $service->activeVariations->values()->map(function ($variation, $variationIndex) use ($service, $meta) {
+        $label = $variation->variation_label ?: ($variation->printing_category ?: $service->name);
+        $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $label), '-'));
+
+        return [
+          'slug' => $slug ?: ('option-' . ($variationIndex + 1)),
+          'name' => $label,
+          'desc' => collect([$variation->printing_category, $variation->color_mode, $variation->product_size, $variation->finish_type, $variation->package_type])->filter()->implode(' / ') ?: ($service->description ?: 'Choose this printing option.'),
+          'price' => 'from <b>₱' . number_format((float) $variation->retail_price, 2) . '</b>',
+          'icon' => $meta['icon'] ?? 'fa-solid fa-print',
+          'image' => $variation->variation_image_path ? asset($variation->variation_image_path) : ($meta['img'] ?? null),
+          'serviceId' => $variation->service_item_id,
+        ];
+      })->all();
+
+      return [
+        'key' => $key,
+        'title' => $service->name,
+        'desc' => $service->description ?: ($meta['desc'] ?? 'Professional printing service.'),
+        'icon' => $meta['icon'] ?? 'fa-solid fa-print',
+        'img' => $meta['img'] ?? ($service->image_path ? asset($service->image_path) : null),
+        'time' => $meta['time'] ?? 'custom',
+        'price' => (float) ($service->retail_price ?: 0),
+        'express' => $meta['express'] ?? false,
+        'order' => $meta['order'] ?? ($index + 1),
+        'options' => count($variationOptions) ? $variationOptions : $fallbackOptions,
+      ];
+    })->values()
+    : $fallbackServices;
+@endphp
+
+<section id="products" class="pfsvc" aria-labelledby="pfsvcTitle">
+  <div class="pfsvc-feedback" id="pfsvcFeedback" role="status" aria-live="polite">
+    <i class="fa-regular fa-circle-check"></i>
+    <span>Services ready.</span>
+  </div>
+
   <div class="pfsvc-wrap">
-    <div class="pfsvc-layout">
-      <aside class="pfsvc-browse">
-        <h3>BROWSE SERVICES</h3>
-        <button type="button" class="active" data-filter="all"><i class="fa-solid fa-table-cells-large"></i>All Services</button>
-        <button type="button" data-filter="doc"><i class="fa-solid fa-print"></i>Document Printing</button>
-        <button type="button" data-filter="photo"><i class="fa-solid fa-copy"></i>Photocopy &amp; Scanning</button>
-        <button type="button" data-filter="id"><i class="fa-solid fa-id-card"></i>ID &amp; Photo Services</button>
-        <button type="button" data-filter="bind"><i class="fa-solid fa-book-open"></i>Lamination &amp; Binding</button>
-        <button type="button" data-filter="largeformat"><i class="fa-solid fa-image"></i>Large Format Printing</button>
-        <button type="button" data-filter="special"><i class="fa-solid fa-star"></i>Custom Special Printing</button>
+    <aside class="pfsvc-side" aria-label="Browse services">
+      <h3>Browse Services</h3>
+      <button type="button" class="pfsvc-nav active" data-filter="all"><i class="fa-solid fa-table-cells-large"></i><span>All Services</span></button>
+      <button type="button" class="pfsvc-nav" data-filter="doc"><i class="fa-solid fa-print"></i><span>Document Printing</span></button>
+      <button type="button" class="pfsvc-nav" data-filter="photo"><i class="fa-solid fa-copy"></i><span>Photocopy &amp; Scanning</span></button>
+      <button type="button" class="pfsvc-nav" data-filter="id"><i class="fa-solid fa-id-card"></i><span>ID &amp; Photo Services</span></button>
+      <button type="button" class="pfsvc-nav" data-filter="bind"><i class="fa-solid fa-book-open"></i><span>Lamination &amp; Binding</span></button>
+      <button type="button" class="pfsvc-nav" data-filter="largeformat"><i class="fa-solid fa-image"></i><span>Large Format Printing</span></button>
+      <button type="button" class="pfsvc-nav" data-filter="special"><i class="fa-solid fa-star"></i><span>Custom Special Printing</span></button>
 
-        <div class="pfsvc-filter">
-          <h4>FILTER BY</h4>
-          <div class="pfsvc-filter-head"><span>Price Range</span><i class="fa-solid fa-chevron-down"></i></div>
-          <div class="pfsvc-range-wrap"><input type="range" id="pfsvcPrice" min="0" max="100" value="100" step="1" disabled></div>
-          <div class="pfsvc-filter-head pfsvc-last"><span>Turnaround Time</span><i class="fa-solid fa-chevron-down"></i></div>
-          <select id="pfsvcTime" class="pfsvc-time">
-            <option value="all">Any Time</option>
-            <option value="same-day">Same Day</option>
-            <option value="next-day">Next Day</option>
-            <option value="custom">Custom</option>
+      <div class="pfsvc-filterbox">
+        <h3>Filter By</h3>
+
+        <label class="pfsvc-label" for="pfsvcPrice">Price Range</label>
+        <div class="pfsvc-price-row"><span>₱0</span><strong id="pfsvcPriceValue">₱20,000+</strong></div>
+        <input id="pfsvcPrice" type="range" min="0" max="20000" value="20000" step="100">
+
+        <label class="pfsvc-label" for="pfsvcTime">Turnaround Time</label>
+        <select id="pfsvcTime">
+          <option value="all">Any Time</option>
+          <option value="same-day">Same Day</option>
+          <option value="next-day">Next Day</option>
+          <option value="custom">Custom</option>
+        </select>
+
+        <label class="pfsvc-switch">
+          <input id="pfsvcExpress" type="checkbox" checked>
+          <span>Show Express Services</span>
+          <b>ON</b>
+        </label>
+      </div>
+    </aside>
+
+    <main class="pfsvc-main">
+      <div class="pfsvc-head">
+        <span>What We Do</span>
+        <h2 id="pfsvcTitle">Our Featured Services</h2>
+        <p>Professional printing solutions tailored to your business and personal needs.</p>
+      </div>
+
+      <div class="pfsvc-tools" aria-label="Service controls">
+        <button type="button" class="pfsvc-btn pfsvc-all active" onclick="pfsvcSetCategory('all')">
+          <i class="fa-solid fa-table-cells-large"></i>
+          <span>All Services</span>
+        </button>
+
+        <label class="pfsvc-sort">Sort by:
+          <select id="pfsvcSort">
+            <option value="popular">Popular</option>
+            <option value="name">Name</option>
+            <option value="price">Price</option>
           </select>
+        </label>
+
+        <button type="button" class="pfsvc-view active" data-view="grid" aria-label="Grid view"><i class="fa-solid fa-grip"></i></button>
+        <button type="button" class="pfsvc-view" data-view="list" aria-label="List view"><i class="fa-solid fa-list"></i></button>
+      </div>
+
+      <div class="pfsvc-grid" id="pfsvcGrid"></div>
+
+      <div class="pfsvc-empty" id="pfsvcEmpty">
+        <i class="fa-solid fa-circle-info"></i>
+        <h3>No service matched.</h3>
+        <p>Try another filter or contact us for custom printing support.</p>
+      </div>
+
+      <div class="pfsvc-callout">
+        <div class="pfsvc-callout-icon"><i class="fa-solid fa-truck-fast"></i></div>
+        <div>
+          <h3>Bulk Order or Regular Printing Needs?</h3>
+          <p>Get support for business and bulk printing orders.</p>
         </div>
-      </aside>
+        <a class="pfsvc-btn" href="/contactus">Contact Us <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
 
-      <main class="pfsvc-main">
-        <div class="pfsvc-head">
-          <div>
-            <span>WHAT WE DO</span>
-            <h2>Our Featured Services</h2>
-            <p>Professional printing solutions tailored to your business and personal needs.</p>
-          </div>
+      <section class="pfsvc-detail" id="pfsvcDetail" hidden>
+        <div class="pfsvc-detail-icon" id="pfsvcDetailIcon"><i class="fa-solid fa-print"></i></div>
+        <div>
+          <span>Selected Service</span>
+          <h3 id="pfsvcDetailTitle">Document Printing</h3>
+          <p id="pfsvcDetailDesc">Choose a service option to continue.</p>
         </div>
-
-        <div class="pfsvc-tools" aria-label="Service controls">
-          <button type="button" class="pfsvc-chip active" onclick="setServiceCategory('all')"><i class="fa-solid fa-table-cells-large"></i> All Services</button>
-          <div class="pfsvc-tool-right">
-            <label class="pfsvc-sort">Sort by:
-              <select id="pfsvcSort" onchange="sortServices()">
-                <option value="popular">Popular</option>
-                <option value="name">Name</option>
-                <option value="category">Category</option>
-              </select>
-            </label>
-            <button type="button" class="pfsvc-view active" onclick="setServiceView('grid')" aria-label="Grid view"><i class="fa-solid fa-grip"></i></button>
-            <button type="button" class="pfsvc-view" onclick="setServiceView('list')" aria-label="List view"><i class="fa-solid fa-list"></i></button>
-          </div>
-        </div>
-
-        <div class="pfsvc-grid">
-          <div class="pfsvc-card" data-category="doc" data-time="same-day" onclick="openService('doc')">
-            <div class="pfsvc-img"><img src="{{ asset('images/optimized/Document PrintingS.webp') }}" alt="Document Printing" loading="eager" fetchpriority="high" decoding="async"><div class="pfsvc-icon"><i class="fa-solid fa-print"></i></div></div>
-            <div class="pfsvc-body"><h3>DOCUMENT PRINTING</h3><p>High-quality black &amp; white or color document printing.</p><button type="button">LEARN MORE <i class="fa-solid fa-arrow-right"></i></button></div>
-          </div>
-
-          <div class="pfsvc-card" data-category="photo" data-time="same-day" onclick="openService('photo')">
-            <div class="pfsvc-img"><img src="{{ asset('images/optimized/PhotocopyS.webp') }}" alt="Photocopy and Scanning" loading="eager" fetchpriority="high" decoding="async"><div class="pfsvc-icon"><i class="fa-solid fa-copy"></i></div></div>
-            <div class="pfsvc-body"><h3>PHOTOCOPY &amp; SCANNING</h3><p>Clear photocopies and high-resolution scanning services.</p><button type="button">LEARN MORE <i class="fa-solid fa-arrow-right"></i></button></div>
-          </div>
-
-          <div class="pfsvc-card" data-category="id" data-time="same-day" onclick="openService('id')">
-            <div class="pfsvc-img"><img src="{{ asset('images/optimized/Photo IDS.webp') }}" alt="ID and Photo Services" loading="eager" fetchpriority="high" decoding="async"><div class="pfsvc-icon"><i class="fa-solid fa-id-card"></i></div></div>
-            <div class="pfsvc-body"><h3>ID &amp; PHOTO SERVICES</h3><p>Professional ID pictures and photo printing services.</p><button type="button">LEARN MORE <i class="fa-solid fa-arrow-right"></i></button></div>
-          </div>
-
-          <div class="pfsvc-card" data-category="bind" data-time="next-day" onclick="openService('bind')">
-            <div class="pfsvc-img"><img src="{{ asset('images/optimized/Lamination & BindingS.webp') }}" alt="Lamination and Binding" loading="eager" decoding="async"><div class="pfsvc-icon"><i class="fa-solid fa-book-open"></i></div></div>
-            <div class="pfsvc-body"><h3>LAMINATION &amp; BINDING</h3><p>Durable lamination and clean document binding solutions.</p><button type="button">LEARN MORE <i class="fa-solid fa-arrow-right"></i></button></div>
-          </div>
-
-          <div class="pfsvc-card" data-category="largeformat" data-time="next-day" onclick="openService('largeformat')">
-            <div class="pfsvc-img"><img src="{{ asset('images/optimized/Large FormatingS.webp') }}" alt="Large Format Printing" loading="eager" decoding="async"><div class="pfsvc-icon"><i class="fa-solid fa-image"></i></div></div>
-            <div class="pfsvc-body"><h3>LARGE FORMAT PRINTING</h3><p>Banners, posters, tarpaulins, and oversized print output.</p><button type="button">LEARN MORE <i class="fa-solid fa-arrow-right"></i></button></div>
-          </div>
-
-          <div class="pfsvc-card" data-category="special" data-time="custom" onclick="openService('special')">
-            <div class="pfsvc-img"><img src="{{ asset('images/optimized/Custom SpecialS.webp') }}" alt="Custom Special Printing" loading="eager" decoding="async"><div class="pfsvc-icon"><i class="fa-solid fa-star"></i></div></div>
-            <div class="pfsvc-body"><h3>CUSTOM SPECIAL PRINTING</h3><p>Personalized printing for custom designs and special projects.</p><button type="button">LEARN MORE <i class="fa-solid fa-arrow-right"></i></button></div>
-          </div>
-
-          <div class="pfsvc-empty" id="pfsvcEmpty">
-            <i class="fa-solid fa-circle-info"></i>
-            <h4>No featured service found</h4>
-            <p>This category is available for inquiry. Please contact us for more details.</p>
-          </div>
-        </div>
-
-        <div class="pfsvc-bottom">
-          <div class="pfsvc-bottom-icon"><i class="fa-solid fa-truck-fast"></i></div>
-          <div class="pfsvc-bottom-text"><h4>Bulk Order or Regular Printing Needs?</h4><p>Get support for business and bulk printing orders.</p></div>
-          <a href="/contact">Contact Us <i class="fa-solid fa-arrow-right"></i></a>
-        </div>
-
-        <section class="pfdetail" id="serviceDetailSection">
-          <div class="pfdetail-card">
-            <div class="pfdetail-icon" id="detailIcon"><i class="fa-solid fa-print"></i></div>
-            <div>
-              <span>SELECTED SERVICE</span>
-              <h3 id="detailTitle">Document Printing - Text Only</h3>
-              <p id="detailDesc">Plain document printing service.</p>
-              <button type="button" onclick="goToSelectedServiceDetail()">OPEN SERVICE DETAILS <i class="fa-solid fa-arrow-right"></i></button>
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
+        <button type="button" class="pfsvc-btn" onclick="pfsvcProceedSelected()">Open Details <i class="fa-solid fa-arrow-right"></i></button>
+      </section>
+    </main>
   </div>
 </section>
 
-<div class="pfdeck-pop" id="serviceDeckPop">
-  <button type="button" class="pfdeck-close" onclick="closeServiceDeck()" aria-label="Close service options"><i class="fa-solid fa-xmark"></i></button>
+<div class="pfsvc-deck" id="pfsvcDeck" aria-hidden="true">
+  <button type="button" class="pfsvc-deck-close" onclick="pfsvcCloseDeck()" aria-label="Close service options">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
 
-  <div class="pfdeck-title">
-    <span id="serviceDeckKicker"><i class="fa-solid fa-print"></i> DOCUMENT PRINTING</span>
-    <h3 id="serviceDeckHeading">Choose Print Option</h3>
-    <p>Select one card to continue.</p>
-  </div>
+  <div class="pfsvc-deck-card">
+    <div class="pfsvc-deck-title">
+      <span id="pfsvcDeckKicker"><i class="fa-solid fa-print"></i> Document Printing</span>
+      <h3 id="pfsvcDeckHeading">Choose Service Option</h3>
+      <p>Select one card to continue.</p>
+    </div>
 
-  <button type="button" class="pfdeck-arrow pfdeck-left" id="serviceDeckLeft" onclick="moveServiceDeck(-1)" aria-label="Previous option"><i class="fa-solid fa-chevron-left"></i></button>
-
-  <div class="pfdeck-stage" id="serviceDeck"></div>
-
-  <button type="button" class="pfdeck-arrow pfdeck-right" id="serviceDeckRight" onclick="moveServiceDeck(1)" aria-label="Next option"><i class="fa-solid fa-chevron-right"></i></button>
-
-  <div class="pfdeck-bottom">
-    <div class="pfdeck-dots" id="serviceDeckDots"></div>
-    <button type="button" class="pfdeck-continue" id="serviceDeckBtn" onclick="proceedServiceOption()">
-      <span>Continue with Text Only</span>
-      <i class="fa-solid fa-arrow-right"></i>
+    <button type="button" class="pfsvc-arrow left" onclick="pfsvcMoveDeck(-1)" aria-label="Previous option">
+      <i class="fa-solid fa-chevron-left"></i>
     </button>
-  </div>
-</div>
 
-<div class="pfsvc-modal" id="serviceModal">
-  <div class="pfsvc-modal-box">
-    <button type="button" class="pfsvc-close" onclick="closeModal()">×</button>
-    <div class="pfsvc-modal-icon" id="modalIcon"><i class="fa-solid fa-print"></i></div>
-    <h3 id="modalTitle">Service Title</h3>
-    <p id="modalDescription">Service description here.</p>
+    <div class="pfsvc-stage" id="pfsvcStage"></div>
+
+    <button type="button" class="pfsvc-arrow right" onclick="pfsvcMoveDeck(1)" aria-label="Next option">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+
+    <div class="pfsvc-deck-actions">
+      <div class="pfsvc-dots" id="pfsvcDots"></div>
+      <button type="button" class="pfsvc-btn" id="pfsvcContinue" onclick="pfsvcProceedSelected()">Continue <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
   </div>
 </div>
 
 <style>
-.pfsvc{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);padding:32px 18px 70px 70px;background:#fff;font-family:'Inter','Poppins',sans-serif;box-sizing:border-box;scroll-margin-top:90px}.pfsvc *{box-sizing:border-box}.pfsvc-wrap{width:100%;max-width:none;margin:0;padding:0}.pfsvc-layout{display:grid;grid-template-columns:285px minmax(0,1fr);gap:80px;align-items:start;width:100%;max-width:1270px;margin:0}.pfsvc-browse{background:#fff;border:1px solid #111827;border-radius:10px;padding:22px 20px 24px;box-shadow:0 14px 35px rgba(0,0,0,.045);overflow:hidden;position:sticky;top:95px}.pfsvc-browse h3,.pfsvc-filter h4{margin:0 0 18px;color:#111;font-size:13px;font-weight:900;letter-spacing:0}.pfsvc-browse button{width:100%;height:38px;border:0;background:#fff;color:#555;display:flex;align-items:center;gap:13px;padding:0 12px;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;transition:.22s;text-align:left}.pfsvc-browse button i{width:18px;text-align:center;color:#777;font-size:15px}.pfsvc-browse button.active{background:#fff1e8;color:#e8752b;border-left:3px solid #e8752b}.pfsvc-browse button.active i,.pfsvc-browse button:hover i{color:#e8752b}.pfsvc-browse button:hover{background:#fff7f1;color:#e8752b}.pfsvc-filter{margin-top:18px;padding-top:22px;border-top:1px solid #eee}.pfsvc-filter-head{display:flex;align-items:center;justify-content:space-between;color:#555;font-size:13px;font-weight:700;margin-bottom:20px}.pfsvc-range-wrap{height:18px;position:relative;margin:0 0 22px}.pfsvc-range-wrap:before{content:"";position:absolute;left:10px;right:10px;top:8px;height:3px;background:#f3b08b}.pfsvc-range-wrap input{position:relative;width:100%;height:18px;margin:0;background:transparent;appearance:none;cursor:not-allowed;z-index:2;opacity:.75}.pfsvc-range-wrap input::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border:3px solid #ef6b24;background:#fff;border-radius:50%}.pfsvc-range-wrap input::-moz-range-thumb{width:15px;height:15px;border:3px solid #ef6b24;background:#fff;border-radius:50%}.pfsvc-last{border-top:1px solid #eee;padding-top:18px;margin-bottom:10px}.pfsvc-time{width:100%;height:35px;border:1px solid #eee;border-radius:5px;padding:0 10px;color:#555;font:700 12px 'Poppins';outline:none;background:#fff}.pfsvc-main{min-width:0;padding-top:24px}.pfsvc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:25px;margin-bottom:10px}.pfsvc-head span{display:block;color:#ff5a1f;font-size:13px;font-weight:900;letter-spacing:0;margin-bottom:8px}.pfsvc-head h2{margin:0 0 9px;color:#111;font-family:'Playfair Display',serif;font-size:38px;line-height:1.03;font-weight:700;letter-spacing:0}.pfsvc-head p{margin:0;color:#555;font-size:14px;line-height:1.6}.pfsvc-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 16px;width:100%}.pfsvc-tool-right{display:flex;align-items:center;justify-content:flex-end;gap:9px}.pfsvc-chip,.pfsvc-view{height:34px;border:1px solid #ff7a00;border-radius:5px;background:#ff7a00;color:#000;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 11px;font-size:11px;font-weight:900;cursor:pointer;transition:.2s}.pfsvc-chip.active,.pfsvc-view.active,.pfsvc-chip:hover,.pfsvc-view:hover{background:#111827;border-color:#111827;color:#fff}.pfsvc-sort{height:34px;display:inline-flex;align-items:center;gap:8px;color:#111;font-size:11px;font-weight:800}.pfsvc-sort select{height:34px;min-width:110px;border:1px solid #111827;border-radius:5px;background:#fff;padding:0 9px;font:800 11px 'Poppins';outline:none}.pfsvc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:38px}.pfsvc-grid.list-view{grid-template-columns:1fr}.pfsvc-grid.list-view .pfsvc-card{display:grid;grid-template-columns:310px minmax(0,1fr)}.pfsvc-grid.list-view .pfsvc-img,.pfsvc-grid.list-view .pfsvc-img img{height:160px}.pfsvc-card{background:#fff;border:1px solid #111827;border-radius:8px;overflow:hidden;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.055);transition:.28s}.pfsvc-card:hover{transform:translateY(-6px);background:#fff7f2;box-shadow:0 20px 42px rgba(0,0,0,.12)}.pfsvc-img{height:125px;position:relative;background:#eee;overflow:visible}.pfsvc-img img{width:100%;height:125px;display:block;object-fit:cover;transition:.4s}.pfsvc-card:hover .pfsvc-img img{transform:scale(1.05)}.pfsvc-icon{position:absolute;left:16px;bottom:-20px;width:48px;height:48px;background:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#111;font-size:19px;box-shadow:0 10px 24px rgba(0,0,0,.16);z-index:3}.pfsvc-body{padding:32px 16px 17px}.pfsvc-body h3{margin:0 0 7px;color:#111;font-family:'Poppins',sans-serif;font-size:12.5px;font-weight:600;letter-spacing:0}.pfsvc-body p{min-height:35px;margin:0 0 19px;color:#666;font-size:11.5px;line-height:1.55}.pfsvc-body button{border:0;background:transparent;padding:0;color:#d36f19;font-size:10.5px;font-weight:900;letter-spacing:0;cursor:pointer}.pfsvc-empty{display:none;grid-column:1/-1;background:#fff;border:1px dashed #111827;border-radius:8px;padding:32px 22px;text-align:center;color:#666;box-shadow:0 12px 28px rgba(0,0,0,.04)}.pfsvc-empty i{width:46px;height:46px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff1e8;color:#ff5a1f;font-size:20px;margin-bottom:12px}.pfsvc-empty h4{margin:0 0 6px;color:#111;font-size:14px;font-weight:900}.pfsvc-empty p{margin:0;color:#666;font-size:12.5px}.pfsvc-bottom{margin-top:26px;background:#fff8f2;border:1px solid #111827;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:14px;width:min(100%,760px)}.pfsvc-bottom-icon{width:42px;height:42px;border-radius:50%;background:#ff5a1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 auto}.pfsvc-bottom h4{margin:0 0 3px;color:#111;font-size:13.5px;font-weight:900}.pfsvc-bottom p{margin:0;color:#666;font-size:11.5px;line-height:1.45}.pfsvc-bottom a{margin-left:auto;min-width:145px;text-align:center;padding:10px 14px;border:1px solid #ff7a00;border-radius:4px;color:#000;background:#ff7a00;text-decoration:none;font-size:10.5px;font-weight:800;white-space:nowrap;transition:.25s}.pfsvc-bottom a:hover{background:#111827;border-color:#111827;color:#fff}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Playfair+Display:wght@700&family=Poppins:wght@600&display=swap');
 
-.pfdeck-pop{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.58);font-family:'Poppins',sans-serif;overflow:hidden;padding:20px}.pfdeck-pop.active{display:flex}.pfdeck-close{position:absolute;top:21px;right:30px;width:45px;height:45px;border:1px solid rgba(255,255,255,.85);border-radius:50%;background:#fff;color:#151515;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 14px 30px rgba(0,0,0,.2);z-index:40;transition:.22s}.pfdeck-close:hover{background:#ff5a1f;color:#fff;border-color:#ff5a1f;transform:scale(1.05)}.pfdeck-title{position:absolute;top:160px;left:50%;transform:translateX(-50%);text-align:center;color:#fff;z-index:10}.pfdeck-title span{display:inline-flex;align-items:center;gap:7px;color:#ff5a1f;font-size:11px;font-weight:900;letter-spacing:1.7px}.pfdeck-title h3{margin:6px 0 3px;font-size:30px;line-height:1;font-weight:900;letter-spacing:-.7px}.pfdeck-title p{margin:0;color:rgba(255,255,255,.74);font-size:12px}.pfdeck-stage{position:relative;width:min(650px,92vw);height:410px;margin-top:110px;perspective:1200px;transform-style:preserve-3d}.pfdeck-card{position:absolute;left:50%;top:50%;width:252px;min-height:318px;background:#fff;border:1px solid #e8e8e8;border-radius:20px;padding:12px 12px 13px;text-align:center;box-shadow:0 24px 54px rgba(0,0,0,.34);cursor:pointer;transform-origin:center 112%;transition:transform .9s cubic-bezier(.16,1,.3,1),opacity .35s ease,filter .35s ease,box-shadow .35s ease,border-color .35s ease;will-change:transform}.pfdeck-card.has-photo{padding:10px 10px 12px;min-height:320px}.pfdeck-pop.moving .pfdeck-card{transition:transform 1s cubic-bezier(.16,1,.3,1),opacity .35s ease,filter .35s ease}.pfdeck-pop.entering .pfdeck-card{opacity:0!important;transform:translate(-50%,-50%) translateY(65px) scale(.76) rotate(0deg)!important}.pfdeck-card.active{z-index:7;border-color:#ff5a1f;box-shadow:0 34px 78px rgba(0,0,0,.43)}.pfdeck-card.left,.pfdeck-card.right{z-index:4;filter:brightness(.96)}.pfdeck-card:hover{filter:none}.pfdeck-img{height:154px;border-radius:16px;background:#fafafa;border:1px solid #eee;display:flex;align-items:center;justify-content:center;margin-bottom:12px;overflow:hidden}.pfdeck-img.with-photo{height:205px;min-height:205px;max-height:205px;padding:7px;border:1px solid #f1d7c9;background:#fff7f2;overflow:hidden;margin-bottom:8px}.pfdeck-service-photo{width:100%;height:100%;max-height:none;display:block;object-fit:contain;object-position:center;border-radius:15px;box-shadow:0 10px 22px rgba(0,0,0,.12)}.pfdeck-card h4{margin:0 0 4px;color:#111;font-size:15px;line-height:1.08;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pfdeck-card p{margin:0 auto;color:#666;font-size:10.5px;line-height:1.25;min-height:14px;max-width:205px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}.pfdeck-card small{display:block;margin-top:5px;color:#555;font-size:10.5px}.pfdeck-card small b{color:#ff5a1f}.paper{width:92px;height:114px;background:#fff;border:1px solid #ddd;border-radius:7px;box-shadow:0 10px 20px rgba(0,0,0,.1);padding:15px 11px}.paper b,.paper span{display:block;height:5px;border-radius:9px;background:#cfcfcf;margin-bottom:9px}.paper b{width:55%;background:#aaa}.bars{height:63px;display:flex;align-items:flex-end;gap:6px;margin-bottom:9px}.bars i{width:13px;background:#bbb;border-radius:4px 4px 0 0}.bars i:nth-child(1){height:24px}.bars i:nth-child(2){height:45px}.bars i:nth-child(3){height:35px}.bars i:nth-child(4){height:60px}.tiles{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}.tiles i{height:28px;border-radius:7px;background:#ff5a1f}.tiles i:nth-child(2){background:#ffb03a}.tiles i:nth-child(3){background:#269fe0}.tiles i:nth-child(4){background:#36b870}.pfdeck-service-visual{width:96px;height:116px;border-radius:18px;background:#fff1e8;color:#ff5a1f;display:flex;align-items:center;justify-content:center;font-size:45px;box-shadow:inset 0 0 0 1px #ffd6c2,0 10px 20px rgba(0,0,0,.08)}.pfdeck-arrow{position:absolute;top:55%;transform:translateY(-50%);width:47px;height:47px;border:1px solid rgba(255,255,255,.92);border-radius:50%;background:rgba(255,255,255,.97);color:#111;box-shadow:0 15px 34px rgba(0,0,0,.24);cursor:pointer;z-index:36;transition:.22s;display:flex;align-items:center;justify-content:center;font-size:14px}.pfdeck-arrow:before{content:"";position:absolute;inset:-5px;border-radius:50%;background:rgba(255,90,31,.16);opacity:0;transition:.22s;z-index:-1}.pfdeck-arrow:hover{background:#ff5a1f;color:#fff;border-color:#ff5a1f;transform:translateY(-50%) scale(1.08)}.pfdeck-arrow:hover:before{opacity:1}.pfdeck-left{left:calc(50% - 306px)}.pfdeck-right{right:calc(50% - 306px)}.pfdeck-bottom{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:25}.pfdeck-dots{display:flex;gap:7px}.pfdeck-dots button{width:7px;height:7px;border:0;border-radius:50%;background:rgba(255,255,255,.46);cursor:pointer;padding:0;transition:.22s}.pfdeck-dots button.active{width:19px;border-radius:20px;background:#ff5a1f}.pfdeck-continue{height:38px;min-width:244px;border:0;border-radius:999px;background:#ff5a1f;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 17px;font-size:11px;font-weight:800;letter-spacing:.25px;cursor:pointer;box-shadow:0 12px 25px rgba(255,90,31,.2);transition:.22s}.pfdeck-continue:hover{background:#e94b12;transform:translateY(-1px)}.pfdeck-continue i{font-size:10px}.pfdeck-card.only{transform-origin:center center}.pfdeck-pop.single .pfdeck-stage{width:min(340px,92vw)}.pfdeck-pop.single .pfdeck-dots{display:none}
+.pfsvc{
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  padding:34px 0 64px;
+  background:#fff;
+  color:#111;
+  font-family:'Inter',system-ui,sans-serif;
+  font-weight:400;
+  letter-spacing:0;
+  scroll-margin-top:90px;
+}
 
-.pfdetail{display:none;margin-top:26px;scroll-margin-top:95px}.pfdetail.show{display:block}.pfdetail-card{display:flex;gap:16px;align-items:flex-start;width:min(100%,760px);padding:20px;border:1px solid #fde1d1;background:#fff8f2;border-radius:12px;box-shadow:0 14px 32px rgba(0,0,0,.05)}.pfdetail-icon{width:52px;height:52px;border-radius:14px;background:#ff5a1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto}.pfdetail span{display:block;color:#ff5a1f;font-size:11px;font-weight:900;letter-spacing:1.5px;margin-bottom:4px}.pfdetail h3{margin:0 0 7px;color:#111;font-size:22px;font-weight:900}.pfdetail p{margin:0 0 14px;color:#555;font-size:13px;line-height:1.65}.pfdetail button{border:0;background:#ff5a1f;color:#fff;border-radius:7px;height:39px;padding:0 18px;font-size:11px;font-weight:900;letter-spacing:.5px;cursor:pointer}.pfdetail button i{margin-left:6px}.pfdetail button:hover{background:#e94b12}
+.pfsvc *{
+  box-sizing:border-box;
+}
 
-.pfsvc-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px;font-family:'Poppins',sans-serif}.pfsvc-modal.active{display:flex}.pfsvc-modal-box{position:relative;width:100%;max-width:430px;background:#fff;border-radius:14px;padding:38px 30px 32px;text-align:center;box-shadow:0 25px 80px rgba(0,0,0,.25);animation:pfpop .25s ease}.pfsvc-close{position:absolute;top:10px;right:16px;border:0;background:transparent;font-size:31px;line-height:1;cursor:pointer;color:#111}.pfsvc-modal-icon{width:70px;height:70px;margin:0 auto 17px;border-radius:50%;background:#fff1e8;color:#ff5a1f;display:flex;align-items:center;justify-content:center;font-size:30px}.pfsvc-modal-box h3{margin:0 0 10px;color:#111;font-size:23px;font-weight:900}.pfsvc-modal-box p{margin:0;color:#666;font-size:14px;line-height:1.7}
-@keyframes pfpop{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:1100px){.pfsvc{padding-left:10px;padding-right:18px}.pfsvc-layout{grid-template-columns:260px minmax(0,1fr);gap:28px}.pfsvc-grid{grid-template-columns:repeat(2,1fr);gap:30px}.pfdeck-left{left:calc(50% - 246px)}.pfdeck-right{right:calc(50% - 246px)}}
-@media(max-width:850px){.pfsvc{padding:25px 16px 55px}.pfsvc-layout{grid-template-columns:1fr}.pfsvc-browse{position:relative;top:auto}.pfsvc-main{padding-top:10px}.pfsvc-head{flex-direction:column}.pfsvc-head h2{font-size:32px}.pfsvc-grid{grid-template-columns:1fr}.pfsvc-bottom,.pfdetail-card{width:100%;flex-direction:column;align-items:flex-start}.pfsvc-bottom a{margin-left:0;width:100%}.pfdeck-title{top:118px}.pfdeck-title h3{font-size:27px}.pfdeck-stage{height:380px;margin-top:92px}.pfdeck-card{width:224px;min-height:302px}.pfdeck-card.has-photo{min-height:306px}.pfdeck-img.with-photo{height:188px;min-height:188px;max-height:188px}.pfdeck-left{left:calc(50% - 212px)}.pfdeck-right{right:calc(50% - 212px)}.pfdeck-bottom{bottom:78px}}
-@media(max-width:600px){.pfdeck-card{width:204px}.pfdeck-card.right,.pfdeck-card.left{opacity:.82}.pfdeck-arrow{top:57%;width:40px;height:40px}.pfdeck-img{height:122px}.pfdeck-img.with-photo{height:170px;min-height:170px;max-height:170px}.paper{transform:scale(.86)}.pfdeck-continue{min-width:220px}.pfdeck-bottom{bottom:68px}.pfdeck-left{left:calc(50% - 182px)}.pfdeck-right{right:calc(50% - 182px)}}
+.pfsvc-wrap{
+  width:min(1280px,calc(100% - 104px));
+  margin:0 24px 0 92px;
+  display:grid;
+  grid-template-columns:290px minmax(0,1fr);
+  gap:42px;
+  align-items:start;
+}
+
+.pfsvc-feedback{
+  display:none;
+  position:fixed;
+  top:76px;
+  left:50%;
+  z-index:999999;
+  transform:translate(-50%,-12px);
+  min-width:250px;
+  height:38px;
+  padding:0 16px;
+  border:1px solid #111;
+  border-radius:10px;
+  background:#111;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font:600 12px 'Poppins';
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s ease,transform .25s ease;
+}
+
+.pfsvc-feedback.show{
+  opacity:1;
+  transform:translate(-50%,0);
+}
+
+.pfsvc-feedback i{
+  color:#ff7a00;
+}
+
+.pfsvc-side{
+  position:sticky;
+  top:95px;
+  background:#fff;
+  padding:0 0 18px;
+  border-right:0;
+}
+
+.pfsvc-side h3{
+  margin:0 0 16px;
+  color:#111;
+  font:600 14px 'Poppins';
+  text-transform:uppercase;
+}
+
+.pfsvc-nav{
+  width:calc(100% - 18px);
+  height:40px;
+  margin:0 18px 7px 0;
+  border:0;
+  border-radius:0;
+  background:#fff;
+  color:#111;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 16px;
+  cursor:pointer;
+  font:600 13px 'Poppins';
+  text-align:left;
+  transition:background-color .2s ease,color .2s ease;
+}
+
+.pfsvc-nav i{
+  width:18px;
+  text-align:center;
+  color:#111;
+}
+
+.pfsvc-nav:hover,
+.pfsvc-nav.active{
+  background:#fff1e8;
+  color:#ff5a12;
+  border-left:3px solid #ff5a12;
+}
+
+.pfsvc-nav:hover i,
+.pfsvc-nav.active i{
+  color:#ff5a12;
+}
+
+.pfsvc-filterbox{
+  margin-top:24px;
+  padding-top:22px;
+  border-top:1px solid #111;
+}
+
+.pfsvc-label{
+  display:block;
+  margin:0 0 8px;
+  color:#111;
+  font:600 13px 'Poppins';
+}
+
+.pfsvc-price-row{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:8px;
+  color:#111;
+  font-size:11px;
+}
+
+.pfsvc-price-row strong{
+  font-weight:400;
+}
+
+.pfsvc-filterbox input[type=range]{
+  width:calc(100% - 18px);
+  accent-color:#ff7a00;
+}
+
+.pfsvc-filterbox select{
+  width:calc(100% - 18px);
+  height:38px;
+  margin:6px 0 18px;
+  padding:0 12px;
+  border:1px solid #111;
+  border-radius:4px;
+  background:#fff;
+  color:#111;
+  font:400 12px 'Inter';
+  outline:none;
+}
+
+.pfsvc-switch{
+  width:calc(100% - 18px);
+  display:grid;
+  grid-template-columns:1fr 54px;
+  align-items:center;
+  gap:10px;
+  color:#111;
+  font:400 12px 'Inter';
+  cursor:pointer;
+}
+
+.pfsvc-switch input{
+  display:none;
+}
+
+.pfsvc-switch b{
+  height:28px;
+  border-radius:999px;
+  background:#111;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font:600 10px 'Poppins';
+  transition:.2s;
+}
+
+.pfsvc-switch input:checked~b{
+  background:#ff7a00;
+  color:#111;
+}
+
+.pfsvc-main{
+  min-width:0;
+}
+
+.pfsvc-head{
+  margin-bottom:18px;
+}
+
+.pfsvc-head span{
+  display:block;
+  margin-bottom:8px;
+  color:#ff5a12;
+  font:600 13px 'Poppins';
+  text-transform:uppercase;
+}
+
+.pfsvc-head h2{
+  margin:0 0 8px;
+  color:#111;
+  font:700 50px/1.04 'Playfair Display',Georgia,serif;
+  letter-spacing:0;
+}
+
+.pfsvc-head p{
+  margin:0;
+  color:#333;
+  font-size:14px;
+  line-height:1.55;
+}
+
+.pfsvc-tools{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto 38px 38px;
+  gap:10px;
+  align-items:center;
+  margin-bottom:18px;
+}
+
+.pfsvc-sort{
+  height:38px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
+  color:#111;
+  font:600 12px 'Poppins';
+  grid-column:3;
+}
+
+.pfsvc-sort select{
+  height:38px;
+  min-width:134px;
+  border:1px solid #111;
+  border-radius:4px;
+  background:#fff;
+  color:#111;
+  padding:0 10px;
+  font:400 12px 'Inter';
+  outline:none;
+}
+
+.pfsvc-btn{
+  height:38px;
+  min-width:136px;
+  border:0!important;
+  border-radius:8px;
+  background:#ff7a00;
+  color:#111;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:0 16px;
+  text-decoration:none;
+  cursor:pointer;
+  font:600 12px 'Poppins';
+  letter-spacing:0;
+  transition:background-color .22s ease,color .22s ease;
+}
+
+.pfsvc-btn:hover,
+.pfsvc-btn.active{
+  background:#111!important;
+  color:#fff!important;
+}
+
+.pfsvc-view{
+  width:38px;
+  height:38px;
+  border:0;
+  background:#fff;
+  color:#111;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  font-size:17px;
+}
+
+.pfsvc-view:hover,
+.pfsvc-view.active{
+  color:#ff5a12;
+}
+
+.pfsvc-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:20px;
+}
+
+.pfsvc-grid.list{
+  grid-template-columns:1fr;
+}
+
+.pfsvc-grid.list .pfsvc-card{
+  display:grid;
+  grid-template-columns:300px 1fr;
+}
+
+.pfsvc-grid.list .pfsvc-img,
+.pfsvc-grid.list .pfsvc-img img{
+  height:180px;
+}
+
+.pfsvc-card{
+  border:1px solid #111;
+  border-radius:8px;
+  background:#fff;
+  overflow:hidden;
+  cursor:pointer;
+  transition:transform .22s ease,background-color .22s ease;
+  height:306px;
+}
+
+.pfsvc-card:hover{
+  transform:translateY(-4px);
+  background:#fff7f1;
+}
+
+.pfsvc-img{
+  position:relative;
+  height:180px;
+  background:#f7f7f7;
+  border-bottom:1px solid #ececec;
+}
+
+.pfsvc-img img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  display:block;
+}
+
+.pfsvc-img.no-image{
+  background:linear-gradient(135deg,#fafafa,#f1f1f1);
+}
+
+.pfsvc-icon{
+  position:absolute;
+  left:14px;
+  bottom:-15px;
+  width:34px;
+  height:34px;
+  border:1px solid #ffd8bd;
+  border-radius:8px;
+  background:#fff4ec;
+  color:#ff7a00;
+  display:grid;
+  place-items:center;
+  font-size:13px;
+  box-shadow:0 8px 18px rgba(255,122,0,.12);
+}
+
+.pfsvc-body{
+  height:126px;
+  padding:22px 16px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-end;
+}
+
+.pfsvc-body h3{
+  min-height:0;
+  margin:0 0 2px;
+  color:#111;
+  font:600 13px/1.2 'Poppins';
+  letter-spacing:0;
+}
+
+.pfsvc-body p{
+  min-height:0;
+  margin:0 0 5px;
+  color:#333;
+  font-size:10.5px;
+  line-height:1.22;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+.pfsvc-meta{
+  display:none;
+}
+
+.pfsvc-card button{
+  height:30px;
+  min-width:106px;
+  border:0;
+  border-radius:8px;
+  background:#ff7a00;
+  color:#111;
+  font:600 10.5px 'Poppins';
+  cursor:pointer;
+  margin-top:0;
+}
+
+.pfsvc-card button:hover{
+  background:#111;
+  color:#fff;
+}
+
+.pfsvc-empty{
+  display:none;
+  margin-top:14px;
+  border:1px solid #111;
+  border-radius:8px;
+  padding:28px;
+  text-align:center;
+}
+
+.pfsvc-empty i{
+  color:#ff7a00;
+  font-size:25px;
+}
+
+.pfsvc-empty h3{
+  font:600 18px 'Poppins';
+  margin:10px 0 4px;
+}
+
+.pfsvc-empty p{
+  margin:0;
+  color:#333;
+  font-size:13px;
+}
+
+.pfsvc-callout{
+  margin-top:22px;
+  padding:0 14px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:transparent;
+}
+
+.pfsvc-detail{
+  display:none!important;
+}
+
+.pfsvc-callout-icon{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  color:#ff7a00;
+  border:1px solid #ff7a00;
+}
+
+.pfsvc-callout h3{
+  margin:0 0 3px;
+  font:600 16px 'Poppins';
+}
+
+.pfsvc-callout p{
+  margin:0;
+  color:#333;
+  font-size:13px;
+}
+
+.pfsvc-callout a{
+  margin-left:auto;
+}
+
+.pfsvc-deck{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.72);
+  padding:20px;
+}
+
+.pfsvc-deck.active{
+  display:flex;
+}
+
+.pfsvc-deck-card{
+  position:relative;
+  width:min(840px,94vw);
+  min-height:500px;
+  color:#fff;
+  text-align:center;
+}
+
+.pfsvc-deck-close{
+  position:absolute;
+  right:0;
+  top:0;
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:50%;
+  background:#fff;
+  color:#111;
+  cursor:pointer;
+  font-size:18px;
+  z-index:20;
+}
+
+.pfsvc-deck-close:hover{
+  background:#111;
+  color:#fff;
+}
+
+.pfsvc-deck-title{
+  padding-top:32px;
+}
+
+.pfsvc-deck-title span{
+  color:#ff7a00;
+  font:600 12px 'Poppins';
+  text-transform:uppercase;
+}
+
+.pfsvc-deck-title h3{
+  margin:8px 0 3px;
+  color:#fff;
+  font:700 31px/1 'Playfair Display';
+}
+
+.pfsvc-deck-title p{
+  margin:0;
+  color:#fff;
+  font-size:12px;
+}
+
+.pfsvc-stage{
+  position:relative;
+  height:316px;
+  margin:14px auto 0;
+  width:min(560px,90vw);
+  perspective:1200px;
+}
+
+.pfsvc-option{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:250px;
+  height:300px;
+  border:0;
+  border-radius:16px;
+  background:#fff;
+  color:#111;
+  padding:0;
+  box-shadow:0 25px 55px rgba(0,0,0,.32);
+  cursor:pointer;
+  transform-origin:center 112%;
+  transition:transform 1s cubic-bezier(.16,1,.3,1),opacity .35s ease,filter .35s ease,border-color .35s ease;
+  will-change:transform;
+  overflow:hidden;
+}
+
+.pfsvc-option.active{
+  z-index:5;
+}
+
+.pfsvc-option.left,
+.pfsvc-option.right{
+  z-index:3;
+  filter:none;
+}
+
+.pfsvc-option.hidden{
+  opacity:0;
+  pointer-events:none;
+}
+
+.pfsvc-option-img{
+  width:100%;
+  height:100%;
+  border-radius:16px;
+  background:#fff7f1;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+}
+
+.pfsvc-option-img img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.pfsvc-option-img i{
+  font-size:82px;
+  color:#ff7a00;
+}
+
+.pfsvc-option h4{
+  display:none;
+}
+
+.pfsvc-option p{
+  display:none;
+}
+
+.pfsvc-option small{
+  display:none;
+}
+
+.pfsvc-arrow{
+  position:absolute;
+  top:57%;
+  width:42px;
+  height:42px;
+  border:0;
+  border-radius:50%;
+  background:#fff;
+  color:#111;
+  cursor:pointer;
+  z-index:15;
+}
+
+.pfsvc-arrow:hover{
+  background:#ff7a00;
+  color:#111;
+}
+
+.pfsvc-arrow.left{
+  left:150px;
+}
+
+.pfsvc-arrow.right{
+  right:150px;
+}
+
+.pfsvc-deck-actions{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  position:relative;
+  z-index:8;
+  margin-top:2px;
+}
+
+.pfsvc-dots{
+  display:flex;
+  gap:6px;
+}
+
+.pfsvc-dots button{
+  width:8px;
+  height:8px;
+  border:0;
+  border-radius:50%;
+  background:#fff;
+  opacity:.45;
+  cursor:pointer;
+}
+
+.pfsvc-dots button.active{
+  width:22px;
+  border-radius:999px;
+  background:#ff7a00;
+  opacity:1;
+}
+
+@media(max-width:1120px){
+  .pfsvc-wrap{
+    width:calc(100% - 36px);
+    margin:0 18px;
+    grid-template-columns:1fr;
+  }
+
+  .pfsvc-side{
+    position:static;
+    border-right:0;
+    border-bottom:1px solid #111;
+    padding-bottom:20px;
+  }
+
+  .pfsvc-grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:720px){
+  .pfsvc-head h2{
+    font-size:38px;
+  }
+
+  .pfsvc-tools{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .pfsvc-tools input,
+  .pfsvc-sort{
+    grid-column:1/-1;
+  }
+
+  .pfsvc-grid,
+  .pfsvc-grid.list{
+    grid-template-columns:1fr;
+  }
+
+  .pfsvc-grid.list .pfsvc-card{
+    display:block;
+  }
+
+  .pfsvc-callout,
+  .pfsvc-detail{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .pfsvc-callout a,
+  .pfsvc-detail button{
+    margin-left:0;
+  }
+
+  .pfsvc-arrow.left{
+    left:6px;
+  }
+
+  .pfsvc-arrow.right{
+    right:6px;
+  }
+}
+
 </style>
 
 <script>
-const SERVICE_DETAIL_ROUTE="/service-detail";
-const SERVICE_DETAIL_TARGET_SELECTOR="#productDetail, #serviceDetailInfo, #service-details, #serviceDetail, #productDetails, #serviceProductDetail";
+const pfsvcServices=@json($frontServices);
 
-const serviceDeckData={
-  doc:{
-    title:"DOCUMENT PRINTING",
-    heading:"Choose Print Option",
-    icon:"fa-solid fa-print",
-    options:[
-      {slug:"text-only",name:"Text Only",label:"TEXT ONLY",desc:"Plain B&W documents.",price:"from <b>₱1.00/page</b>",art:"text",icon:"fa-solid fa-file-lines",serviceId:"DOC-TX-001"},
-      {slug:"text-graphics",name:"Text + Image",label:"TEXT WITH IMAGE",desc:"Text with simple images.",price:"from <b>₱2.00/page</b>",art:"graph",icon:"fa-solid fa-chart-simple",serviceId:"DOC-TWI-004"},
-      {slug:"full-color",name:"Full Color",label:"FULL COLOR",desc:"Colored document print.",price:"from <b>₱5.00/page</b>",art:"color",icon:"fa-solid fa-palette",serviceId:"DOC-TX-003"}
-    ]
-  },
-  photo:{
-    title:"PHOTOCOPY & SCANNING",
-    heading:"Choose Service Option",
-    icon:"fa-solid fa-copy",
-    options:[
-      {slug:"photocopy",name:"Photocopy",label:"PHOTOCOPY",desc:"Clear copies.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-copy",serviceId:"DOC-PCPY-001"},
-      {slug:"scanning",name:"Scanning",label:"SCANNING",desc:"Digital scans.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-magnifying-glass",serviceId:"DOC-SCN-001"}
-    ]
-  },
-  id:{
-    title:"ID & PHOTO SERVICES",
-    heading:"Choose Service Option",
-    icon:"fa-solid fa-id-card",
-    options:[
-      {slug:"id-photo",name:"ID Photo",label:"ID PHOTO",desc:"ID photo print.",price:"Available for <b>inquiry</b>",art:"image",image:"{{ asset('images/Photo ID (cover).png') }}",icon:"fa-solid fa-id-card",serviceId:"IDP-PKG-001"},
-      {slug:"passport-visa",name:"Passport/Visa",label:"PASSPORT/VISA",desc:"Passport sizes.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-passport",serviceId:"IDP-PKG-004"},
-      {slug:"single-photo-print",name:"Single Photo",label:"SINGLE PHOTO",desc:"Photo print.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-image",serviceId:"IDP-SP-003"}
-    ]
-  },
-  bind:{
-    title:"LAMINATION & BINDING",
-    heading:"Choose Service Option",
-    icon:"fa-solid fa-book-open",
-    options:[
-      {slug:"lamination",name:"Lamination",label:"LAMINATION",desc:"Protective film.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-layer-group",serviceId:"LAM-001"},
-      {slug:"spiral-binding",name:"Spiral Binding",label:"SPIRAL BINDING",desc:"Bound reports.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-book-open",serviceId:"BND-SPR-001"}
-    ]
-  },
-  largeformat:{
-    title:"LARGE FORMAT PRINTING",
-    heading:"Choose Service Option",
-    icon:"fa-solid fa-image",
-    options:[
-      {slug:"sintra-board",name:"Sintra Board",label:"SINTRA BOARD",desc:"Rigid signage.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-border-all",serviceId:"LF-SIN-001"}
-    ]
-  },
-  special:{
-    title:"CUSTOM SPECIAL PRINTING",
-    heading:"Choose Service Option",
-    icon:"fa-solid fa-star",
-    options:[
-      {slug:"custom-special-printing",name:"Custom Print",label:"CUSTOM PRINT",desc:"Custom request.",price:"Available for <b>inquiry</b>",art:"icon",icon:"fa-solid fa-star",serviceId:"CSP-001"}
-    ]
+let pfsvcState={
+  category:"all",
+  view:"grid",
+  activeKey:pfsvcServices[0]?.key||"doc",
+  activeIndex:0,
+  selected:null
+};
+
+function pfsvcToast(message){
+  if(typeof window.showFrontFeedback==="function"){
+    window.showFrontFeedback(message);
+    return;
   }
-};
 
-const serviceDetails={
-  fallback:["SERVICE INQUIRY","This service is available for inquiry. Please contact us for complete details.","fa-solid fa-circle-info"]
-};
-
-let currentCategory="all",activeServiceKey="doc",serviceActive=0,lastSelectedService=null;
-
-function deckSafe(text){return String(text||"").replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[ch];});}
-function stripHtml(text){const div=document.createElement("div");div.innerHTML=String(text||"");return div.textContent||div.innerText||"";}
-function slugSafe(text){return String(text||"").toLowerCase().trim().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");}
-
-function serviceOptionArt(option){
-  if(option.art==="text")return '<div class="paper text-paper"><b></b><span></span><span></span><span></span><span></span><span></span></div>';
-  if(option.art==="graph")return '<div class="paper graph-paper"><b></b><div class="bars"><i></i><i></i><i></i><i></i></div><span></span></div>';
-  if(option.art==="color")return '<div class="paper color-paper"><b></b><div class="tiles"><i></i><i></i><i></i><i></i></div><span></span></div>';
-  if(option.art==="image"&&option.image)return `<img class="pfdeck-service-photo" src="${deckSafe(option.image)}" alt="${deckSafe(option.name||"Service image")}" loading="lazy" decoding="async">`;
-  return `<div class="pfdeck-service-visual"><i class="${deckSafe(option.icon||"fa-solid fa-circle")}"></i></div>`;
+  window.dispatchEvent(new CustomEvent("printify-front-feedback",{detail:{message}}));
 }
 
-function openService(key){
-  if(serviceDeckData[key]){openServiceDeck(key);return;}
-  const d=serviceDetails.fallback;
-  document.getElementById("modalTitle").textContent=d[0];
-  document.getElementById("modalDescription").textContent=d[1];
-  document.getElementById("modalIcon").innerHTML=`<i class="${d[2]}"></i>`;
-  document.getElementById("serviceModal").classList.add("active");
-  document.body.style.overflow="hidden";
+function pfsvcSafe(text){
+  return String(text||"").replace(/[&<>"']/g,ch=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    "\"":"&quot;",
+    "'":"&#039;"
+  }[ch]));
 }
 
-function openServiceDeck(key){
-  const data=serviceDeckData[key];
-  if(!data)return;
-  const pop=document.getElementById("serviceDeckPop");
-  activeServiceKey=key;
-  serviceActive=0;
-  document.getElementById("serviceDeckKicker").innerHTML=`<i class="${data.icon}"></i> ${deckSafe(data.title)}`;
-  document.getElementById("serviceDeckHeading").textContent=data.heading;
-  pop.classList.toggle("single",data.options.length===1);
-  buildServiceDeck();
-  pop.classList.add("active","entering");
-  document.body.style.overflow="hidden";
-  renderServiceDeck();
-  setTimeout(()=>pop.classList.remove("entering"),80);
+function pfsvcServiceByKey(key){
+  return pfsvcServices.find(item=>item.key===key)||pfsvcServices[0];
 }
 
-function buildServiceDeck(){
-  const data=serviceDeckData[activeServiceKey];
-  const deck=document.getElementById("serviceDeck");
-  if(!data||!deck)return;
-  deck.innerHTML=data.options.map((option,i)=>`
-    <article class="pfdeck-card ${option.art==="image"?"has-photo":""}" data-index="${i}">
-      <div class="pfdeck-img ${option.art==="image"?"with-photo":""}">${serviceOptionArt(option)}</div>
-      <h4 title="${deckSafe(option.name)}">${deckSafe(option.name)}</h4>
-      <p>${deckSafe(option.desc)}</p>
-      <small>${option.price}</small>
+function pfsvcRenderCards(){
+  const grid=document.getElementById("pfsvcGrid");
+  const empty=document.getElementById("pfsvcEmpty");
+
+  if(!grid)return;
+
+  const time=document.getElementById("pfsvcTime")?.value||"all";
+  const max=Number(document.getElementById("pfsvcPrice")?.value||20000);
+  const showExpress=document.getElementById("pfsvcExpress")?.checked;
+
+  let list=pfsvcServices.filter(s=>
+    (pfsvcState.category==="all"||s.key===pfsvcState.category)&&
+    (time==="all"||s.time===time)&&
+    s.price<=max&&
+    (showExpress||!s.express)
+  );
+
+  const sort=document.getElementById("pfsvcSort")?.value||"popular";
+
+  list.sort((a,b)=>
+    sort==="name"
+      ? a.title.localeCompare(b.title)
+      : sort==="price"
+        ? a.price-b.price
+        : a.order-b.order
+  );
+
+  grid.classList.toggle("list",pfsvcState.view==="list");
+
+  grid.innerHTML=list.map(s=>`
+    <article class="pfsvc-card" data-key="${s.key}" onclick="pfsvcOpenDeck('${s.key}')">
+      <div class="pfsvc-img ${s.img ? "" : "no-image"}">
+        ${s.img ? `<img src="${s.img}" alt="${pfsvcSafe(s.title)}" loading="eager" decoding="sync" fetchpriority="high" onerror="this.closest('.pfsvc-img')?.classList.add('no-image');this.remove();">` : ""}
+        <span class="pfsvc-icon"><i class="${s.icon}"></i></span>
+      </div>
+
+      <div class="pfsvc-body">
+        <h3>${pfsvcSafe(s.title)}</h3>
+        <p>${pfsvcSafe(s.desc)}</p>
+        <button type="button">Learn More <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
     </article>
   `).join("");
+
+  empty.style.display=list.length?"none":"block";
 }
 
-function renderServiceDeck(){
-  const data=serviceDeckData[activeServiceKey];
-  const deck=document.getElementById("serviceDeck");
-  if(!data||!deck)return;
-  let cards=[...deck.querySelectorAll(".pfdeck-card")];
-  if(cards.length!==data.options.length){buildServiceDeck();cards=[...deck.querySelectorAll(".pfdeck-card")];}
-  const total=cards.length;
-  cards.forEach((card,i)=>{
-    const hasPhoto=card.classList.contains("has-photo");
-    card.className=`pfdeck-card${hasPhoto?" has-photo":""}`;
-    if(total===1){
-      card.classList.add("active","only");
-      card.style.transform="translate(-50%,-50%) translateX(0) translateY(-21px) rotate(0deg) scale(1.08)";
-      return;
-    }
-    if(total===2){
-      if(i===serviceActive){
-        card.classList.add("active");
-        card.style.transform="translate(-50%,-50%) translateX(0) translateY(-21px) rotate(0deg) scale(1.08)";
-      }else if(serviceActive===0){
-        card.classList.add("right");
-        card.style.transform="translate(-50%,-50%) translateX(58px) translateY(29px) rotate(18deg) scale(.93)";
-      }else{
-        card.classList.add("left");
-        card.style.transform="translate(-50%,-50%) translateX(-58px) translateY(29px) rotate(-18deg) scale(.93)";
-      }
-      return;
-    }
-    const pos=(i-serviceActive+total)%total;
-    if(pos===0){
-      card.classList.add("active");
-      card.style.transform="translate(-50%,-50%) translateX(0) translateY(-21px) rotate(0deg) scale(1.08)";
-    }else if(pos===1){
-      card.classList.add("right");
-      card.style.transform="translate(-50%,-50%) translateX(58px) translateY(29px) rotate(18deg) scale(.93)";
-    }else{
-      card.classList.add("left");
-      card.style.transform="translate(-50%,-50%) translateX(-58px) translateY(29px) rotate(-18deg) scale(.93)";
-    }
+function pfsvcSetCategory(category){
+  pfsvcState.category=category||"all";
+
+  document.querySelectorAll(".pfsvc-nav").forEach(btn=>{
+    btn.classList.toggle("active",btn.dataset.filter===pfsvcState.category);
   });
 
-  document.getElementById("serviceDeckDots").innerHTML=total>1?data.options.map((_,i)=>`<button type="button" class="${i===serviceActive?'active':''}" onclick="selectServiceDeck(${i})"></button>`).join(""):"";
-  document.querySelector("#serviceDeckBtn span").textContent=`Continue with ${data.options[serviceActive].name}`;
-  document.getElementById("serviceDeckLeft").style.display=total>1?"flex":"none";
-  document.getElementById("serviceDeckRight").style.display=total>1?"flex":"none";
+  document.querySelector(".pfsvc-all")?.classList.toggle("active",pfsvcState.category==="all");
+
+  pfsvcRenderCards();
+
+  pfsvcToast(
+    pfsvcState.category==="all"
+      ? "All services shown."
+      : `${pfsvcServiceByKey(category).title} selected.`
+  );
 }
 
-function moveServiceDeck(step){
-  const data=serviceDeckData[activeServiceKey];
-  if(!data||data.options.length<2)return;
-  const pop=document.getElementById("serviceDeckPop");
-  pop.classList.add("moving");
-  serviceActive=(serviceActive+step+data.options.length)%data.options.length;
-  renderServiceDeck();
-  setTimeout(()=>pop.classList.remove("moving"),1000);
+function pfsvcBuildDeck(){
+  const service=pfsvcServiceByKey(pfsvcState.activeKey);
+  const stage=document.getElementById("pfsvcStage");
+
+  stage.innerHTML=service.options.map((o,i)=>{
+    const image=o.image||service.img;
+    const img=image
+      ? `<img src="${image}" alt="${pfsvcSafe(o.name)}" loading="eager" decoding="sync">`
+      : `<i class="${o.icon||service.icon}"></i>`;
+
+    return `
+      <article class="pfsvc-option hidden" data-option-index="${i}" onclick="pfsvcChooseOption(${i})" aria-label="${pfsvcSafe(o.name)}">
+        <div class="pfsvc-option-img">${img}</div>
+      </article>
+    `;
+  }).join("");
 }
 
-function selectServiceDeck(i){
-  const data=serviceDeckData[activeServiceKey];
-  if(!data||!data.options[i])return;
-  const pop=document.getElementById("serviceDeckPop");
-  pop.classList.add("moving");
-  serviceActive=i;
-  renderServiceDeck();
-  setTimeout(()=>pop.classList.remove("moving"),1000);
+function pfsvcOpenDeck(key){
+  const service=pfsvcServiceByKey(key);
+
+  pfsvcState.activeKey=service.key;
+  pfsvcState.activeIndex=0;
+
+  document.getElementById("pfsvcDeckKicker").innerHTML=`<i class="${service.icon}"></i> ${pfsvcSafe(service.title)}`;
+  document.getElementById("pfsvcDeckHeading").textContent="Choose Service Option";
+  document.getElementById("pfsvcDeck").classList.add("active");
+  document.getElementById("pfsvcDeck").setAttribute("aria-hidden","false");
+
+  document.body.style.overflow="hidden";
+
+  pfsvcBuildDeck();
+  requestAnimationFrame(pfsvcRenderDeck);
 }
 
-function getSelectedServicePayload(){
-  const data=serviceDeckData[activeServiceKey];
-  const selected=data&&data.options[serviceActive]?data.options[serviceActive]:null;
-  if(!data||!selected)return null;
+function pfsvcRenderDeck(){
+  const service=pfsvcServiceByKey(pfsvcState.activeKey);
+  const stage=document.getElementById("pfsvcStage");
+  const dots=document.getElementById("pfsvcDots");
+
+  let cards=Array.from(stage.querySelectorAll(".pfsvc-option"));
+
+  if(cards.length!==service.options.length){
+    pfsvcBuildDeck();
+    cards=Array.from(stage.querySelectorAll(".pfsvc-option"));
+  }
+
+  cards.forEach((card,i)=>{
+    const pos=(i-pfsvcState.activeIndex+service.options.length)%service.options.length;
+    const cls=pos===0?"active":pos===1?"right":pos===service.options.length-1?"left":"hidden";
+
+    const twoCards=service.options.length===2;
+    let transform="translate(-50%,-50%) translateX(0) translateY(-2px) rotate(0deg) scale(1.04)";
+    let opacity="1";
+
+    if(twoCards && cls==="active"){
+      transform="translate(-50%,-50%) translateX(-70px) translateY(0) rotate(0deg) scale(1)";
+    }
+
+    if(cls==="left"){
+      transform=`translate(-50%,-50%) translateX(${twoCards?-96:-118}px) translateY(16px) rotate(-6deg) scale(.9)`;
+      opacity="1";
+    }
+
+    if(cls==="right"){
+      transform=`translate(-50%,-50%) translateX(${twoCards?110:118}px) translateY(${twoCards?0:16}px) rotate(${twoCards?0:6}deg) scale(${twoCards?.94:.9})`;
+      opacity="1";
+    }
+
+    if(cls==="hidden"){
+      transform="translate(-50%,-50%) translateY(22px) scale(.72)";
+      opacity="0";
+    }
+
+    card.className=`pfsvc-option ${cls}`;
+    card.style.transform=transform;
+    card.style.opacity=opacity;
+  });
+
+  dots.innerHTML=service.options.map((_,i)=>`
+    <button type="button" class="${i===pfsvcState.activeIndex?'active':''}" onclick="pfsvcPickOption(${i})" aria-label="Choose option ${i+1}"></button>
+  `).join("");
+
+  document.getElementById("pfsvcContinue").innerHTML=`Continue with ${pfsvcSafe(service.options[pfsvcState.activeIndex].name)} <i class="fa-solid fa-arrow-right"></i>`;
+}
+
+function pfsvcMoveDeck(step){
+  const service=pfsvcServiceByKey(pfsvcState.activeKey);
+  pfsvcState.activeIndex=(pfsvcState.activeIndex+step+service.options.length)%service.options.length;
+  pfsvcRenderDeck();
+}
+
+function pfsvcPickOption(index){
+  pfsvcState.activeIndex=index;
+  pfsvcRenderDeck();
+}
+
+function pfsvcChooseOption(index){
+  if(typeof window.requireSignedInForOrder==="function"&&!window.requireSignedInForOrder())return false;
+  pfsvcState.activeIndex=index;
+  pfsvcRenderDeck();
+  setTimeout(pfsvcProceedSelected,180);
+  return true;
+}
+
+function pfsvcCloseDeck(){
+  document.getElementById("pfsvcDeck").classList.remove("active");
+  document.getElementById("pfsvcDeck").setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+}
+
+function pfsvcDetailSlug(slug){
+  return ({
+    "text-graphics":"text-image",
+    "full-color":"image-only",
+    "visa-photo":"passport-visa",
+    "2x2-photo":"single-photo-print",
+    "tarpaulin":"sintra-board"
+  }[slug]||slug);
+}
+
+function pfsvcPayload(){
+  const service=pfsvcServiceByKey(pfsvcState.activeKey);
+  const option=service.options[pfsvcState.activeIndex];
+  const detailSlug=pfsvcDetailSlug(option.slug);
+
   return {
-    categoryKey:activeServiceKey,
-    categoryTitle:data.title,
-    categorySlug:slugSafe(data.title),
-    serviceName:selected.name,
-    serviceSlug:selected.slug||slugSafe(selected.name),
-    serviceLabel:selected.label||selected.name,
-    serviceDescription:selected.desc,
-    servicePriceText:stripHtml(selected.price),
-    serviceIcon:selected.icon||data.icon,
-    serviceImage:selected.image||"",
-    serviceId:selected.serviceId||"SRV-INQ-001"
+    categoryKey:service.key,
+    categoryTitle:service.title,
+    categorySlug:service.key,
+    serviceName:option.name,
+    serviceSlug:detailSlug,
+    optionSlug:option.slug,
+    detailSlug,
+    serviceDescription:option.desc,
+    serviceIcon:option.icon||service.icon,
+    serviceImage:option.image||service.img,
+    serviceId:option.serviceId,
+    servicePriceText:String(option.price).replace(/<[^>]+>/g,"")
   };
 }
 
-function proceedServiceOption(){
-  const payload=getSelectedServicePayload();
-  if(!payload)return;
-  if(typeof requireSignedInForOrder==="function"&&!requireSignedInForOrder())return;
-  lastSelectedService=payload;
+function pfsvcProceedSelected(){
+  if(typeof window.requireSignedInForOrder==="function"&&!window.requireSignedInForOrder())return false;
+  const payload=pfsvcPayload();
+
+  pfsvcState.selected=payload;
   sessionStorage.setItem("selectedPrintifyService",JSON.stringify(payload));
-  window.dispatchEvent(new CustomEvent("printifyServiceSelected",{detail:payload}));
-  closeServiceDeck();
-  openSelectedServiceDetail(payload);
-}
 
-function setDetailText(id,value){
-  const el=document.getElementById(id);
-  if(el)el.textContent=value;
-}
+  document.getElementById("pfsvcDetail").hidden=false;
+  document.getElementById("pfsvcDetailIcon").innerHTML=`<i class="${payload.serviceIcon}"></i>`;
+  document.getElementById("pfsvcDetailTitle").textContent=`${payload.categoryTitle} - ${payload.serviceName}`;
+  document.getElementById("pfsvcDetailDesc").textContent=payload.serviceDescription;
 
-function setDetailHtml(id,value){
-  const el=document.getElementById(id);
-  if(el)el.innerHTML=value;
-}
+  pfsvcCloseDeck();
 
-function setSelectChoice(id,value,label){
-  const select=document.getElementById(id);
-  if(!select||!value)return;
-  let option=[...select.options].find(item=>item.value===value);
-  if(!option){
-    option=new Option(label||value,value,true,true);
-    select.add(option);
-  }
-  select.value=value;
-}
-
-function hydrateProductDetail(payload){
-  if(!payload)return;
-  const title=`${payload.categoryTitle} - ${payload.serviceName}`;
-  const serviceId=payload.serviceId||"SRV-INQ-001";
-  setDetailText("detailTitleHeader",payload.serviceName||payload.categoryTitle);
-  setDetailText("breadcrumbCategory",payload.categoryTitle||"Services");
-  setDetailText("breadcrumbService",payload.serviceName||"Selected Service");
-  setDetailText("currentServiceId",serviceId);
-  setDetailText("summaryServiceId",`Service ID: ${serviceId}`);
-  setDetailText("summaryServiceName",payload.serviceName||"Selected Service");
-  setDetailText("summaryServiceMeta",`${payload.categoryTitle||"Service"} • ${payload.servicePriceText||"Available for inquiry"}`);
-  setDetailText("summaryServiceQty",`${Math.max(1,Number(document.getElementById("qtyInput")?.value)||1)} sheet`);
-  setDetailText("productSpecs",payload.serviceDescription||"Selected printing service.");
-  setSelectChoice("printCategory",serviceId,`${payload.serviceName||"Selected Service"} — ${serviceId}`);
-  if(payload.serviceImage){
-    const summaryImg=document.getElementById("summaryProductImage");
-    if(summaryImg)summaryImg.src=payload.serviceImage;
-  }
-  if(typeof updatePrice==="function")updatePrice();
-}
-
-function openSelectedServiceDetail(payload){
-  hydrateProductDetail(payload);
-  const realDetail=document.querySelector(SERVICE_DETAIL_TARGET_SELECTOR);
-  if(realDetail){
-    realDetail.removeAttribute("hidden");
-    realDetail.classList.add("active","show","selected-service-open");
-    setTimeout(()=>realDetail.scrollIntoView({behavior:"smooth",block:"start"}),120);
+  if(typeof window.openPrintifyServiceDetail==="function"){
+    window.openPrintifyServiceDetail(payload,true);
+    pfsvcToast(`${payload.serviceName} details opened.`);
     return;
   }
 
-  const preview=document.getElementById("serviceDetailSection");
-  if(preview){
-    document.getElementById("detailTitle").textContent=`${payload.categoryTitle} - ${payload.serviceName}`;
-    document.getElementById("detailDesc").textContent=payload.serviceDescription;
-    document.getElementById("detailIcon").innerHTML=`<i class="${payload.serviceIcon}"></i>`;
-    preview.classList.add("show");
-    setTimeout(()=>preview.scrollIntoView({behavior:"smooth",block:"start"}),120);
-    return;
-  }
+  const target=document.getElementById("serviceDetail")||document.getElementById("pfsvcDetail");
 
-  goToSelectedServiceDetail();
+  target?.classList?.add("pdv-is-open","active","show");
+  pfsvcToast(`${payload.serviceName} selected.`);
+
+  setTimeout(()=>target?.scrollIntoView({behavior:"smooth",block:"start"}),120);
+  return true;
 }
 
-function goToSelectedServiceDetail(){
-  if(typeof requireSignedInForOrder==="function"&&!requireSignedInForOrder())return;
-  let payload=lastSelectedService;
-  if(!payload){
-    try{payload=JSON.parse(sessionStorage.getItem("selectedPrintifyService")||"null");}catch(e){payload=null;}
-  }
-  if(!payload)return;
-
-  if(SERVICE_DETAIL_ROUTE){
-    const url=`${SERVICE_DETAIL_ROUTE}?category=${encodeURIComponent(payload.categorySlug)}&service=${encodeURIComponent(payload.serviceSlug)}`;
-    window.location.href=url;
-    return;
-  }
-
-  const realDetail=document.querySelector(SERVICE_DETAIL_TARGET_SELECTOR);
-  if(realDetail){
-    hydrateProductDetail(payload);
-    realDetail.removeAttribute("hidden");
-    realDetail.classList.add("active","show","selected-service-open");
-    realDetail.scrollIntoView({behavior:"smooth",block:"start"});
-    return;
-  }
-
-  window.location.hash="productDetail";
-}
-
-function closeServiceDeck(){document.getElementById("serviceDeckPop").classList.remove("active","entering","moving","single");document.body.style.overflow="";}
-function closeModal(){document.getElementById("serviceModal").classList.remove("active");document.body.style.overflow="";}
-
-const serviceDeckEl=document.getElementById("serviceDeck");
-serviceDeckEl.addEventListener("click",e=>{
-  const card=e.target.closest(".pfdeck-card");
-  if(!card)return;
-  const index=Number(card.dataset.index);
-  if(index===serviceActive){proceedServiceOption();return;}
-  selectServiceDeck(index);
+document.querySelectorAll(".pfsvc-nav").forEach(btn=>{
+  btn.addEventListener("click",()=>pfsvcSetCategory(btn.dataset.filter));
 });
 
-function applyServiceFilters(){
-  const selectedTime=document.getElementById("pfsvcTime").value,empty=document.getElementById("pfsvcEmpty");
-  let visible=0;
-  document.querySelectorAll(".pfsvc-card").forEach(card=>{
-    const show=(currentCategory==="all"||card.dataset.category===currentCategory)&&(selectedTime==="all"||card.dataset.time===selectedTime);
-    card.style.display=show?"":"none";
-    if(show)visible++;
-  });
-  empty.style.display=visible===0?"block":"none";
-}
+document.querySelectorAll(".pfsvc-view").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    pfsvcState.view=btn.dataset.view;
 
-function setServiceCategory(category){
-  currentCategory=category||"all";
-  document.querySelectorAll(".pfsvc-browse button").forEach(i=>i.classList.toggle("active",i.dataset.filter===currentCategory));
-  document.querySelectorAll(".pfsvc-chip").forEach(i=>i.classList.toggle("active",currentCategory==="all"));
-  applyServiceFilters();
-}
+    document.querySelectorAll(".pfsvc-view").forEach(item=>{
+      item.classList.toggle("active",item===btn);
+    });
 
-function sortServices(){
-  const grid=document.querySelector(".pfsvc-grid"),sort=document.getElementById("pfsvcSort")?.value||"popular";
-  if(!grid)return;
-  const cards=[...grid.querySelectorAll(".pfsvc-card")];
-  cards.sort((a,b)=>{
-    if(sort==="name")return a.querySelector("h3").textContent.localeCompare(b.querySelector("h3").textContent);
-    if(sort==="category")return a.dataset.category.localeCompare(b.dataset.category);
-    return Number(a.dataset.order||0)-Number(b.dataset.order||0);
-  }).forEach(card=>grid.insertBefore(card,document.getElementById("pfsvcEmpty")));
-  applyServiceFilters();
-}
-
-function setServiceView(view){
-  const grid=document.querySelector(".pfsvc-grid");
-  if(!grid)return;
-  grid.classList.toggle("list-view",view==="list");
-  document.querySelectorAll(".pfsvc-view").forEach((btn,i)=>btn.classList.toggle("active",(view==="grid"&&i===0)||(view==="list"&&i===1)));
-}
-
-document.querySelectorAll(".pfsvc-card").forEach((card,index)=>card.dataset.order=index);
-document.querySelectorAll(".pfsvc-browse button").forEach(btn=>{
-  btn.addEventListener("click",function(){
-    setServiceCategory(this.dataset.filter||"all");
+    pfsvcRenderCards();
+    pfsvcToast(`${pfsvcState.view==="grid"?"Grid":"List"} view applied.`);
   });
 });
 
-document.getElementById("pfsvcTime").addEventListener("change",applyServiceFilters);
+["pfsvcSort","pfsvcTime","pfsvcExpress"].forEach(id=>{
+  document.getElementById(id)?.addEventListener("change",pfsvcRenderCards);
+});
 
-window.addEventListener("click",e=>{
-  if(e.target.id==="serviceModal")closeModal();
-  if(e.target.id==="serviceDeckPop")closeServiceDeck();
+document.getElementById("pfsvcPrice")?.addEventListener("input",e=>{
+  document.getElementById("pfsvcPriceValue").textContent=
+    Number(e.target.value)>=20000
+      ? "₱20,000+"
+      : `₱${Number(e.target.value).toLocaleString()}`;
+
+  pfsvcRenderCards();
 });
 
 window.addEventListener("keydown",e=>{
-  const deckOpen=document.getElementById("serviceDeckPop").classList.contains("active");
-  if(e.key==="Escape"){closeModal();closeServiceDeck();}
-  if(deckOpen&&e.key==="ArrowRight")moveServiceDeck(1);
-  if(deckOpen&&e.key==="ArrowLeft")moveServiceDeck(-1);
-  if(deckOpen&&e.key==="Enter")proceedServiceOption();
+  if(!document.getElementById("pfsvcDeck").classList.contains("active"))return;
+
+  if(e.key==="Escape")pfsvcCloseDeck();
+  if(e.key==="ArrowLeft")pfsvcMoveDeck(-1);
+  if(e.key==="ArrowRight")pfsvcMoveDeck(1);
+  if(e.key==="Enter")pfsvcProceedSelected();
 });
 
-applyServiceFilters();
+window.addEventListener("click",e=>{
+  if(e.target.id==="pfsvcDeck")pfsvcCloseDeck();
+});
+
+pfsvcRenderCards();
 </script>

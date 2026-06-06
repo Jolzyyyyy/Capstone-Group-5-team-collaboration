@@ -1,4 +1,13 @@
-<x-app-layout>
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Printify.co | Admin Portal</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body>
     @php
         $portalUser = $portalUser ?? auth()->user();
         $headerAuditLogs = isset($recentAuditLogs)
@@ -15,19 +24,53 @@
                 ['title' => 'System status', 'body' => 'No critical alerts detected.', 'time' => 'Now'],
             ]);
         }
+        $isDeveloperPortal = isset($portalUser) && $portalUser->isDeveloper();
+        $portalRoleLabel = $isDeveloperPortal ? 'Developer' : 'Admin';
+        $portalRoleUpper = strtoupper($portalRoleLabel);
+        $portalTitle = $portalRoleUpper . ' DASHBOARD';
+        $portalKicker = $isDeveloperPortal ? 'Developer Management Portal' : 'Admin Management Portal';
+        $portalTagline = $isDeveloperPortal
+            ? 'Manage admin clients, services, analytics, and platform controls from one developer workspace.'
+            : 'Manage customers, orders, products, reports, and system activity from one admin workspace.';
+        $portalDisplayName = $portalUser->name ?? $portalRoleLabel;
+        $portalInitial = strtoupper(substr($portalDisplayName, 0, 1));
+        $headerSearchItems = $isDeveloperPortal
+            ? [
+                ['title' => 'Dashboard', 'meta' => 'Developer overview and platform activity', 'url' => route('admin.dashboard')],
+                ['title' => 'Manage Admin Clients', 'meta' => 'Approve, assign, and review admin clients', 'url' => route('developer.admin-clients.index')],
+                ['title' => 'Orders', 'meta' => 'Developer order monitoring', 'url' => route('developer.orders.index')],
+                ['title' => 'Services', 'meta' => 'Manage service catalog and availability', 'url' => route('developer.services.index')],
+                ['title' => 'Customers', 'meta' => 'Review customer records and activity', 'url' => route('developer.customers.index')],
+                ['title' => 'Analytics', 'meta' => 'Developer analytics and platform insights', 'url' => route('developer.analytics.index')],
+                ['title' => 'Reports', 'meta' => 'Operational and performance reports', 'url' => route('developer.reports.index')],
+                ['title' => 'Settings', 'meta' => 'Developer preferences and system controls', 'url' => route('developer.settings.index')],
+            ]
+            : [
+                ['title' => 'Dashboard', 'meta' => 'Overview and recent transactions', 'url' => route('admin.dashboard')],
+                ['title' => 'Customer/User', 'meta' => 'Manage registered users', 'url' => route('admin.customers')],
+                ['title' => 'Orders', 'meta' => 'Order management and status tracking', 'url' => route('admin.orders')],
+                ['title' => 'Products', 'meta' => 'Product inventory and services', 'url' => route('admin.products')],
+                ['title' => 'Reports', 'meta' => 'Sales reports and export tools', 'url' => route('admin.reports')],
+                ['title' => 'Analytics', 'meta' => 'Traffic and performance charts', 'url' => route('admin.analytics')],
+                ['title' => 'Settings', 'meta' => 'Preferences and system controls', 'url' => route('admin.settings')],
+            ];
     @endphp
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&family=Poppins:wght@500;600;700&display=swap');
         
         :root {
             --sidebar-width: 260px;
             --sidebar-closed-width: 85px;
-            --primary-purple: #6366F1;
+            --primary-purple: #2563EB;
+            --staff-blue: #2563EB;
+            --staff-blue-dark: #1D4ED8;
+            --staff-blue-soft: #EFF6FF;
+            --staff-orange: #FF7A00;
             --bg-light: #F8FAFC;
-            --header-height: 230px; 
+            --header-height: 300px; 
             --card-radius: 20px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --yellow-text: #EAB308;
+            --yellow-text: #FFB000;
             --green-card: #10B981;
             --blue-card: #3B82F6;
             --yellow-card: #F59E0B;
@@ -38,11 +81,13 @@
         }
 
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
             background-color: var(--bg-light); 
             margin: 0; color: #1E293B;
             overflow-x: hidden;
         }
+        h1, .hero-main-title { font-family: 'Playfair Display', Georgia, serif; }
+        h2, h3, .sidebar-link, .visual-card-title, .tool-panel-title, .panel-title, .chat-title { font-family: 'Poppins', system-ui, sans-serif; letter-spacing: 0; }
 
         /* --- SIDEBAR --- */
         .sidebar {
@@ -64,35 +109,43 @@
             display: flex; align-items: center; justify-content: center;
             transition: 0.2s; color: #64748B; background: #F8FAFC;
         }
-        .menu-toggle:hover { background: #E2E8F0; color: var(--primary-purple); }
-        .brand-name { font-weight: 800; font-size: 1.3rem; color: #0F172A; font-style: italic; letter-spacing: -1px; white-space: nowrap; }
+        .menu-toggle:hover { background: #F1F5F9; color: var(--staff-blue); }
+        .brand-name { font-weight: 900; font-size: 1.3rem; color: #0F172A; font-style: italic; letter-spacing: -1px; white-space: nowrap; }
         
         .nav-menu { flex: 1; padding: 14px 14px; overflow-y: auto; overflow-x: hidden; }
         .sidebar-link {
             display: flex; align-items: center; gap: 12px;
             padding: 11px 16px; margin-bottom: 5px;
             border-radius: 12px; color: #64748B;
-            text-decoration: none; font-weight: 700; 
+            text-decoration: none; font-weight: 800; 
             font-size: 10px; text-transform: uppercase;
-            transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+            transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
             cursor: pointer; position: relative;
             white-space: nowrap;
         }
         
         .sidebar-link:hover {
-            background: #E0E7FF;
-            color: #4F46E5;
-            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.12);
-            transform: translateX(2px);
+            background: #F1F5F9;
+            color: #334155;
+            box-shadow: none;
         }
         .sidebar-link.active {
-            background: #EEF2FF; color: var(--primary-purple);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+            background: var(--staff-blue-soft); color: var(--staff-blue);
+            box-shadow: none;
         }
         .sidebar-link.active::before {
             content: ''; position: absolute; left: 0; top: 25%; bottom: 25%;
-            width: 4px; background: var(--primary-purple); border-radius: 0 4px 4px 0;
+            width: 4px; background: var(--staff-blue); border-radius: 0 4px 4px 0;
         }
+        .sidebar-link.active::after {
+            content: '›';
+            margin-left: auto;
+            color: var(--staff-blue);
+            font-size: 16px;
+            font-weight: 950;
+        }
+        .sidebar.closed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sidebar.closed .sidebar-link.active::after { display: none; }
 
         .nav-text { transition: opacity 0.2s; }
 
@@ -106,53 +159,74 @@
         /* --- HERO HEADER --- */
         .hero-banner {
             height: var(--header-height);
-            background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.7)), url('https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?q=80&w=2000');
+            background: linear-gradient(120deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.36)), url('https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?q=80&w=2000');
             background-size: cover; background-position: center;
             padding: 5px 60px;
             color: white; position: relative;
             display: flex; flex-direction: column; justify-content: space-between;
+            overflow: visible;
+        }
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            right: -80px;
+            bottom: -130px;
+            width: 330px;
+            height: 330px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.1);
+            pointer-events: none;
         }
 
-        .top-nav { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 15px; }
+        .top-nav { height:44px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 7px; position: relative; z-index: 20; flex-wrap: nowrap; }
         .header-icon-no-box { 
-            position: relative; cursor: pointer; width: 40px; height: 40px; 
-            display: flex; align-items: center; justify-content: center; 
+            position: relative; cursor: pointer; width: 38px; height: 38px; 
+            display: grid; place-items: center; 
             padding: 0;
             background: transparent;
             border: 1px solid transparent;
-            border-radius: 12px;
+            border-radius: 14px;
             font: inherit;
-            transition: color 0.2s, background-color 0.2s, border-color 0.2s, transform 0.2s;
+            transition: color 0.18s, background-color 0.18s, border-color 0.18s;
             color: rgba(255,255,255,0.7);
         }
         .header-icon-no-box:hover, .header-icon-no-box.is-active {
             color: white;
-            background: rgba(99, 102, 241, 0.34);
+            background: rgba(241,245,249,0.24);
             border-color: rgba(255,255,255,0.18);
-            transform: translateY(-1px);
         }
-        .red-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid #000; }
+        .red-dot { position: absolute; top: 2px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--staff-orange); color:#fff; border-radius: 999px; border: 2px solid rgba(15,23,42,.78); display:grid; place-items:center; font-size:8px; font-weight:950; line-height:1; }
         
-        .profile-area { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.3); padding: 5px 15px 5px 5px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
-        .profile-pic { width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; position: relative; }
-        .green-dot { position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; background: #10B981; border-radius: 50%; border: 2px solid #1e293b; }
+        .profile-area { display: flex; align-items: center; gap: 10px; background: transparent; padding: 0; border-radius: 0; border: 0; }
+        .profile-pic { width: 40px; height: 40px; border-radius: 50%; border: 0; position: relative; overflow:hidden; background:var(--staff-blue); display:grid; place-items:center; color:white; font-weight:900; font-size:14px; }
+        .profile-pic img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+        .green-dot { position: absolute; bottom: 4px; right: 3px; width: 8px; height: 8px; background: #22C55E; border-radius: 50%; border: none; box-shadow: 0 0 0 3px rgba(34,197,94,.22); }
 
-        .hero-title-area { display: flex; flex-direction: column; justify-content: center; flex-grow: 1; margin-top: 40px; }
-        .hero-main-title { font-size: 3.2rem; font-weight: 900; color: var(--yellow-text); margin: 0; letter-spacing: -2px; text-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-
-        .quick-actions-container { position: absolute; right: 60px; bottom: 35px; display: flex; align-items: center; gap: 30px; }
-        .action-circle-group { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+        .hero-title-area { display: flex; flex-direction: column; justify-content: center; flex-grow: 1; margin-top: 20px; max-width:720px; position:relative; z-index:2; }
+        .hero-title-area::before { content:''; width:74px; height:4px; border-radius:999px; background:linear-gradient(90deg,var(--staff-blue),#60A5FA); margin-bottom:18px; box-shadow:0 8px 20px rgba(37,99,235,.35); }
+        .hero-kicker { font-size:13px; color:white; opacity:.9; font-weight:700; margin:0 0 2px; }
+        .hero-kicker::before { content:''; display:inline-block; width:7px; height:7px; margin-right:7px; border-radius:999px; background:#60A5FA; box-shadow:0 0 12px #60A5FA; }
+        .hero-main-title { font-size: clamp(2.1rem,4.4vw,3.35rem); font-weight: 700; color: var(--staff-orange); margin: 0; letter-spacing: 0; line-height:1; text-shadow: 0 4px 12px rgba(0,0,0,0.4); white-space:nowrap; }
+        .hero-subline { margin-top:16px; max-width:600px; font-size:13px; line-height:1.7; color:rgba(255,255,255,.78); font-weight:600; }
+        .dots-container{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+        .dot{width:8px;height:8px;border:0;border-radius:50%;background:rgba(255,255,255,.42)}
+        .dot.active{background:var(--staff-blue);transform:scale(1.35)}
+        .quick-actions-container { position: absolute; right: 32px; bottom: 58px; display: flex; align-items: center; gap: 0; z-index: 10; padding:12px 14px; border:1px solid rgba(255,255,255,.22); border-radius:14px; background:rgba(17,24,39,.42); box-shadow:0 18px 50px rgba(0,0,0,.22); backdrop-filter:blur(12px); }
+        .action-circle-group { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; min-width:88px; border-right:1px solid rgba(255,255,255,.12); }
+        .action-circle-group:last-child { border-right:0; }
         .action-circle {
-            width: 55px; height: 55px; border-radius: 50%;
+            width: 44px; height: 44px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: white; transition: background 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            color: white; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.25);
         }
-        .action-label { font-size: 10px; font-weight: 800; color: #E2E8F0; text-transform: capitalize; letter-spacing: 0.5px; }
-        .circle-purple { background: var(--action-gradient); }
-        .circle-green { background: var(--action-green); }
-        .circle-yellow { background: var(--action-yellow); }
+        .action-circle-group:hover .action-circle { transform: translateY(-4px) scale(1.04); }
+        .action-label { font-size: 9px; font-weight: 900; color: #E2E8F0; text-transform: capitalize; letter-spacing: 0.4px; }
+        .circle-purple { background: linear-gradient(135deg,#8B5CF6,#4F46E5); }
+        .circle-green { background: linear-gradient(135deg,#22C55E,#15803D); }
+        .circle-yellow { background: linear-gradient(135deg,#F59E0B,#D97706); }
+        .circle-blue { background: linear-gradient(135deg,#0EA5E9,#2563EB); }
 
-        .content-container { padding: 40px 100px; }
+        .content-container { padding: 32px 70px 70px; }
         .overview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-bottom: 30px; }
 
@@ -231,7 +305,7 @@
 
         .action-dots { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; background: white; color: #94A3B8; cursor: pointer; }
 
-        .admin-section-content { padding: 40px 100px; }
+        .admin-section-content { padding: 32px 70px 70px; }
         .admin-section-content > .main-wrapper,
         .admin-section-content > .analytics-section,
         .admin-section-content > .settings-section {
@@ -322,71 +396,75 @@
             transition-property: background-color, color, border-color, box-shadow, opacity !important;
         }
 
-        .header-search-wrap { display: flex; align-items: center; position: relative; }
+        .header-search-wrap { display: flex; align-items: center; position: relative; width:270px; min-width:270px; }
         .header-search-box {
-            width: 270px;
-            border: 1px solid rgba(255,255,255,0.18);
-            background: rgba(15,23,42,0.72);
+            width: 100%;
+            height: 34px;
+            border: 1px solid rgba(255,255,255,0.20);
+            background: rgba(255,255,255,0.12);
             color: white;
             border-radius: 999px;
-            padding: 10px 44px 10px 16px;
-            font-size: 12px;
+            padding: 0 44px 0 14px;
+            font-size: 11px;
             font-weight: 700;
             outline: none;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+            backdrop-filter: blur(10px);
         }
         .header-search-submit {
             position: absolute;
-            right: 5px;
+            right: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 32px;
-            height: 32px;
+            width: 38px;
+            height: 34px;
             border: none;
-            border-radius: 50%;
-            background: transparent;
-            color: rgba(255,255,255,0.78);
+            border-radius: 0 999px 999px 0;
+            background: var(--staff-blue);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: background-color 0.2s, color 0.2s;
         }
-        .header-search-submit:hover { background: rgba(99,102,241,0.65); color: white; }
-        .header-search-box::placeholder { color: rgba(255,255,255,0.62); }
+        .header-search-submit:hover { background: #111827; color: white; }
+        .header-search-box::placeholder { color: rgba(255,255,255,0.74); }
         .header-tool-panel {
             position: absolute;
-            top: 52px;
+            top: 48px;
             right: 0;
-            width: 320px;
-            max-height: 340px;
+            width: 335px;
+            max-height: 430px;
             overflow-y: auto;
             background: white;
             color: #1E293B;
-            border: 1px solid #E2E8F0;
-            border-radius: 16px;
-            box-shadow: 0 20px 45px rgba(15,23,42,0.18);
+            border: 1px solid rgba(226,232,240,.95);
+            border-radius: 22px;
+            box-shadow: 0 28px 80px rgba(15,23,42,.26);
             padding: 12px;
             z-index: 1200;
         }
-        .tool-panel-title { font-size: 11px; font-weight: 900; color: #64748B; text-transform: uppercase; letter-spacing: 1px; padding: 8px 8px 10px; }
+        .header-tool-panel::before { content:''; position:absolute; top:-9px; right:31px; width:18px; height:18px; background:white; border-left:1px solid rgba(226,232,240,.95); border-top:1px solid rgba(226,232,240,.95); transform:rotate(45deg); }
+        .tool-panel-title { font-size: 10px; font-weight: 950; color: #64748B; text-transform: uppercase; letter-spacing: .04em; padding: 8px 8px 10px; position:relative; z-index:1; }
         .notification-item, .search-result-item {
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid #F1F5F9;
+            padding: 11px 10px;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
             margin-bottom: 8px;
-            background: #F8FAFC;
+            background: white;
             cursor: pointer;
-            transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+            transition: background-color 0.18s ease, border-color 0.18s ease;
+            position: relative;
+            z-index: 1;
         }
         .notification-item:hover, .search-result-item:hover {
-            background: #EEF2FF;
-            border-color: #C7D2FE;
-            transform: translateY(-1px);
+            background: #EFF6FF;
+            border-color: #BFDBFE;
         }
-        .notification-title, .search-result-title { font-size: 13px; font-weight: 900; color: #1E293B; }
-        .notification-body, .search-result-meta { font-size: 11px; color: #64748B; margin-top: 4px; line-height: 1.35; }
-        .notification-time { font-size: 10px; font-weight: 800; color: var(--primary-purple); margin-top: 6px; }
+        .notification-title, .search-result-title { font-size: 12px; font-weight: 950; color: #1E293B; }
+        .notification-body, .search-result-meta { font-size: 10px; color: #64748B; margin-top: 4px; line-height: 1.35; }
+        .notification-time { font-size: 9px; font-weight: 900; color: var(--staff-blue); margin-top: 6px; }
         .chat-drawer {
             position: fixed;
             right: 28px;
@@ -414,11 +492,42 @@
         .chat-body { flex: 1; padding: 14px; overflow-y: auto; background: #F8FAFC; }
         .chat-message { max-width: 82%; padding: 10px 12px; border-radius: 14px; margin-bottom: 10px; font-size: 12px; line-height: 1.4; }
         .chat-message.customer { background: white; color: #1E293B; border: 1px solid #E2E8F0; }
-        .chat-message.me { margin-left: auto; background: var(--primary-purple); color: white; border-bottom-right-radius: 5px; }
+        .chat-message.me { margin-left: auto; background: var(--staff-blue); color: white; border-bottom-right-radius: 5px; }
         .chat-input-row { padding: 12px; display:flex; gap:8px; border-top:1px solid #E2E8F0; }
         .chat-input-row input { flex:1; border:1px solid #CBD5E1; border-radius:999px; padding:10px 12px; font-size:12px; outline:none; }
-        .chat-input-row button { width:40px; height:40px; border-radius:50%; border:none; background:var(--primary-purple); color:white; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-        .chat-input-row button:hover { background:#4F46E5; }
+        .chat-input-row button { width:40px; height:40px; border-radius:50%; border:none; background:var(--staff-blue); color:white; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+        .chat-input-row button:hover { background:var(--staff-blue-dark); }
+
+        .date-pill { background:white; padding:10px 20px; border-radius:12px; border:1px solid #111827; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; color:#111827; }
+        .date-pill i { width:16px; color:#111827; }
+
+        @media(max-width:1024px){
+            .admin-main-shell,.admin-main-shell.expanded{margin-left:var(--sidebar-closed-width)}
+            .sidebar{width:var(--sidebar-closed-width)}
+            .brand-name,.sidebar-link span,.sidebar-link.active::after{display:none!important}
+            .sidebar-link{justify-content:center;padding-left:0;padding-right:0}
+            .hero-banner{padding:5px 28px}
+            .header-search-wrap{width:225px;min-width:225px}
+            .quick-actions-container{right:28px}
+            .action-circle-group{min-width:82px}
+            .content-container,.admin-section-content{padding:32px 40px 60px}
+            .stats-grid{grid-template-columns:repeat(2,1fr)}
+        }
+        @media(max-width:760px){
+            .admin-main-shell,.admin-main-shell.expanded{margin-left:0}
+            .sidebar{transform:translateX(-100%)}
+            .sidebar.mobile-open{transform:translateX(0);width:var(--sidebar-width)}
+            .hero-banner{height:390px;padding:16px}
+            .top-nav{justify-content:flex-start;flex-wrap:wrap;height:auto}
+            .header-search-wrap{order:10;width:100%;min-width:0;flex-basis:100%;margin-top:8px}
+            .header-tool-panel{left:0;right:auto;width:100%}
+            .quick-actions-container{left:16px;right:16px;bottom:28px;justify-content:space-between;padding:12px}
+            .action-circle-group{min-width:auto;border-right:0}
+            .hero-main-title{white-space:normal}
+            .content-container,.admin-section-content{padding:20px 16px}
+            .stats-grid{grid-template-columns:1fr}
+            .overview-header{align-items:flex-start;gap:14px;flex-direction:column}
+        }
 
         .detail-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .modal-card { background: white; width: 450px; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -466,20 +575,12 @@
             }
         ],
         init() {
-            const savedThreads = window.localStorage.getItem('printifyCustomerInquiryThreads');
+            const savedThreads = window.localStorage.getItem('printifyStaffInquiryThreads');
             if (savedThreads) {
                 try { this.chatThreads = JSON.parse(savedThreads); } catch (error) {}
             }
         },
-        searchItems: [
-            { title: 'Dashboard', meta: 'Overview and recent transactions', url: '{{ route('admin.dashboard') }}' },
-            { title: 'Customer/User', meta: 'Manage registered users', url: '{{ route('admin.customers') }}' },
-            { title: 'Orders', meta: 'Order management and status tracking', url: '{{ route('admin.orders') }}' },
-            { title: 'Products', meta: 'Product inventory and services', url: '{{ route('admin.products') }}' },
-            { title: 'Reports', meta: 'Sales reports and export tools', url: '{{ route('admin.reports') }}' },
-            { title: 'Analytics', meta: 'Traffic and performance charts', url: '{{ route('admin.analytics') }}' },
-            { title: 'Settings', meta: 'Preferences and system controls', url: '{{ route('admin.settings') }}' }
-        ],
+        searchItems: @js($headerSearchItems),
         modalTitle: '', modalData: '', modalColor: '',
         get activeThread() {
             return this.chatThreads.find(thread => thread.id == this.activeThreadId) || this.chatThreads[0];
@@ -513,13 +614,13 @@
             this.activeThread.messages = [
                 { from: 'customer', text: 'Conversation cleared. Waiting for the next customer inquiry.', time: 'Now' }
             ];
-            window.localStorage.setItem('printifyCustomerInquiryThreads', JSON.stringify(this.chatThreads));
+            window.localStorage.setItem('printifyStaffInquiryThreads', JSON.stringify(this.chatThreads));
         },
         sendChatMessage() {
             if (!this.chatDraft.trim() || !this.activeThread) return;
             this.activeThread.messages.push({ from: 'me', text: this.chatDraft.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
             this.chatDraft = '';
-            window.localStorage.setItem('printifyCustomerInquiryThreads', JSON.stringify(this.chatThreads));
+            window.localStorage.setItem('printifyStaffInquiryThreads', JSON.stringify(this.chatThreads));
         },
         openModal(title, info, color) {
             this.modalTitle = title; this.modalData = info;
@@ -621,16 +722,13 @@
                 <header class="hero-banner">
                     <div class="top-nav">
                         <div class="header-search-wrap" @click.outside="searchOpen = false">
-                            <form x-show="searchOpen" x-transition @submit.prevent="submitSearch()" style="position:relative;">
-                                <input class="header-search-box" x-model="searchTerm" type="search" placeholder="Search admin sections..." @keydown.escape="searchOpen = false">
+                            <form @submit.prevent="submitSearch()" style="position:relative;width:100%;">
+                                <input class="header-search-box" x-model="searchTerm" type="search" placeholder="Search admin sections..." @focus="searchOpen = true; notificationOpen = false" @keydown.escape="searchOpen = false">
                                 <button type="submit" class="header-search-submit" title="Search">
                                     <i data-lucide="search" style="width:17px"></i>
                                 </button>
                             </form>
-                            <button x-show="!searchOpen" type="button" class="header-icon-no-box" @click="searchOpen = true; notificationOpen = false; setTimeout(() => $el.previousElementSibling.querySelector('input').focus(), 80)" title="Search">
-                                <i data-lucide="search" style="width:20px"></i>
-                            </button>
-                            <div class="header-tool-panel" x-show="searchOpen && searchTerm.length >= 0" x-transition x-cloak>
+                            <div class="header-tool-panel" x-show="searchOpen || searchTerm.length > 0" x-transition x-cloak>
                                 <div class="tool-panel-title">Search Results</div>
                                 <template x-for="item in filteredSearchItems" :key="item.title">
                                     <a :href="item.url" class="search-result-item" style="display:block; text-decoration:none;">
@@ -642,7 +740,7 @@
                         </div>
                         <div style="position:relative;" @click.outside="notificationOpen = false">
                             <button type="button" class="header-icon-no-box" :class="notificationOpen ? 'is-active' : ''" @click="openNotifications()" title="Notifications">
-                                <i data-lucide="bell" style="width:20px"></i><div class="red-dot" x-show="!notificationsRead"></div>
+                                <i data-lucide="bell" style="width:20px"></i><div class="red-dot" x-show="!notificationsRead">3</div>
                             </button>
                             <div class="header-tool-panel" x-show="notificationOpen" x-transition x-cloak>
                                 <div class="tool-panel-title">Notifications</div>
@@ -655,36 +753,27 @@
                                 </template>
                             </div>
                         </div>
-                        <button type="button" class="header-icon-no-box" :class="chatOpen ? 'is-active' : ''" @click="chatOpen = !chatOpen" title="Customer inquiries"><i data-lucide="mail" style="width:20px"></i><div class="red-dot"></div></button>
+                        <button type="button" class="header-icon-no-box" :class="chatOpen ? 'is-active' : ''" @click="chatOpen = !chatOpen" title="Customer inquiries"><i data-lucide="mail" style="width:20px"></i><div class="red-dot">1</div></button>
                         
                         <div class="profile-area">
                             <div class="profile-pic">
-                                <img src="https://i.pravatar.cc/150?u=print" style="width:100%; border-radius:50%">
+                                <img src="https://i.pravatar.cc/150?u={{ urlencode($portalDisplayName) }}" alt="{{ $portalDisplayName }}">
                                 <div class="green-dot"></div>
                             </div>
                             <div style="display: flex; flex-direction: column;">
-                                <span style="font-weight: 800; font-size: 10px; color: white;">ADMIN / DEVELOPER</span>
-                                <span style="font-size: 9px; color: #10B981; font-weight: 700;">● ONLINE</span>
+                                <span style="font-weight: 900; font-size: 10px; color: white; text-transform:uppercase;">{{ $portalRoleUpper }} / {{ $portalDisplayName }}</span>
+                                <span style="font-size: 9px; color: #E2E8F0; font-weight: 800; text-transform:uppercase;">{{ $portalRoleUpper }}</span>
                             </div>
-                        @endforeach
-                    </div>
-                </section>
-            </div>
-
-            <div class="mt-8 grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
-                <section class="overflow-hidden rounded-lg border border-[#eadfd2] bg-white shadow-sm">
-                    <div class="flex items-center justify-between border-b border-[#f0e5d8] px-5 py-4">
-                        <div>
-                            <p class="text-xs font-black uppercase text-[#ff8d2a]">Sales And Orders</p>
-                            <h2 class="mt-1 text-lg font-black text-[#22201f]">Recent Orders</h2>
                         </div>
-                        <a href="{{ route('admin.orders.index') }}" class="text-sm font-bold text-[#b45309] underline">Open order database</a>
                     </div>
 
                     <div class="hero-title-area">
-                        <p style="font-size: 16px; color: white; opacity: 0.8; font-weight: 600; margin-bottom: -5px;">Staff and Developer Portal</p>
-                        <h1 class="hero-main-title">ADMIN DASHBOARD</h1>
+                        <p class="hero-kicker">{{ $portalKicker }}</p>
+                        <h1 class="hero-main-title">{{ $portalTitle }}</h1>
+                        <p class="hero-subline">{{ $portalTagline }}</p>
                     </div>
+
+                    <div class="dots-container"><span class="dot"></span><span class="dot active"></span><span class="dot"></span></div>
 
                     <div class="quick-actions-container">
                         <div class="action-circle-group" @click="openModal('New Print Job', 'Initiating new printer workflow...', '#60A5FA')">
@@ -699,6 +788,10 @@
                             <div class="action-circle circle-yellow"><i data-lucide="layers" style="width:24px"></i></div>
                             <span class="action-label">Printer Queue</span>
                         </div>
+                        <div class="action-circle-group" @click="chatOpen = true">
+                            <div class="action-circle circle-blue"><i data-lucide="headphones" style="width:24px"></i></div>
+                            <span class="action-label">Support</span>
+                        </div>
                     </div>
                 </header>
 
@@ -706,8 +799,8 @@
                 <main class="content-container">
                     <div class="overview-header">
                         <h2 style="font-size:32px; font-weight:900; letter-spacing:-1px; margin:0">Overview <span style="color:var(--primary-purple)">.</span></h2>
-                        <div style="background:white; padding:10px 20px; border-radius:12px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700;">
-                            <i data-lucide="calendar" style="width:16px; color:var(--primary-purple)"></i>
+                        <div class="date-pill">
+                            <i data-lucide="calendar"></i>
                             May 14, 2026 - Present
                         </div>
                     </div>
@@ -924,5 +1017,5 @@
             setTimeout(() => lucide.createIcons(), 50); 
         });
     </script>
-</x-app-layout>
-
+</body>
+</html>

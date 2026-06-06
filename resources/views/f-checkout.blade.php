@@ -159,9 +159,9 @@ html{scroll-behavior:smooth}
 }
 .pfy-delivery-option:hover,
 .pfy-delivery-option.is-selected{
-  border-color:#ffd0b8;
-  background:#fff9f5;
-  box-shadow:0 10px 22px rgba(255,90,31,.055);
+  border-color:#111827;
+  background:rgba(17,24,39,.10);
+  box-shadow:none;
 }
 .pfy-delivery-option input{width:16px;height:16px;accent-color:var(--pf-orange)}
 .pfy-delivery-copy strong{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:900;color:#111;line-height:1.2}
@@ -202,7 +202,7 @@ html{scroll-behavior:smooth}
 .pfy-pay-option strong{display:block;color:#111;font-size:11px;font-weight:900}
 .pfy-pay-option small{display:block;margin-top:2px;color:#777;font-size:9.2px}
 .pfy-pay-option:hover,
-.pfy-pay-option.is-selected{border-color:#ffd0b8;background:#fff9f5;box-shadow:0 10px 22px rgba(255,90,31,.055)}
+.pfy-pay-option.is-selected{border-color:#111827;background:rgba(17,24,39,.10);box-shadow:none}
 .pfy-secure-note{margin-top:13px;color:#555;font-size:11px;display:flex;align-items:center;gap:8px}
 .pfy-secure-note i{color:#111}
 .pfy-sidebar{position:sticky;top:92px}
@@ -357,11 +357,109 @@ html{scroll-behavior:smooth}
   .pfy-summary{padding:18px}
   .pfy-grand-total strong{font-size:21px}
 }
+/* Customer dashboard style alignment */
+:root{--pf-orange:#ff7a00;--pf-orange-dark:#111827;--pf-green:#16a34a;--pf-line:#111827;--pf-hover:rgba(17,24,39,.10);--pf-hover-strong:rgba(17,24,39,.16);--pf-body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--pf-head:'Playfair Display',Georgia,serif;--pf-title:'Poppins',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#checkout{padding:12px 0 30px;background:#fff;font-family:var(--pf-body)!important;font-weight:400;letter-spacing:0;color:#111827}
+#checkout button,#checkout input,#checkout select,#checkout textarea{font-family:var(--pf-body)!important;letter-spacing:0}
+.pfy-page{width:min(1490px,calc(100% - 30px));padding:10px 0 30px}
+.pfy-page-head{margin-bottom:14px}
+.pfy-page-head h1{font-family:var(--pf-head)!important;font-size:30px;font-weight:700!important;letter-spacing:0!important;line-height:1.08}
+.pfy-page-head p,.pfy-breadcrumb,.pfy-field input,.pfy-field select,.pfy-note-box textarea,.pfy-total-row,.pfy-terms,.pfy-secure-card p,.pfy-order-info p{font-family:var(--pf-body)!important;font-weight:400;letter-spacing:0}
+.pfy-card-title h2,.pfy-summary h3,.pfy-secure-card h4,.pfy-empty h2,.pfy-success h2{font-family:var(--pf-title)!important;font-size:14.5px!important;font-weight:600!important;letter-spacing:.018em!important;line-height:1.35}
+.pfy-main-grid{gap:18px;grid-template-columns:minmax(0,1fr) 360px}
+.pfy-stepper,.pfy-card,.pfy-summary,.pfy-secure-card,.pfy-success{border:1px solid var(--pf-line)!important;border-radius:14px;background:#fff;box-shadow:0 10px 26px rgba(15,23,42,.045);transition:background .18s ease,box-shadow .18s ease,border-color .18s ease}
+.pfy-card{margin-bottom:18px}
+.pfy-card:hover,.pfy-summary:hover,.pfy-secure-card:hover,.pfy-success:hover{background:var(--pf-hover)!important;border-color:var(--pf-line)!important;box-shadow:0 18px 42px rgba(17,24,39,.14)}
+.pfy-card-head{padding:16px 18px 7px}
+.pfy-card-body{padding:10px 18px 16px}
+.pfy-card-icon,.pfy-summary-title i,.pfy-step.is-active .pfy-step-no,.pfy-step.is-done .pfy-step-no{background:var(--pf-orange)!important;color:#111827!important}
+.pfy-field label{font-family:var(--pf-body)!important;font-weight:600;letter-spacing:0}
+.pfy-field input,.pfy-field select,.pfy-note-box textarea,.pfy-promo input{border:1px solid #dfe3ea;border-radius:9px;background:#fff;color:#111827;font-weight:400}
+.pfy-field input:focus,.pfy-field select:focus,.pfy-note-box textarea:focus,.pfy-promo input:focus{border-color:#111827!important;box-shadow:0 0 0 3px rgba(17,24,39,.10)!important}
+.pfy-checkline input,.pfy-section-control input{accent-color:var(--pf-green)}
+.pfy-delivery-option,.pfy-pay-option,.pfy-empty{border:1px solid #dfe3ea;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.pfy-delivery-option:hover,.pfy-delivery-option.is-selected,.pfy-pay-option:hover,.pfy-pay-option.is-selected,.pfy-empty:hover{background:var(--pf-hover)!important;border-color:#111827!important;box-shadow:none!important;transform:none!important}
+.pfy-delivery-option input,.pfy-pay-option input{accent-color:var(--pf-orange)}
+.pfy-place-order,.pfy-promo button,.pfy-empty a,.pfy-success-actions a,.pfy-success-actions button{height:42px;min-width:132px;border:0!important;border-radius:10px;background:var(--pf-orange)!important;color:#111827!important;font-family:var(--pf-title)!important;font-size:12px!important;font-weight:600!important;letter-spacing:.014em!important;box-shadow:none!important;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.pfy-place-order{width:100%;font-size:13px!important}
+.pfy-place-order:hover,.pfy-promo button:hover,.pfy-empty a:hover,.pfy-success-actions a:hover,.pfy-success-actions button:hover{background:#111827!important;color:#fff!important;transform:none!important}
+.pfy-place-order:disabled{background:#cfcfcf!important;color:#fff!important;cursor:not-allowed}
+.pfy-grand-total{background:#fff6ef;border-radius:10px}
+.pfy-grand-total strong,.pfy-total-row.discount strong,.pfy-success strong,.pfy-secure-icon{color:var(--pf-green)!important}
+.pfy-secure-icon{border-color:var(--pf-green)!important}
+.pfy-toast{top:96px!important;font-family:var(--pf-body)!important;font-weight:700;border-radius:14px;background:#111827!important}
+.pfy-toast.is-success{background:#111827!important;border-color:rgba(255,255,255,.12)}
+.pfy-toast.is-error{background:#7f1d1d!important}
+@media(max-width:1180px){.pfy-page{width:calc(100% - 32px)}.pfy-main-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.pfy-page{width:calc(100% - 24px)}}
+.pfy-breadcrumb{font-size:13px!important;font-weight:500!important;gap:12px!important;line-height:1.2}
+.pfy-page-head h1,.pfy-success h2{font-size:30px!important}
+.pfy-main-grid{grid-template-columns:minmax(0,1fr) 430px!important;gap:18px!important}
+.pfy-card,.pfy-summary,.pfy-secure-card,.pfy-stepper,.pfy-success{box-shadow:none!important}
+.pfy-card:hover,.pfy-summary:hover,.pfy-secure-card:hover,.pfy-success:hover,.pfy-delivery-option:hover,.pfy-delivery-option.is-selected,.pfy-pay-option:hover,.pfy-pay-option.is-selected,.pfy-empty:hover{box-shadow:none!important}
+.pfy-card-icon,.pfy-summary-title i,.pfy-pay-option i,.pfy-secure-icon{background:transparent!important;border:0!important;color:#111827!important;border-radius:0!important}
+.pfy-card-icon{width:28px;height:28px;font-size:17px}
+.pfy-summary-title i{width:24px;height:24px}
+.pfy-pay-option i{width:24px;height:24px}
+.pfy-field label b{display:none!important}
+.pfy-field label:after{content:":";color:#111827}
+.pfy-promo{grid-template-columns:minmax(0,1fr) 112px!important;align-items:center;gap:8px!important;margin-bottom:16px}
+.pfy-promo input{width:100%;height:36px!important;min-width:0;padding:0 12px!important}
+.pfy-promo button{height:36px!important;min-width:112px!important;border-radius:9px!important}
+.pfy-place-order{height:42px!important;box-shadow:none!important}
+.pfy-pay-option input{accent-color:#2563eb!important}
+.pfy-pay-option.is-selected input{accent-color:#2563eb!important}
+.pfy-step.is-active .pfy-step-no,.pfy-step.is-done .pfy-step-no{box-shadow:none!important}
+.pfy-card-title h2,.pfy-summary h3,.pfy-secure-card h4,.pfy-empty h2,.pfy-success h2{font-size:14.5px!important}
+.pfy-card-title p,.pfy-field input,.pfy-field select,.pfy-checkline,.pfy-section-control,.pfy-delivery-copy strong,.pfy-delivery-copy small,.pfy-delivery-price,.pfy-pay-option strong,.pfy-pay-option small,.pfy-order-info h4,.pfy-order-info p,.pfy-order-price,.pfy-item-count,.pfy-total-row,.pfy-reward,.pfy-terms,.pfy-secure-card p,.pfy-note-box textarea{font-size:12px!important;line-height:1.4!important}
+.pfy-field label{font-size:11px!important}
+.pfy-breadcrumb strong{color:#ff7a00!important;border-bottom:3px solid #ff7a00;text-decoration:none!important;padding-bottom:3px}
+.pfy-breadcrumb #checkoutCategoryCrumb,.pfy-breadcrumb #checkoutServiceCrumb{color:#111827;font-weight:600}
+.pfy-step.is-active .pfy-step-no,.pfy-step.is-done .pfy-step-no{background:transparent!important;color:#ff7a00!important;border:1px solid #ff7a00!important}
+.pfy-step.is-active .pfy-step-copy strong,.pfy-step.is-done .pfy-step-copy strong{color:#ff7a00!important}
+.pfy-step.is-active .pfy-step-copy small,.pfy-step.is-done .pfy-step-copy small{color:#ff7a00!important}
+.pfy-step.is-done:after{border-top-color:#ff7a00!important}
+.pfy-delivery-option,.pfy-pay-option{border-color:#dfe3ea!important;background:#fff!important}
+.pfy-delivery-option:hover,.pfy-delivery-option.is-selected,.pfy-pay-option:hover,.pfy-pay-option.is-selected{border-color:#111827!important;background:rgba(17,24,39,.10)!important}
+.pfy-delivery-option.is-selected .pfy-delivery-copy strong,.pfy-delivery-option.is-selected .pfy-delivery-price,.pfy-pay-option.is-selected strong{color:#111827!important}
+.pfy-delivery-option input,.pfy-pay-option input{accent-color:#16a34a!important}
+.pfy-card-icon,.pfy-summary-title i,.pfy-secure-icon{color:#ff7a00!important}
+.pfy-card-title .fa-location-dot,.pfy-card-title .fa-truck,.pfy-card-title .fa-credit-card,.pfy-card-title .fa-clipboard,.pfy-card-title .fa-user{color:#ff7a00!important}
+.pfy-pay-option i{color:#111827!important;background:transparent!important}
+.pfy-grand-total strong{color:#16a34a!important}
+@media(min-width:1181px){
+#checkout{padding:40px 18px 70px 100px}
+.pfy-page{width:min(1270px,calc(100% - 118px));max-width:1270px;margin:0 18px 0 0;padding:0}
+.pfy-main-grid{grid-template-columns:minmax(0,1fr) 430px!important;gap:32px!important}
+}
+@media(max-width:1180px){.pfy-main-grid{grid-template-columns:1fr!important}}
+
+#checkout .pfy-toast{
+  background:transparent!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+  width:auto!important;
+  max-width:min(440px,calc(100vw - 32px))!important;
+  font-family:var(--pf-body)!important;
+  font-size:12px!important;
+  font-weight:400!important;
+  line-height:1.45!important;
+  text-shadow:0 1px 12px rgba(0,0,0,.68)!important;
+}
+#checkout .pfy-toast.is-success,
+#checkout .pfy-toast.is-info,
+#checkout .pfy-toast.is-error{
+  background:transparent!important;
+  border-color:transparent!important;
+}
 </style>
 
 <section id="checkout" class="section checkout-section" data-section-id="checkout" data-page="checkout">
 <main class="pfy-page">
-  <div class="pfy-breadcrumb"><a href="/" onclick="jumpTo('home');return false;">Home</a><i class="fa-solid fa-chevron-right"></i><a href="/services" onclick="jumpTo('products');return false;">Services</a><i class="fa-solid fa-chevron-right"></i><strong>Checkout</strong></div>
+  <div class="pfy-breadcrumb"><a href="/" onclick="jumpTo('home');return false;">Home</a><i class="fa-solid fa-chevron-right"></i><a href="/services" onclick="jumpTo('products');return false;">Services</a><span id="checkoutCategoryCrumbWrap" hidden><i class="fa-solid fa-chevron-right"></i><span id="checkoutCategoryCrumb">Selected Service</span></span><span id="checkoutServiceCrumbWrap" hidden><i class="fa-solid fa-chevron-right"></i><span id="checkoutServiceCrumb">Service Option</span></span><i class="fa-solid fa-chevron-right"></i><strong>Checkout</strong></div>
   <div class="pfy-page-head">
     <h1>Checkout</h1>
     <p>Complete your order in a few simple steps.</p>
@@ -391,9 +489,9 @@ html{scroll-behavior:smooth}
         </div>
         <div class="pfy-card-body">
           <div class="pfy-field-grid">
-            <div class="pfy-field"><label for="fullName">Full Name <b>*</b></label><input type="text" id="fullName" value="{{ old('fullName', Auth::check() ? Auth::user()->name : '') }}" autocomplete="name" required></div>
-            <div class="pfy-field"><label for="email">Email Address <b>*</b></label><input type="email" id="email" value="{{ old('email', Auth::check() ? Auth::user()->email : '') }}" autocomplete="email" required></div>
-            <div class="pfy-field"><label for="phone">Phone Number <b>*</b></label><input type="tel" id="phone" value="{{ old('phone', '') }}" autocomplete="tel" required></div>
+            <div class="pfy-field"><label for="fullName">Full Name</label><input type="text" id="fullName" value="{{ old('fullName', Auth::check() ? Auth::user()->name : '') }}" autocomplete="name" required></div>
+            <div class="pfy-field"><label for="email">Email Address</label><input type="email" id="email" value="{{ old('email', Auth::check() ? Auth::user()->email : '') }}" autocomplete="email" required></div>
+            <div class="pfy-field"><label for="phone">Phone Number</label><input type="tel" id="phone" value="{{ old('phone', '') }}" autocomplete="tel" required></div>
           </div>
           <label class="pfy-checkline"><input type="checkbox" id="statusUpdates" checked>Keep me updated on order status and exclusive offers</label>
         </div>
@@ -406,14 +504,14 @@ html{scroll-behavior:smooth}
         </div>
         <div class="pfy-card-body">
           <div class="pfy-field-grid two">
-            <div class="pfy-field"><label for="street">Street Address <b>*</b></label><input type="text" id="street" value="{{ old('street', '') }}" autocomplete="street-address" required></div>
+            <div class="pfy-field"><label for="street">Street Address</label><input type="text" id="street" value="{{ old('street', '') }}" autocomplete="street-address" required></div>
             <div class="pfy-field"><label for="apartment">Apartment, suite, etc. (optional)</label><input type="text" id="apartment" value="{{ old('apartment', '') }}"></div>
           </div>
           <div class="pfy-field-grid four" style="margin-top:14px">
-            <div class="pfy-field"><label for="city">City / Town <b>*</b></label><input type="text" id="city" value="{{ old('city', '') }}" required></div>
-            <div class="pfy-field"><label for="province">State / Province <b>*</b></label><input type="text" id="province" value="{{ old('province', '') }}" required></div>
-            <div class="pfy-field"><label for="postal">Postal Code <b>*</b></label><input type="text" id="postal" value="{{ old('postal', '') }}" required></div>
-            <div class="pfy-field"><label for="country">Country <b>*</b></label><select id="country"><option value="Philippines" selected>Philippines</option></select></div>
+            <div class="pfy-field"><label for="city">City / Town</label><input type="text" id="city" value="{{ old('city', '') }}" required></div>
+            <div class="pfy-field"><label for="province">State / Province</label><input type="text" id="province" value="{{ old('province', '') }}" required></div>
+            <div class="pfy-field"><label for="postal">Postal Code</label><input type="text" id="postal" value="{{ old('postal', '') }}" required></div>
+            <div class="pfy-field"><label for="country">Country</label><select id="country"><option value="Philippines" selected>Philippines</option></select></div>
           </div>
         </div>
       </section>
@@ -474,7 +572,6 @@ html{scroll-behavior:smooth}
           <div class="pfy-total-row"><span>Subtotal</span><strong id="subtotal">₱0.00</strong></div>
           <div class="pfy-total-row discount"><span>Discount</span><strong id="discount">- ₱0.00</strong></div>
           <div class="pfy-total-row"><span id="shippingLabel">Shipping (Standard Delivery)</span><strong id="shippingCost">₱150.00</strong></div>
-          <div class="pfy-total-row"><span>Tax (12%)</span><strong id="tax">₱0.00</strong></div>
           <div class="pfy-grand-total"><span>Total</span><strong id="total">₱0.00</strong></div>
           <div class="pfy-reward"><i class="fa-regular fa-gem"></i><span id="rewardText">You'll earn 0 reward points with this order!</span></div>
           <button class="pfy-place-order" id="placeOrderBtn" type="button" onclick="placeOrder()">Place Order <i class="fa-solid fa-lock"></i></button>
@@ -497,7 +594,7 @@ html{scroll-behavior:smooth}
 (function(){
 "use strict";
 const state={items:[],promoCode:"",totals:{subtotal:0,discount:0,shipping:150,tax:0,total:0}};
-const els={orderItems:document.getElementById("orderItems"),summaryItemCount:document.getElementById("summaryItemCount"),emptyState:document.getElementById("emptyState"),orderContent:document.getElementById("orderContent"),subtotal:document.getElementById("subtotal"),discount:document.getElementById("discount"),shippingCost:document.getElementById("shippingCost"),shippingLabel:document.getElementById("shippingLabel"),tax:document.getElementById("tax"),total:document.getElementById("total"),rewardText:document.getElementById("rewardText"),headerCartCount:document.getElementById("headerCartCount")||document.getElementById("cartBadge"),toast:document.getElementById("toast"),noteCount:document.getElementById("noteCount"),notes:document.getElementById("notes"),successBox:document.getElementById("successBox"),successRef:document.getElementById("successRef"),checkoutGrid:document.getElementById("checkoutGrid")};
+const els={orderItems:document.getElementById("orderItems"),summaryItemCount:document.getElementById("summaryItemCount"),emptyState:document.getElementById("emptyState"),orderContent:document.getElementById("orderContent"),subtotal:document.getElementById("subtotal"),discount:document.getElementById("discount"),shippingCost:document.getElementById("shippingCost"),shippingLabel:document.getElementById("shippingLabel"),tax:document.getElementById("tax"),total:document.getElementById("total"),rewardText:document.getElementById("rewardText"),headerCartCount:document.getElementById("headerCartCount")||document.getElementById("cartBadge"),toast:document.getElementById("toast"),noteCount:document.getElementById("noteCount"),notes:document.getElementById("notes"),successBox:document.getElementById("successBox"),successRef:document.getElementById("successRef"),checkoutGrid:document.getElementById("checkoutGrid"),categoryCrumb:document.getElementById("checkoutCategoryCrumb"),categoryCrumbWrap:document.getElementById("checkoutCategoryCrumbWrap"),serviceCrumb:document.getElementById("checkoutServiceCrumb"),serviceCrumbWrap:document.getElementById("checkoutServiceCrumbWrap")};
 function safeJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)||fallback)}catch(e){return JSON.parse(fallback)}}
 function saveJson(key,value){localStorage.setItem(key,JSON.stringify(value))}
 function peso(value){return "₱"+Number(value||0).toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2})}
@@ -556,8 +653,8 @@ function calculateTotals(){
   if(code==="PRINTIFY50")discount=50;
   discount=Math.min(discount,subtotal);
   const shipping=selectedShipping().cost;
-  const tax=(subtotal-discount+shipping)*.12;
-  const total=subtotal-discount+shipping+tax;
+  const tax=0;
+  const total=subtotal-discount+shipping;
   state.totals={subtotal:subtotal,discount:discount,shipping:shipping,tax:tax,total:total};
 }
 function imageMarkup(item){
@@ -581,6 +678,25 @@ function renderItems(){
     return '<article class="pfy-order-item">'+imageMarkup(item)+'<div class="pfy-order-info"><h4>'+escapeHtml(item.name)+'</h4><p>Quantity: '+item.qty+' pcs</p>'+meta+'</div><div class="pfy-order-price">'+peso(item.lineTotal)+'</div></article>';
   }).join("");
 }
+function renderCheckoutBreadcrumb(){
+  const first=state.items[0]||{};
+  const raw=first.raw&&typeof first.raw==="object"?first.raw:{};
+  const category=raw.categoryTitle||raw.category||first.category||(Array.isArray(first.meta)?first.meta[0]:"");
+  const service=raw.serviceName||raw.title||first.name||"";
+  const serviceKey=raw.serviceKey||raw.slug||first.serviceKey||"text-only";
+  if(els.categoryCrumb&&els.categoryCrumbWrap){
+    els.categoryCrumb.textContent=category||"Selected Service";
+    els.categoryCrumbWrap.hidden=!category;
+    els.categoryCrumb.style.cursor="pointer";
+    els.categoryCrumb.onclick=function(){if(typeof jumpTo==="function")jumpTo("products",{updateUrl:true});else window.location.href="/services"};
+  }
+  if(els.serviceCrumb&&els.serviceCrumbWrap){
+    els.serviceCrumb.textContent=service||"Service Option";
+    els.serviceCrumbWrap.hidden=!service;
+    els.serviceCrumb.style.cursor="pointer";
+    els.serviceCrumb.onclick=function(){if(typeof window.openPrintifyServiceDetail==="function")window.openPrintifyServiceDetail(serviceKey,true);else window.location.href="/service-details?service="+encodeURIComponent(serviceKey)};
+  }
+}
 function renderTotals(){
   calculateTotals();
   const count=itemCount();
@@ -594,8 +710,17 @@ function renderTotals(){
   if(els.total)els.total.textContent=peso(state.totals.total);
   if(els.rewardText)els.rewardText.textContent="You'll earn "+Math.max(0,Math.floor(state.totals.total/100))+" reward points with this order!";
 }
-function renderAll(){renderItems();renderTotals();updateStep(1)}
+function renderAll(){renderItems();renderCheckoutBreadcrumb();renderTotals();syncCheckoutStep()}
 function updateStep(step){document.querySelectorAll(".pfy-step").forEach(function(node){const current=Number(node.dataset.step);node.classList.toggle("is-active",current===step);node.classList.toggle("is-done",current<step)})}
+function hasValues(ids){return ids.every(function(id){const input=document.getElementById(id);return input&&input.value.trim()})}
+function syncCheckoutStep(){
+  if(!state.items.length){updateStep(1);return}
+  const customerDone=hasValues(["fullName","email","phone"]);
+  const shippingDone=hasValues(["street","city","province","postal"]);
+  if(customerDone&&shippingDone){updateStep(3);return}
+  if(customerDone){updateStep(2);return}
+  updateStep(1);
+}
 function updateRadioCards(){document.querySelectorAll("[data-radio-wrap]").forEach(function(label){const input=label.querySelector('input[type="radio"]');label.classList.toggle("is-selected",Boolean(input&&input.checked))})}
 function validateForm(){
   const required=["fullName","email","phone","street","city","province","postal"];
@@ -657,8 +782,8 @@ window.applyPromo=function(){
   state.promoCode=code;localStorage.setItem("printifyPromoCode",code);renderTotals();showToast("Promo code applied.","success");
 };
 window.placeOrder=async function(){
+  if(!validateForm()){syncCheckoutStep();return}
   updateStep(4);
-  if(!validateForm())return;
   calculateTotals();
   const order=buildCompletedOrder();
   const orders=safeJson("printifyOrders","[]");
@@ -708,8 +833,8 @@ function applyPaymentReturnState(){
     showToast("Payment was cancelled. You can choose PayMongo or Maya and try again.","error");
   }
 }
-document.querySelectorAll('input[name="shipping"], input[name="payment"]').forEach(function(input){input.addEventListener("change",function(){updateRadioCards();renderTotals();if(input.name==="shipping")updateStep(2);if(input.name==="payment")updateStep(3)})});
-["fullName","email","phone","street","city","province","postal"].forEach(function(id){const node=document.getElementById(id);if(node)node.addEventListener("focus",function(){updateStep(id==="fullName"||id==="email"||id==="phone"?1:2)})});
+document.querySelectorAll('input[name="shipping"], input[name="payment"]').forEach(function(input){input.addEventListener("change",function(){updateRadioCards();renderTotals();syncCheckoutStep()})});
+["fullName","email","phone","street","city","province","postal"].forEach(function(id){const node=document.getElementById(id);if(node){node.addEventListener("focus",function(){updateStep(id==="fullName"||id==="email"||id==="phone"?1:2)});node.addEventListener("input",syncCheckoutStep);node.addEventListener("change",syncCheckoutStep);}});
 if(els.notes)els.notes.addEventListener("input",function(){els.noteCount.textContent=els.notes.value.length+"/250"});
 document.addEventListener("printify:checkout-opened",window.refreshPrintifyCheckout);
 function openCheckoutFromHash(){

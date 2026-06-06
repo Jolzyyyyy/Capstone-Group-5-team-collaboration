@@ -29,28 +29,41 @@
         @csrf
         @method('PUT')
 
-                    <div>
-                        <x-input-label for="status" :value="__('Status')" />
-                        <select name="status" id="status" required class="mt-1 block w-full rounded-lg border-[#d8c8b7] bg-white text-[#22201f] shadow-sm focus:border-[#ff8d2a] focus:ring-[#ff8d2a]">
-                            @foreach ($statuses as $status)
-                                <option value="{{ $status }}" {{ $order->status === $status ? 'selected' : '' }}>
-                                    {{ $status }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('status')" class="mt-2" />
-                    </div>
+        <label for="status"><strong>Status</strong></label>
+        <select name="status" id="status" required>
+            @php
+                $statuses = [
+                    'Pending',
+                    'Processing',
+                    'For Verification',
+                    'Ready',
+                    'Completed',
+                    'Cancelled'
+                ];
+            @endphp
 
-                    <div class="rounded-lg bg-[#f7f4ef] p-4 text-sm text-[#6f675f]">
-                        <p class="font-black text-[#22201f]">{{ $order->customer_name }}</p>
-                        <p class="mt-1">{{ $order->customer_email ?? 'No email recorded' }}</p>
-                    </div>
+            @foreach($statuses as $s)
+                <option value="{{ $s }}" {{ $order->status === $s ? 'selected' : '' }}>
+                    {{ $s }}
+                </option>
+            @endforeach
+        </select>
 
-                    <x-primary-button>
-                        {{ __('Save Status') }}
-                    </x-primary-button>
-                </form>
-            </section>
-        </main>
-    </div>
-</x-app-layout>
+        @if($errors->any())
+            <div class="msg error">
+                <ul>
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <div class="row" style="margin-top: 14px;">
+            <button type="submit" class="btn">Save</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>
