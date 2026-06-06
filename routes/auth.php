@@ -63,6 +63,12 @@ Route::prefix('verify-account')->name('otp.')->group(function () {
     Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend');
 });
 
+Route::prefix('customer/verify-account')->name('customer.otp.')->group(function () {
+    Route::get('/', [VerifyOtpController::class, 'show'])->name('verify');
+    Route::post('/', [VerifyOtpController::class, 'verify'])->name('submit');
+    Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend');
+});
+
 /*
 |--------------------------------------------------------------------------
 | 2. AUTHENTICATED AREA (Users already logged in)
