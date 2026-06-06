@@ -7,6 +7,7 @@ use App\Models\ServiceVariation;
 use App\Services\ServiceCatalogManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ServiceCatalogManagerTest extends TestCase
@@ -119,5 +120,46 @@ class ServiceCatalogManagerTest extends TestCase
             'bulk_price' => 9,
             'is_active' => true,
         ]);
+    }
+
+    public function test_it_deletes_a_service_and_its_catalog_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('services/document-printing.jpg', 'image');
+
+        $service = Service::create([
+            'name' => 'Document Printing',
+            'category' => 'Printing',
+            'retail_price' => 5,
+            'bulk_price' => 4,
+            'unit' => null,
+            'description' => null,
+            'image_path' => 'services/document-printing.jpg',
+            'is_active' => true,
+        ]);
+
+        app(ServiceCatalogManager::class)->deleteService($service);
+
+        $this->assertDatabaseMissing('services', [
+            'id' => $service->id,
+        ]);
+        Storage::disk('public')->assertMissing('services/document-printing.jpg');
+    }
+
+    public function test_it_toggles_service_active_status(): void
+    {
+        $service = Service::create([
+            'name' => 'Document Printing',
+            'category' => 'Printing',
+            'retail_price' => 5,
+            'bulk_price' => 4,
+            'unit' => null,
+            'description' => null,
+            'is_active' => true,
+        ]);
+
+        app(ServiceCatalogManager::class)->toggleServiceActive($service);
+
+        $this->assertFalse($service->refresh()->is_active);
     }
 }

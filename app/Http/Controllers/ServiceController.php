@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use App\Services\ServiceCatalogManager;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ServiceController extends Controller
 {
@@ -165,11 +164,7 @@ class ServiceController extends Controller
     {
         $this->authorizeServiceManagement();
 
-        if ($service->image_path) {
-            Storage::disk('public')->delete($service->image_path);
-        }
-
-        $service->delete();
+        $this->serviceCatalogManager->deleteService($service);
 
         return redirect()->route('admin.services.index')
             ->with('success', 'Service deleted successfully.');
@@ -182,8 +177,7 @@ class ServiceController extends Controller
     {
         $this->authorizeServiceManagement();
 
-        $service->is_active = !$service->is_active;
-        $service->save();
+        $this->serviceCatalogManager->toggleServiceActive($service);
 
         return back()->with('success', 'Service status updated.');
     }

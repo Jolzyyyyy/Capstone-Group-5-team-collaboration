@@ -77,6 +77,23 @@ class ServiceCatalogManager
         });
     }
 
+    public function deleteService(Service $service): void
+    {
+        if ($service->image_path) {
+            Storage::disk('public')->delete($service->image_path);
+        }
+
+        $service->delete();
+    }
+
+    public function toggleServiceActive(Service $service): Service
+    {
+        $service->is_active = !$service->is_active;
+        $service->save();
+
+        return $service;
+    }
+
     private function createVariations(Request $request, Service $service, array $variations): void
     {
         foreach ($variations as $index => $variation) {
