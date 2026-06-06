@@ -60,8 +60,9 @@ class CheckoutController extends Controller
             'items_count' => $itemsCount,
             'total' => $total,
         ];
+        $paymongoConfigured = $this->paymongoSecretKey() !== null;
 
-        return view('checkout.index', compact('cart', 'summary'));
+        return view('checkout.index', compact('cart', 'summary', 'paymongoConfigured'));
     }
 
     public function place(Request $request)
@@ -95,6 +96,12 @@ class CheckoutController extends Controller
         ], [
             'print_file_confirmed.accepted' => 'Please confirm that the attached file is the final file to be printed.',
         ]);
+
+        if (!$this->paymongoSecretKey()) {
+            return back()
+                ->withInput()
+                ->with('error', 'Online payment is not configured yet. Add PAYMONGO_SECRET_KEY in .env before placing PayMongo orders.');
+        }
 
         $order = DB::transaction(function () use ($request, $rawCart, $validated) {
             $customer = $request->user();
@@ -174,6 +181,13 @@ class CheckoutController extends Controller
         }
 
         return false;
+    }
+
+    private function paymongoSecretKey(): ?string
+    {
+        $secretKey = trim((string) config('services.paymongo.secret_key', ''));
+
+        return $secretKey !== '' ? $secretKey : null;
     }
 
     private function resolveReviewedCartCatalog(array $row): array

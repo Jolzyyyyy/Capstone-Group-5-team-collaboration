@@ -7,6 +7,7 @@
         $grandTotal = $serviceSubtotal + $releaseFee;
         $itemCount = (int) ($summary['items_count'] ?? count($cart));
         $releaseWindow = now()->addDay()->format('M d') . ' - ' . now()->addDays(2)->format('M d');
+        $paymongoConfigured = $paymongoConfigured ?? filled(trim((string) config('services.paymongo.secret_key')));
     @endphp
 
     <style>
@@ -86,6 +87,19 @@
 
         .checkout-btn:hover {
             background: #ff6a00;
+        }
+
+        .checkout-btn:disabled,
+        .checkout-btn.is-disabled {
+            background: #9ca3af;
+            color: #f8fafc;
+            cursor: not-allowed;
+            opacity: .82;
+        }
+
+        .checkout-btn:disabled:hover,
+        .checkout-btn.is-disabled:hover {
+            background: #9ca3af;
         }
 
         .checkout-btn.secondary {
@@ -364,6 +378,16 @@
             border-color: #fed7aa;
             background: #fff7ed;
             color: #9a3412;
+        }
+
+        .paymongo-box.is-disabled {
+            border-color: #fecaca;
+            background: #fff1f2;
+            color: #991b1b;
+        }
+
+        .paymongo-box.is-disabled strong {
+            color: #7f1d1d;
         }
 
         .confirmation-card {
@@ -703,14 +727,19 @@
                         </div>
 
                         <div class="card-body">
-                            <div class="paymongo-box">
-                                <strong>Select payment method now.</strong>
-                                After you place the order, PayMongo opens securely for the selected payment mode.
+                            <div class="paymongo-box {{ $paymongoConfigured ? '' : 'is-disabled' }}">
+                                @if ($paymongoConfigured)
+                                    <strong>Select payment method now.</strong>
+                                    After you place the order, PayMongo opens securely for the selected payment mode.
+                                @else
+                                    <strong>Online payment setup required.</strong>
+                                    Paste your real PayMongo test secret key in .env as PAYMONGO_SECRET_KEY, then clear config cache before placing PayMongo orders.
+                                @endif
                             </div>
 
                             <div class="choice-grid" style="margin-top:14px;">
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="gcash" @checked(old('payment_method', 'gcash') === 'gcash')>
+                                    <input type="radio" name="payment_method" value="gcash" @checked(old('payment_method', 'gcash') === 'gcash') @disabled(!$paymongoConfigured)>
                                     <span>
                                         <strong>GCash</strong>
                                         <span>Pay through PayMongo hosted checkout.</span>
@@ -718,7 +747,7 @@
                                 </label>
 
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="card" @checked(old('payment_method') === 'card')>
+                                    <input type="radio" name="payment_method" value="card" @checked(old('payment_method') === 'card') @disabled(!$paymongoConfigured)>
                                     <span>
                                         <strong>Credit / Debit Card</strong>
                                         <span>Card details are handled by PayMongo.</span>
@@ -726,7 +755,7 @@
                                 </label>
 
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="paymaya" @checked(old('payment_method') === 'paymaya')>
+                                    <input type="radio" name="payment_method" value="paymaya" @checked(old('payment_method') === 'paymaya') @disabled(!$paymongoConfigured)>
                                     <span>
                                         <strong>Maya</strong>
                                         <span>Use Maya wallet through PayMongo.</span>
@@ -734,7 +763,7 @@
                                 </label>
 
                                 <label class="choice-card">
-                                    <input type="radio" name="payment_method" value="grab_pay" @checked(old('payment_method') === 'grab_pay')>
+                                    <input type="radio" name="payment_method" value="grab_pay" @checked(old('payment_method') === 'grab_pay') @disabled(!$paymongoConfigured)>
                                     <span>
                                         <strong>GrabPay</strong>
                                         <span>Use GrabPay through PayMongo.</span>
@@ -745,7 +774,9 @@
                     </section>
 
                     <div class="checkout-mobile-submit">
-                        <button type="submit" class="checkout-btn" style="width: 100%;">Place Order &amp; Pay with PayMongo</button>
+                        <button type="submit" class="checkout-btn" style="width: 100%;" @disabled(!$paymongoConfigured)>
+                            {{ $paymongoConfigured ? 'Place Order & Pay with PayMongo' : 'Place Order Requires PayMongo Test Key' }}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -781,8 +812,14 @@
                             <strong>{{ $money($grandTotal) }}</strong>
                         </div>
 
-                        <button type="submit" form="checkoutForm" class="checkout-btn">Place Order &amp; Pay with PayMongo</button>
-                        <p class="pay-note">This review saves the order and immediately opens PayMongo for the selected payment method.</p>
+                        <button type="submit" form="checkoutForm" class="checkout-btn" @disabled(!$paymongoConfigured)>
+                            {{ $paymongoConfigured ? 'Place Order & Pay with PayMongo' : 'Place Order Requires PayMongo Test Key' }}
+                        </button>
+                        <p class="pay-note">
+                            {{ $paymongoConfigured
+                                ? 'This review saves the order and immediately opens PayMongo for the selected payment method.'
+                                : 'Online payment will unlock after the real PayMongo test secret key is added to .env and config cache is cleared.' }}
+                        </p>
                         <div class="summary-note">All selected services already have required attached files from the service page.</div>
                     </div>
                 </div>

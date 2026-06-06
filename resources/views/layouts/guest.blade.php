@@ -74,15 +74,15 @@
             }
 
             @keyframes authPanelFlipLogin {
-                0% { transform: translateX(-115%) rotateY(-42deg) scale(0.94); opacity: 0.22; filter: blur(8px); }
-                62% { transform: translateX(8%) rotateY(8deg) scale(1.02); opacity: 1; filter: blur(0); }
-                100% { transform: translateX(0) rotateY(0) scale(1); opacity: 1; filter: blur(0); }
+                0% { transform: translateZ(1px) rotateY(88deg); opacity: 0.08; }
+                58% { transform: translateZ(2px) rotateY(-10deg); opacity: 1; }
+                100% { transform: translateZ(2px) rotateY(0deg); opacity: 1; }
             }
 
             @keyframes authPanelFlipRegister {
-                0% { transform: translateX(115%) rotateY(42deg) scale(0.94); opacity: 0.22; filter: blur(8px); }
-                62% { transform: translateX(-8%) rotateY(-8deg) scale(1.02); opacity: 1; filter: blur(0); }
-                100% { transform: translateX(0) rotateY(0) scale(1); opacity: 1; filter: blur(0); }
+                0% { transform: translateZ(1px) rotateY(-88deg); opacity: 0.08; }
+                58% { transform: translateZ(2px) rotateY(10deg); opacity: 1; }
+                100% { transform: translateZ(2px) rotateY(0deg); opacity: 1; }
             }
 
             @keyframes authFormFade {
@@ -91,21 +91,24 @@
             }
 
             @keyframes authSwitchOut {
-                0% { transform: rotateY(0deg) translateX(0) scale(1); filter: blur(0); opacity: 1; }
-                35% { transform: rotateY(-10deg) translateX(-10px) scale(1.01); filter: blur(0); opacity: 1; }
-                100% { transform: rotateY(-58deg) translateX(-56px) scale(0.92); filter: blur(7px); opacity: 0.18; }
+                from { transform: translateZ(0); }
+                to { transform: translateZ(0); }
             }
 
             @keyframes authFlipPanelExit {
-                0% { transform: translateX(0) rotateY(0deg) scale(1); opacity: 1; filter: blur(0); }
-                44% { transform: translateX(-16px) rotateY(-22deg) scale(1.02); opacity: 1; filter: blur(0); }
-                100% { transform: translateX(-86%) rotateY(-78deg) scale(0.9); opacity: 0.12; filter: blur(7px); }
+                from { transform: translateZ(2px) rotateY(0deg); opacity: 1; }
+                to { transform: translateZ(1px) rotateY(-180deg); opacity: 0.98; }
             }
 
             @keyframes authFlipPanelExitReverse {
-                0% { transform: translateX(0) rotateY(0deg) scale(1); opacity: 1; filter: blur(0); }
-                44% { transform: translateX(16px) rotateY(22deg) scale(1.02); opacity: 1; filter: blur(0); }
-                100% { transform: translateX(86%) rotateY(78deg) scale(0.9); opacity: 0.12; filter: blur(7px); }
+                from { transform: translateZ(2px) rotateY(0deg); opacity: 1; }
+                to { transform: translateZ(1px) rotateY(180deg); opacity: 0.98; }
+            }
+
+            @keyframes authFormSwitchFade {
+                0% { opacity: 1; transform: scale(1) translateX(0); }
+                40% { opacity: 0.78; transform: scale(0.98) translateX(0); }
+                100% { opacity: 0; transform: scale(0.94) translateX(10px); }
             }
 
             @keyframes authPanelGlow {
@@ -192,7 +195,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 24px;
+                padding: 18px;
                 perspective: 1500px;
                 position: relative;
                 z-index: 1;
@@ -225,21 +228,23 @@
 
             .auth-stage {
                 position: relative;
-                width: min(960px, 100%);
-                min-height: 580px;
-                border-radius: 28px;
+                width: min(940px, calc(100vw - 44px));
+                min-height: min(560px, calc(100vh - 36px));
+                height: min(620px, calc(100vh - 36px));
+                border-radius: 20px;
                 border: 1px solid rgba(255,255,255,0.14);
                 background:
                     linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.025)),
                     rgba(7, 18, 33, 0.58);
                 box-shadow:
-                    0 34px 90px rgba(2, 8, 23, 0.42),
+                    0 24px 64px rgba(2, 8, 23, 0.38),
                     inset 0 1px 0 rgba(255,255,255,0.08);
                 overflow: hidden;
                 display: grid;
-                animation: authCardIn 0.6s cubic-bezier(.22,1,.36,1);
+                animation: none;
                 transform-style: preserve-3d;
                 backdrop-filter: blur(18px);
+                will-change: transform, opacity;
             }
 
             .auth-stage--split {
@@ -249,16 +254,21 @@
             .auth-stage--single {
                 width: min(520px, 100%);
                 min-height: auto;
+                height: auto;
                 padding: 0;
             }
 
             .auth-stage.is-flipping {
                 pointer-events: none;
-                animation: authSwitchOut 0.56s cubic-bezier(.2,.8,.2,1) both;
+                animation: authSwitchOut 0.72s linear both;
             }
 
             .auth-stage.is-flipping .auth-flip-panel {
-                animation: authFlipPanelExit 0.56s cubic-bezier(.2,.8,.2,1) both;
+                animation: authFlipPanelExit 0.72s cubic-bezier(.45, 0, .55, 1) both;
+            }
+
+            .auth-stage.is-flipping .auth-card {
+                animation: authFormSwitchFade 0.68s ease-in-out both;
             }
 
             .auth-stage.auth-mode-register.is-flipping .auth-flip-panel {
@@ -274,8 +284,10 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 36px;
+                padding: 22px 34px;
                 box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+                overflow-y: auto;
+                will-change: transform, opacity;
             }
 
             .auth-mode-login .auth-form-panel {
@@ -284,20 +296,21 @@
 
             .auth-mode-register .auth-form-panel {
                 order: 2;
+                padding: 18px 32px 16px;
             }
 
             .auth-stage--single .auth-form-panel {
-                padding: 30px;
+                padding: 26px;
             }
 
             .auth-card {
                 width: 100%;
                 max-width: 390px;
-                animation: authFormFade 0.58s cubic-bezier(.22,1,.36,1);
+                animation: none;
             }
 
             .auth-stage--single .auth-card {
-                max-width: 440px;
+                max-width: 420px;
             }
 
             .auth-flip-panel {
@@ -305,7 +318,7 @@
                 z-index: 1;
                 order: 2;
                 min-width: 0;
-                padding: 44px 42px;
+                padding: 34px 38px;
                 color: #fff;
                 background:
                     linear-gradient(145deg, rgba(6, 17, 31, 0.88), rgba(13, 27, 43, 0.72) 42%, rgba(249, 115, 22, 0.70)),
@@ -317,9 +330,11 @@
                 text-align: center;
                 transform-origin: left center;
                 overflow: hidden;
-                animation: authPanelFlipLogin 0.92s cubic-bezier(.18,.88,.2,1.08);
+                transform: translateZ(2px) rotateY(0deg);
+                animation: none;
                 backface-visibility: hidden;
                 transform-style: preserve-3d;
+                will-change: transform, opacity;
             }
 
             .auth-mode-register .auth-flip-panel {
@@ -359,23 +374,22 @@
             .auth-flip-content {
                 position: relative;
                 z-index: 1;
-                max-width: 330px;
+                max-width: 350px;
             }
 
             .auth-logo-row {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                gap: 10px;
-                margin-bottom: 24px;
+                margin-bottom: 18px;
                 color: #fff;
                 font-weight: 900;
-                letter-spacing: -0.04em;
+                letter-spacing: 0;
             }
 
             .auth-logo-badge {
-                width: 46px;
-                height: 46px;
+                width: 58px;
+                height: 58px;
                 border-radius: 16px;
                 display: inline-flex;
                 align-items: center;
@@ -383,12 +397,19 @@
                 background: rgba(255,255,255,0.18);
                 border: 1px solid rgba(255,255,255,0.24);
                 box-shadow: 0 14px 34px rgba(90, 33, 6, 0.18);
+                padding: 4px;
+            }
+
+            .auth-panel-logo {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
             }
 
             .auth-flip-eyebrow,
             .auth-eyebrow {
                 margin: 0;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 900;
                 letter-spacing: 0.22em;
                 text-transform: uppercase;
@@ -399,18 +420,18 @@
             }
 
             .auth-flip-title {
-                margin: 12px 0 0;
-                font-size: clamp(34px, 5vw, 46px);
+                margin: 10px 0 0;
+                font-size: clamp(28px, 4vw, 38px);
                 line-height: 0.98;
                 font-weight: 900;
-                letter-spacing: -0.06em;
+                letter-spacing: 0;
             }
 
             .auth-flip-text {
-                margin: 18px auto 0;
+                margin: 14px auto 0;
                 color: rgba(255,255,255,0.88);
-                font-size: 14px;
-                line-height: 1.7;
+                font-size: 13px;
+                line-height: 1.58;
                 font-weight: 600;
             }
 
@@ -418,15 +439,15 @@
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                min-width: 150px;
-                min-height: 46px;
-                margin-top: 28px;
+                min-width: 132px;
+                min-height: 42px;
+                margin-top: 22px;
                 border-radius: 999px;
                 border: 1px solid rgba(255,255,255,0.86);
                 color: #fff;
                 background: rgba(255,255,255,0.08);
                 text-decoration: none;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 900;
                 letter-spacing: 0.16em;
                 text-transform: uppercase;
@@ -467,19 +488,19 @@
             }
 
             .auth-shell .auth-title {
-                margin: 8px 0 0;
+                margin: 6px 0 0;
                 color: var(--auth-ink);
-                font-size: clamp(28px, 5vw, 38px);
+                font-size: clamp(26px, 4vw, 32px);
                 line-height: 1;
                 font-weight: 900;
-                letter-spacing: -0.06em;
+                letter-spacing: 0;
             }
 
             .auth-shell .auth-subtitle {
-                margin: 12px auto 0;
+                margin: 8px auto 0;
                 color: var(--auth-muted);
-                font-size: 13px;
-                line-height: 1.65;
+                font-size: 12px;
+                line-height: 1.45;
                 font-weight: 600;
             }
 
@@ -495,14 +516,14 @@
             .auth-shell input[type="email"],
             .auth-shell input[type="password"],
             .auth-shell input[type="text"] {
-                min-height: 48px;
+                min-height: 42px;
                 border: 0;
                 border-radius: 0;
                 background: var(--auth-field);
                 color: var(--auth-ink);
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 700;
-                padding: 13px 14px;
+                padding: 10px 13px;
                 box-shadow: none;
             }
 
@@ -522,15 +543,15 @@
 
             .auth-shell .primary-cta {
                 position: relative;
-                min-height: 46px;
+                min-height: 42px;
                 border-radius: 999px;
                 border: 1px solid var(--auth-orange);
                 background: var(--auth-orange);
                 color: #fff;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 900;
                 letter-spacing: 0.16em;
-                padding: 0 28px;
+                padding: 0 22px;
                 text-transform: uppercase;
                 box-shadow: 0 14px 28px rgba(255, 107, 43, 0.22);
                 transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -550,7 +571,7 @@
 
             .auth-google-btn {
                 display: flex;
-                min-height: 48px;
+                min-height: 42px;
                 width: 100%;
                 align-items: center;
                 justify-content: center;
@@ -559,9 +580,9 @@
                 background: #fff;
                 color: var(--auth-ink);
                 border-radius: 0;
-                padding: 12px 14px;
+                padding: 9px 12px;
                 text-decoration: none;
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 900;
                 letter-spacing: 0.13em;
                 text-transform: uppercase;
@@ -576,8 +597,8 @@
 
             .auth-google-mark {
                 display: inline-flex;
-                width: 28px;
-                height: 28px;
+                width: 24px;
+                height: 24px;
                 border-radius: 999px;
                 align-items: center;
                 justify-content: center;
@@ -591,7 +612,7 @@
                 align-items: center;
                 gap: 12px;
                 color: #98a2b3;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 900;
                 letter-spacing: 0.18em;
                 text-transform: uppercase;
@@ -628,20 +649,89 @@
             }
 
             .auth-inline-switch {
-                margin-top: 22px;
+                margin-top: 14px;
                 text-align: center;
                 color: var(--auth-muted);
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 600;
             }
 
             .auth-action-hint {
-                margin: 16px 0 0;
+                margin: 10px 0 0;
                 color: var(--auth-muted);
-                font-size: 12px;
-                line-height: 1.55;
+                font-size: 11px;
+                line-height: 1.45;
                 font-weight: 600;
                 text-align: center;
+            }
+
+            .auth-card .mb-7 {
+                margin-bottom: 1rem !important;
+            }
+
+            .auth-card .mb-6,
+            .auth-card .mb-5 {
+                margin-bottom: 0.85rem !important;
+            }
+
+            .auth-card .mt-6 {
+                margin-top: 1rem !important;
+            }
+
+            .auth-card .mt-4 {
+                margin-top: 0.75rem !important;
+            }
+
+            .auth-card .gap-4 {
+                gap: 0.75rem !important;
+            }
+
+            .auth-mode-register .auth-card .mb-7 {
+                margin-bottom: 0.65rem !important;
+            }
+
+            .auth-mode-register .auth-card .mb-6,
+            .auth-mode-register .auth-card .mb-5 {
+                margin-bottom: 0.6rem !important;
+            }
+
+            .auth-mode-register .auth-card .mt-6 {
+                margin-top: 0.75rem !important;
+            }
+
+            .auth-mode-register .auth-card .mt-4 {
+                margin-top: 0.55rem !important;
+            }
+
+            .auth-mode-register .auth-card .gap-4 {
+                gap: 0.6rem !important;
+            }
+
+            .auth-mode-register .auth-shell .auth-title {
+                font-size: clamp(24px, 3vw, 29px);
+            }
+
+            .auth-mode-register .auth-shell .auth-subtitle {
+                font-size: 11px;
+                line-height: 1.35;
+            }
+
+            .auth-mode-register .auth-shell input[type="email"],
+            .auth-mode-register .auth-shell input[type="password"],
+            .auth-mode-register .auth-shell input[type="text"] {
+                min-height: 38px;
+                padding: 8px 11px;
+            }
+
+            .auth-mode-register .auth-google-btn {
+                min-height: 38px;
+                padding: 7px 12px;
+            }
+
+            .auth-mode-register .auth-action-hint {
+                margin-top: 7px;
+                font-size: 10px;
+                line-height: 1.35;
             }
 
             .remember-wrap {
@@ -683,6 +773,11 @@
                     padding: 34px 24px;
                 }
 
+                .auth-logo-badge {
+                    width: 56px;
+                    height: 56px;
+                }
+
                 .auth-form-panel {
                     padding: 34px 22px 26px;
                 }
@@ -709,6 +804,7 @@
                     border-radius: 24px;
                     width: 100%;
                     min-height: auto;
+                    height: auto;
                     margin: 10px 0;
                 }
 
@@ -744,9 +840,8 @@
                         <div class="auth-flip-content">
                             <div class="auth-logo-row">
                                 <span class="auth-logo-badge">
-                                    <x-application-logo class="h-9 w-9 fill-current text-white" />
+                                    <x-application-logo class="auth-panel-logo" />
                                 </span>
-                                <span>{{ config('app.name', 'Printify & Co.') }}</span>
                             </div>
                             <p class="auth-flip-eyebrow">{{ $panel['eyebrow'] }}</p>
                             <h1 class="auth-flip-title">{{ $panel['title'] }}</h1>
@@ -771,9 +866,8 @@
                         <div class="auth-flip-content">
                             <div class="auth-logo-row">
                                 <span class="auth-logo-badge">
-                                    <x-application-logo class="h-9 w-9 fill-current text-white" />
+                                    <x-application-logo class="auth-panel-logo" />
                                 </span>
-                                <span>{{ config('app.name', 'Printify & Co.') }}</span>
                             </div>
                             <p class="auth-flip-eyebrow">{{ $panel['eyebrow'] }}</p>
                             <h1 class="auth-flip-title">{{ $panel['title'] }}</h1>
@@ -794,11 +888,17 @@
                     if (!target) return;
 
                     event.preventDefault();
+                    if (stage.classList.contains('is-flipping')) return;
                     stage.classList.add('is-flipping');
                     link.setAttribute('aria-disabled', 'true');
+                    const resetSwitch = window.setTimeout(() => {
+                        stage.classList.remove('is-flipping');
+                        link.removeAttribute('aria-disabled');
+                    }, 980);
+                    window.addEventListener('pagehide', () => window.clearTimeout(resetSwitch), { once: true });
                     window.setTimeout(() => {
                         window.location.assign(target);
-                    }, 540);
+                    }, 700);
                 });
             });
         </script>

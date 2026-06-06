@@ -82,7 +82,7 @@ class PaymongoCheckoutController extends Controller
             return back()->with('error', 'Invalid checkout total. Please try again.');
         }
 
-        $secretKey = config('services.paymongo.secret_key');
+        $secretKey = $this->paymongoSecretKey();
         if (!$secretKey) {
             return redirect()
                 ->route('payment.checkout', $order)
@@ -271,6 +271,13 @@ class PaymongoCheckoutController extends Controller
     private function paymongoOrderReference(Order $order): string
     {
         return 'ORDER-'.$order->id;
+    }
+
+    private function paymongoSecretKey(): ?string
+    {
+        $secretKey = trim((string) config('services.paymongo.secret_key', ''));
+
+        return $secretKey !== '' ? $secretKey : null;
     }
 
     private function paymongoSignatureIsValid(Request $request): bool
