@@ -194,20 +194,7 @@ Route::middleware(['auth', 'role:customer', 'otp.verified'])->group(function () 
     | Customer Dashboard
     |--------------------------------------------------------------------------
     */
-    Route::get('/dashboard', function () {
-        $user = request()->user();
-        $orderQuery = $user->orders();
-
-        return view('dashboard', [
-            'recentOrders' => (clone $orderQuery)->latest()->limit(5)->get(),
-            'assignedAdminClient' => $user->assignedAdminClient,
-            'availableServices' => Service::where('is_active', true)->count(),
-            'orderCount' => (clone $orderQuery)->count(),
-            'activeOrderCount' => (clone $orderQuery)->whereIn('status', ['Pending', 'For Verification', 'Processing', 'Ready'])->count(),
-            'completedOrderCount' => (clone $orderQuery)->where('status', 'Completed')->count(),
-            'totalSpent' => (float) (clone $orderQuery)->sum('total_price'),
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [CustomerPortalController::class, 'dashboard'])->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
