@@ -74,6 +74,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
             ->patchJson('/profile', [
                 'name' => 'Maria Santos',
                 'email' => 'customer@example.com',

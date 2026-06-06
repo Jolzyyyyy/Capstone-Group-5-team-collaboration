@@ -12,8 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Idadagdag ang backup_email field sa tabi ng main email
-            $table->string('backup_email')->nullable()->after('email');
+            if (!Schema::hasColumn('users', 'backup_email')) {
+                $table->string('backup_email')->nullable()->after('email');
+            }
         });
     }
 
@@ -23,8 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Buburahin ang field kapag nag-rollback (php artisan migrate:rollback)
-            $table->dropColumn('backup_email');
+            if (Schema::hasColumn('users', 'backup_email')) {
+                $table->dropColumn('backup_email');
+            }
         });
     }
 };

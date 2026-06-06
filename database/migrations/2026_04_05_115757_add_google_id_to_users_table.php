@@ -9,16 +9,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Idadagdag natin ito pagkatapos ng password column
-            $table->string('google_id')->nullable()->after('password');
-            $table->string('google_token')->nullable()->after('google_id');
+            if (!Schema::hasColumn('users', 'google_id')) {
+                $table->string('google_id')->nullable()->after('password');
+            }
+
+            if (!Schema::hasColumn('users', 'google_token')) {
+                $table->string('google_token')->nullable()->after('google_id');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['google_id', 'google_token']);
+            foreach (['google_id', 'google_token'] as $column) {
+                if (Schema::hasColumn('users', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

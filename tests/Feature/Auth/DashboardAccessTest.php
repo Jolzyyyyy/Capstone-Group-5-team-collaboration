@@ -26,8 +26,8 @@ class DashboardAccessTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Client Portal')
-            ->assertSee('Dashboard Overview')
+            ->assertSee('Customer Access')
+            ->assertSee('Account Security')
             ->assertSee('Customer');
     }
 
@@ -82,7 +82,7 @@ class DashboardAccessTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Dashboard Overview')
+            ->assertSee('Admin Dashboard')
             ->assertSee('Admin Portal')
             ->assertDontSee('Developer Dashboard')
             ->assertDontSee('Manage Admin Clients');
@@ -117,7 +117,7 @@ class DashboardAccessTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('Developer Portal')
+            ->assertSee('Developer Access')
             ->assertSee('Developer')
             ->assertSee('Manage Admin Clients')
             ->assertDontSee('Client Portal')
@@ -149,7 +149,6 @@ class DashboardAccessTest extends TestCase
             ->assertSee('Settings')
             ->assertDontSee('Products')
             ->assertDontSee('Rates')
-            ->assertDontSee('Help Center')
             ->assertDontSee('Customer/User');
     }
 

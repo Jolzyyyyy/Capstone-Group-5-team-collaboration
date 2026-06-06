@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Ito ang magsasabi kung nakapag-set na ng manual password ang Google user
-            // Default ay 'false' dahil sa Google Register, random password lang ang sineset natin
-            $table->boolean('has_set_password')->default(false)->after('password');
+            if (!Schema::hasColumn('users', 'has_set_password')) {
+                $table->boolean('has_set_password')->default(false)->after('password');
+            }
         });
     }
 
@@ -24,8 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Tanggalin ang column kapag ni-rollback ang migration
-            $table->dropColumn('has_set_password');
+            if (Schema::hasColumn('users', 'has_set_password')) {
+                $table->dropColumn('has_set_password');
+            }
         });
     }
 };
