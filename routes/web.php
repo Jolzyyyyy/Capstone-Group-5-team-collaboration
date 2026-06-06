@@ -6,6 +6,7 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerPortalController;
+use App\Http\Controllers\FrontPageController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymongoCheckoutController;
 use App\Http\Controllers\ProfileController;
@@ -30,13 +31,7 @@ use App\Models\Service;
 | webhook endpoint. Keep auth/session-sensitive customer portal routes below.
 |
 */
-Route::get('/', function () {
-    $services = Service::where('is_active', 1)
-        ->with('activeVariations')
-        ->get();
-
-    return view('welcome', compact('services'));
-})->name('home');
+Route::get('/', [FrontPageController::class, 'home'])->name('home');
 
 Route::redirect('/home', '/')->name('landing.home');
 Route::redirect('/products', '/services')->name('landing.products');
