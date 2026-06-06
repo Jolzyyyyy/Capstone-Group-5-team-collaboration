@@ -11,7 +11,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Notifications\SendOTP;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -36,12 +35,9 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // --- SECURITY UPDATE: CHECK IF USING BACKUP EMAIL ---
-        $isBackup = $request->has('use_backup');
-        $searchColumn = $isBackup ? 'backup_email' : 'email';
-
-        // 2. Find user by the chosen email column
-        $user = User::where($searchColumn, trim($request->email))->first();
+        // 2. Find user by email
+        $email = strtolower(trim((string) $request->email));
+        $user = User::where('email', $email)->first();
 
         if (!$user) {
             return back()
@@ -63,23 +59,10 @@ class PasswordResetLinkController extends Controller
             'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ])->save();
 
-        // 6. Send OTP email notification
+        // 6. Queue OTP email notification so Gmail SMTP does not block this request.
         try {
-            /** * IMPORTANT: Kung backup email ang gamit, doon natin ipapadala ang notification.
-             * Gagamit tayo ng Notification::route para ma-override ang default email.
-             */
-            if ($isBackup) {
-                Notification::route('mail', $user->backup_email)
-                    ->notify(new SendOTP($otp));
-            } else {
-                $user->notify(new SendOTP($otp));
-            }
-
-            $deliveryEmail = $isBackup ? $user->backup_email : $user->email;
-            RateLimiter::hit(
-                $this->customerOtpResendThrottleKey((string) $deliveryEmail, $request->ip()),
-                User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS
-            );
+            $user->notify(new SendOTP($otp));
+            RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
             
         } catch (\Exception $e) {
             Log::error('Forgot Password OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
@@ -92,13 +75,13 @@ class PasswordResetLinkController extends Controller
         /**
          * 7. Store session data (CRITICAL)
          * Inilalagay natin ang mga flags para malaman ng VerifyOtpController 
-         * na Password Recovery ang ginagawa ng user.
+         * na Password Recovery ang ginagawa ng user, hindi regular login.
          */
         $request->session()->put([
             'password_reset_token' => $token,
-            'password_reset_email' => $user->email, // Main email pa rin ang reference para sa auth
-            'otp_email'           => $isBackup ? $user->backup_email : $user->email,
-            'is_forgot_password'  => true, 
+            'password_reset_email' => $user->email,
+            'otp_email'           => $user->email,
+            'is_forgot_password'  => true, // 🔥 Eto ang trigger para sa Reset Password redirection
             'auth_type'           => 'forgot_password', 
         ]);
 
@@ -106,10 +89,10 @@ class PasswordResetLinkController extends Controller
          * 8. Redirect to OTP verification page
          */
         return redirect()->route('otp.verify', [
-            'email' => $isBackup ? $user->backup_email : $user->email,
-            'flow' => 'forgot_password',
-        ])
-            ->with('status', 'A 6-digit verification code has been sent to your ' . ($isBackup ? 'backup' : 'email') . '.');
+                'email' => $user->email,
+                'flow' => 'forgot_password',
+            ])
+            ->with('status', 'A 6-digit verification code has been sent to your email.');
     }
 
     private function customerOtpResendThrottleKey(string $email, string $ip): string

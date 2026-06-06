@@ -31,6 +31,22 @@ class DashboardAccessTest extends TestCase
             ->assertSee('Customer');
     }
 
+    public function test_verified_customer_still_needs_session_otp_before_dashboard_access(): void
+    {
+        $customer = User::factory()->create([
+            'role' => User::ROLE_CUSTOMER,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($customer)
+            ->get(route('dashboard', absolute: false));
+
+        $response
+            ->assertRedirect(route('otp.verify', absolute: false))
+            ->assertSessionHas('otp_email', $customer->email);
+    }
+
     public function test_developer_dashboard_renders_developer_controls(): void
     {
         $developer = User::factory()->create([

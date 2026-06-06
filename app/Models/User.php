@@ -141,6 +141,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === self::ROLE_DEVELOPER;
     }
 
+    public function isSystemDeveloper(): bool
+    {
+        return $this->role === self::ROLE_DEVELOPER;
+    }
+
+    public function requiresStaffPortalOtp(): bool
+    {
+        return $this->canAccessAdminPortal() && !$this->isSystemDeveloper();
+    }
+
     public function canManageAdminClients(): bool
     {
         return $this->isDeveloper();

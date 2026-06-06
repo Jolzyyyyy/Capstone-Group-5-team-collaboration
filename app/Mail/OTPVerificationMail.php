@@ -45,7 +45,14 @@ class OTPVerificationMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.security-otp',
+            view: 'emails.otp-simple',
+            text: 'emails.otp-simple-text',
+            with: [
+                'otp' => $this->otp,
+                'name' => 'Staff',
+                'ttlMinutes' => \App\Models\User::EMAIL_OTP_TTL_MINUTES,
+                'appName' => config('app.name'),
+            ],
         );
     }
 

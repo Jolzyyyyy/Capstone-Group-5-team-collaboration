@@ -1,2 +1,9 @@
 @echo off
-powershell -ExecutionPolicy Bypass -File "%~dp0start-local-dev.ps1"
+setlocal
+
+cd /d "%~dp0"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-local-dev.ps1"
+
+echo.
+echo Press any key to close this window.
+pause >nul

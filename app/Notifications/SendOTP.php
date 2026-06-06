@@ -3,15 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-// use Illuminate\Contracts\Queue\ShouldQueue; // Naka-comment muna para instant send
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class SendOTP extends Notification
 {
-    use Queueable;
-
     public $otp;
 
     /**
@@ -37,18 +33,15 @@ class SendOTP extends Notification
     {
         return (new MailMessage)
             ->subject('Security Verification Code - Printify & Co.')
-            ->greeting('Hello, ' . ($notifiable->name ?? 'Customer') . '!')
-            ->line('We need to verify your account to ensure the security of your Printify & Co. profile.')
-            ->line('Here is your 6-digit verification code:')
-            
-            /** * Pinapalaki natin ang OTP gamit ang markdown (#) 
-             * para madaling makita at ma-copy ng user.
-             */
-            ->line('# **' . $this->otp . '**') 
-            
-            ->line('This code will expire in '.User::EMAIL_OTP_TTL_MINUTES.' minutes.')
-            ->line('If you did not request this, please ignore this email to keep your account safe.')
-            ->salutation('Thank you, ' . config('app.name') . ' Team');
+            ->view([
+                'html' => 'emails.otp-simple',
+                'text' => 'emails.otp-simple-text',
+            ], [
+                'otp' => $this->otp,
+                'name' => $notifiable->name ?? 'Customer',
+                'ttlMinutes' => User::EMAIL_OTP_TTL_MINUTES,
+                'appName' => config('app.name'),
+            ]);
     }
 
     /**

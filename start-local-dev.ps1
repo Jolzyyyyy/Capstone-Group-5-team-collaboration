@@ -4,10 +4,15 @@ $projectRoot = $PSScriptRoot
 $storageLogs = Join-Path $projectRoot 'storage\logs'
 
 $phpExe = 'C:\xampp\php\php.exe'
+$npmCmd = 'C:\Program Files\nodejs\npm.cmd'
 $mailpitExe = 'C:\Users\julie\AppData\Local\Microsoft\WinGet\Packages\axllent.mailpit_Microsoft.Winget.Source_8wekyb3d8bbwe\mailpit.exe'
 
 $laravelLog = Join-Path $storageLogs 'local-dev-laravel.log'
 $laravelErrorLog = Join-Path $storageLogs 'local-dev-laravel-error.log'
+$viteLog = Join-Path $storageLogs 'local-dev-vite.log'
+$viteErrorLog = Join-Path $storageLogs 'local-dev-vite-error.log'
+$queueLog = Join-Path $storageLogs 'local-dev-queue.log'
+$queueErrorLog = Join-Path $storageLogs 'local-dev-queue-error.log'
 $mailpitLog = Join-Path $storageLogs 'local-dev-mailpit.log'
 $mailpitErrorLog = Join-Path $storageLogs 'local-dev-mailpit-error.log'
 
@@ -69,12 +74,41 @@ function Start-HiddenExecutable {
     return [System.Diagnostics.Process]::Start($startInfo)
 }
 
+function Test-QueueWorker {
+    $workers = Get-CimInstance Win32_Process |
+        Where-Object {
+            $_.CommandLine -and
+            $_.CommandLine -match 'artisan\s+queue:work'
+        }
+
+    return @($workers).Count -gt 0
+}
+
+function Test-ViteServer {
+    return (Test-TcpPort -Address '127.0.0.1' -Port 5173) -or
+        (Test-TcpPort -Address '::1' -Port 5173)
+}
+
 if (-not (Test-Path $storageLogs)) {
     New-Item -ItemType Directory -Path $storageLogs -Force | Out-Null
 }
 
+if (-not (Test-Path (Join-Path $projectRoot '.env'))) {
+    $envExample = Join-Path $projectRoot '.env.example'
+
+    if (-not (Test-Path $envExample)) {
+        throw 'Missing .env and .env.example files. Cannot start Laravel without an environment file.'
+    }
+
+    Copy-Item -LiteralPath $envExample -Destination (Join-Path $projectRoot '.env') -Force
+}
+
 if (-not (Test-Path $phpExe)) {
     throw "PHP executable not found at $phpExe"
+}
+
+if (-not (Test-Path $npmCmd)) {
+    throw "npm executable not found at $npmCmd"
 }
 
 if (-not (Test-Path $mailpitExe)) {
@@ -82,6 +116,8 @@ if (-not (Test-Path $mailpitExe)) {
 }
 
 $laravelRunning = Test-TcpPort -Address '127.0.0.1' -Port 8000
+$viteRunning = Test-ViteServer
+$queueRunning = Test-QueueWorker
 $mailpitUiRunning = Test-TcpPort -Address '127.0.0.1' -Port 8025
 $mailpitSmtpRunning = Test-TcpPort -Address '127.0.0.1' -Port 1025
 
@@ -92,12 +128,35 @@ if (-not $laravelRunning) {
         -RedirectStandardOutput $laravelLog `
         -RedirectStandardError $laravelErrorLog `
         -WindowStyle Hidden `
-        -UseNewEnvironment `
         -PassThru
 
     if (-not (Wait-ForPort -Address '127.0.0.1' -Port 8000)) {
         throw 'Laravel server failed to start on 127.0.0.1:8000'
     }
+}
+
+if (-not $viteRunning) {
+    $viteProcess = Start-Process -FilePath $npmCmd `
+        -ArgumentList @('run', 'dev', '--', '--host', '127.0.0.1') `
+        -WorkingDirectory $projectRoot `
+        -RedirectStandardOutput $viteLog `
+        -RedirectStandardError $viteErrorLog `
+        -WindowStyle Hidden `
+        -PassThru
+
+    if (-not (Wait-ForPort -Address '127.0.0.1' -Port 5173)) {
+        throw 'Vite dev server failed to start on 127.0.0.1:5173'
+    }
+}
+
+if (-not $queueRunning) {
+    $queueProcess = Start-Process -FilePath $phpExe `
+        -ArgumentList @('artisan', 'queue:work', 'database', '--queue=mail,default', '--sleep=1', '--tries=3', '--timeout=30') `
+        -WorkingDirectory $projectRoot `
+        -RedirectStandardOutput $queueLog `
+        -RedirectStandardError $queueErrorLog `
+        -WindowStyle Hidden `
+        -PassThru
 }
 
 if (-not ($mailpitUiRunning -and $mailpitSmtpRunning)) {
@@ -118,10 +177,16 @@ if (-not ($mailpitUiRunning -and $mailpitSmtpRunning)) {
 Write-Host ''
 Write-Host 'Local dev services are ready.' -ForegroundColor Green
 Write-Host 'Laravel : http://127.0.0.1:8000'
+Write-Host 'Vite    : http://127.0.0.1:5173'
 Write-Host 'Mailpit : http://127.0.0.1:8025'
+Write-Host 'Queue   : database worker for mail/default jobs'
 Write-Host ''
 Write-Host 'Logs:'
 Write-Host "  $laravelLog"
 Write-Host "  $laravelErrorLog"
+Write-Host "  $viteLog"
+Write-Host "  $viteErrorLog"
+Write-Host "  $queueLog"
+Write-Host "  $queueErrorLog"
 Write-Host "  $mailpitLog"
 Write-Host "  $mailpitErrorLog"

@@ -1,1021 +1,452 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Printify.co | Admin Portal</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body>
+<x-app-layout>
     @php
-        $portalUser = $portalUser ?? auth()->user();
-        $headerAuditLogs = isset($recentAuditLogs)
-            ? $recentAuditLogs
-            : \App\Models\AuditLog::with(['actor', 'targetUser'])->latest()->limit(8)->get();
-        $headerNotifications = $headerAuditLogs->map(fn ($log) => [
-            'title' => \Illuminate\Support\Str::headline($log->event ?? 'System update'),
-            'body' => trim(($log->actor?->name ?? 'System') . ($log->targetUser ? ' updated ' . $log->targetUser->name : ' activity recorded')),
-            'time' => optional($log->created_at)->diffForHumans() ?? 'Just now',
-        ])->values();
-        if ($headerNotifications->isEmpty()) {
-            $headerNotifications = collect([
-                ['title' => 'Dashboard ready', 'body' => 'Admin workspace is ready for today.', 'time' => 'Now'],
-                ['title' => 'System status', 'body' => 'No critical alerts detected.', 'time' => 'Now'],
-            ]);
+        $user = Auth::user();
+        $isDeveloper = $user->isDeveloper();
+        $isAdminClient = $user->isAdminClient();
+        $profile = $profile ?? ($isAdminClient ? $user->adminClientProfile : null);
+        $stats = $stats ?? [];
+        $money = fn ($value) => 'PHP ' . number_format((float) $value, 2);
+        $heroImage = $isDeveloper ? asset('images/Homesld2.jpg') : asset('images/Homesld3.jpg');
+
+        $portalLinks = [
+            ['label' => 'Go to Home', 'href' => url('/'), 'active' => false, 'icon' => 'H'],
+            ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard'), 'icon' => 'D'],
+            ['label' => 'Orders', 'href' => route('admin.orders.index'), 'active' => request()->routeIs('admin.orders.*'), 'icon' => 'O'],
+            ['label' => 'Customers', 'href' => route('admin.customers.index'), 'active' => request()->routeIs('admin.customers.*'), 'icon' => 'C'],
+            ['label' => 'Services', 'href' => route('admin.services.index'), 'active' => request()->routeIs('admin.services.*'), 'icon' => 'S'],
+            ['label' => 'Analytics', 'href' => route('admin.analytics.index'), 'active' => request()->routeIs('admin.analytics.*'), 'icon' => 'A'],
+            ['label' => 'Reports', 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*'), 'icon' => 'R'],
+            ['label' => 'Settings', 'href' => route('admin.settings.index'), 'active' => request()->routeIs('admin.settings.*'), 'icon' => 'G'],
+            ['label' => 'Help Center', 'href' => route('admin.help.index'), 'active' => request()->routeIs('admin.help.*'), 'icon' => '?'],
+        ];
+
+        if ($isDeveloper) {
+            array_splice($portalLinks, 4, 0, [[
+                'label' => 'Admin Clients',
+                'href' => route('developer.admin-clients.index'),
+                'active' => request()->routeIs('developer.admin-clients.*'),
+                'icon' => 'AC',
+            ]]);
         }
-        $isDeveloperPortal = isset($portalUser) && $portalUser->isDeveloper();
-        $portalRoleLabel = $isDeveloperPortal ? 'Developer' : 'Admin';
-        $portalRoleUpper = strtoupper($portalRoleLabel);
-        $portalTitle = $portalRoleUpper . ' DASHBOARD';
-        $portalKicker = $isDeveloperPortal ? 'Developer Management Portal' : 'Admin Management Portal';
-        $portalTagline = $isDeveloperPortal
-            ? 'Manage admin clients, services, analytics, and platform controls from one developer workspace.'
-            : 'Manage customers, orders, products, reports, and system activity from one admin workspace.';
-        $portalDisplayName = $portalUser->name ?? $portalRoleLabel;
-        $portalInitial = strtoupper(substr($portalDisplayName, 0, 1));
-        $headerSearchItems = $isDeveloperPortal
+
+        if ($isAdminClient) {
+            $portalLinks[] = [
+                'label' => 'Reference Profile',
+                'href' => route('admin.admin-client-profile.edit'),
+                'active' => request()->routeIs('admin.admin-client-profile.*'),
+                'icon' => 'P',
+            ];
+        }
+
+        $primaryStats = [
+            ['label' => 'Revenue Stream', 'value' => $money($stats['sales_total'] ?? 0), 'note' => 'Total recorded order value', 'href' => route('admin.reports.index'), 'tone' => 'from-[#f97316] to-[#ec4899]'],
+            ['label' => 'Order Trends', 'value' => number_format((int) ($stats['orders'] ?? 0)), 'note' => ($stats['orders_this_month'] ?? 0) . ' orders this month', 'href' => route('admin.orders.index'), 'tone' => 'from-[#2563eb] to-[#14b8a6]'],
+            ['label' => 'Account Status', 'value' => number_format((int) ($stats['customers'] ?? 0)), 'note' => $isDeveloper ? 'All customer accounts' : 'Assigned customers', 'href' => route('admin.customers.index'), 'tone' => 'from-[#10b981] to-[#059669]'],
+            ['label' => 'Service Inventory', 'value' => number_format((int) ($stats['active_services'] ?? 0)), 'note' => ($stats['inactive_services'] ?? 0) . ' inactive records', 'href' => route('admin.services.index'), 'tone' => 'from-[#f59e0b] to-[#f97316]'],
+        ];
+
+        if ($isDeveloper) {
+            $primaryStats[] = [
+                'label' => 'Admin Clients',
+                'value' => number_format((int) ($stats['approved_admin_clients'] ?? 0)),
+                'note' => ($stats['pending_admin_clients'] ?? 0) . ' pending approval',
+                'href' => route('developer.admin-clients.index'),
+                'tone' => 'from-[#7c3aed] to-[#4f46e5]',
+            ];
+        }
+
+        $quickActions = $isDeveloper
             ? [
-                ['title' => 'Dashboard', 'meta' => 'Developer overview and platform activity', 'url' => route('admin.dashboard')],
-                ['title' => 'Manage Admin Clients', 'meta' => 'Approve, assign, and review admin clients', 'url' => route('developer.admin-clients.index')],
-                ['title' => 'Orders', 'meta' => 'Developer order monitoring', 'url' => route('developer.orders.index')],
-                ['title' => 'Services', 'meta' => 'Manage service catalog and availability', 'url' => route('developer.services.index')],
-                ['title' => 'Customers', 'meta' => 'Review customer records and activity', 'url' => route('developer.customers.index')],
-                ['title' => 'Analytics', 'meta' => 'Developer analytics and platform insights', 'url' => route('developer.analytics.index')],
-                ['title' => 'Reports', 'meta' => 'Operational and performance reports', 'url' => route('developer.reports.index')],
-                ['title' => 'Settings', 'meta' => 'Developer preferences and system controls', 'url' => route('developer.settings.index')],
+                ['label' => 'Manage Admin Clients', 'href' => route('developer.admin-clients.index'), 'icon' => 'AC', 'tone' => 'bg-[#7c3aed]'],
+                ['label' => 'System Status', 'href' => route('admin.analytics.index'), 'icon' => 'ST', 'tone' => 'bg-[#10b981]'],
+                ['label' => 'Printer Queue', 'href' => route('admin.orders.index'), 'icon' => 'PQ', 'tone' => 'bg-[#f59e0b]'],
             ]
             : [
-                ['title' => 'Dashboard', 'meta' => 'Overview and recent transactions', 'url' => route('admin.dashboard')],
-                ['title' => 'Customer/User', 'meta' => 'Manage registered users', 'url' => route('admin.customers')],
-                ['title' => 'Orders', 'meta' => 'Order management and status tracking', 'url' => route('admin.orders')],
-                ['title' => 'Products', 'meta' => 'Product inventory and services', 'url' => route('admin.products')],
-                ['title' => 'Reports', 'meta' => 'Sales reports and export tools', 'url' => route('admin.reports')],
-                ['title' => 'Analytics', 'meta' => 'Traffic and performance charts', 'url' => route('admin.analytics')],
-                ['title' => 'Settings', 'meta' => 'Preferences and system controls', 'url' => route('admin.settings')],
+                ['label' => 'Assigned Orders', 'href' => route('admin.orders.index'), 'icon' => 'AO', 'tone' => 'bg-[#2563eb]'],
+                ['label' => 'System Status', 'href' => route('admin.analytics.index'), 'icon' => 'ST', 'tone' => 'bg-[#10b981]'],
+                ['label' => 'Service Catalog', 'href' => route('admin.services.index'), 'icon' => 'SC', 'tone' => 'bg-[#f59e0b]'],
             ];
+
+        $scopeRows = $isDeveloper
+            ? [
+                ['label' => 'Developer', 'value' => 'Full system oversight'],
+                ['label' => 'Admin-client accounts', 'value' => 'Invite, approve, suspend, and audit'],
+                ['label' => 'Customer data', 'value' => 'All customer accounts and all orders'],
+                ['label' => 'Unassigned intake', 'value' => ($stats['unassigned_orders'] ?? 0) . ' orders and ' . ($stats['unassigned_customers'] ?? 0) . ' customers need assignment'],
+            ]
+            : [
+                ['label' => 'Admin-client', 'value' => 'Assigned operational records only'],
+                ['label' => 'Customer data', 'value' => 'Assigned customers and their orders'],
+                ['label' => 'Service catalog', 'value' => 'Shared service records for order handling'],
+                ['label' => 'Developer controls', 'value' => 'Hidden from this role'],
+            ];
+
+        $statusClasses = [
+            'Pending' => 'bg-amber-50 text-amber-800 ring-amber-200',
+            'For Verification' => 'bg-blue-50 text-blue-800 ring-blue-200',
+            'Processing' => 'bg-violet-50 text-violet-800 ring-violet-200',
+            'Ready' => 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+            'Completed' => 'bg-slate-100 text-slate-800 ring-slate-200',
+            'Cancelled' => 'bg-rose-50 text-rose-800 ring-rose-200',
+        ];
+
+        $paymentClasses = [
+            'paid' => 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+            'pending' => 'bg-amber-50 text-amber-800 ring-amber-200',
+            'failed' => 'bg-rose-50 text-rose-800 ring-rose-200',
+            'cancelled' => 'bg-slate-100 text-slate-700 ring-slate-200',
+            'unpaid' => 'bg-slate-100 text-slate-700 ring-slate-200',
+        ];
     @endphp
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&family=Poppins:wght@500;600;700&display=swap');
-        
-        :root {
-            --sidebar-width: 260px;
-            --sidebar-closed-width: 85px;
-            --primary-purple: #2563EB;
-            --staff-blue: #2563EB;
-            --staff-blue-dark: #1D4ED8;
-            --staff-blue-soft: #EFF6FF;
-            --staff-orange: #FF7A00;
-            --bg-light: #F8FAFC;
-            --header-height: 300px; 
-            --card-radius: 20px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --yellow-text: #FFB000;
-            --green-card: #10B981;
-            --blue-card: #3B82F6;
-            --yellow-card: #F59E0B;
-            --pink-card: #EC4899;
-            --action-gradient: linear-gradient(135deg, #60A5FA, #E879F9);
-            --action-green: #4ADE80;
-            --action-yellow: #FBBF24;
-        }
 
-        body { 
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-            background-color: var(--bg-light); 
-            margin: 0; color: #1E293B;
-            overflow-x: hidden;
-        }
-        h1, .hero-main-title { font-family: 'Playfair Display', Georgia, serif; }
-        h2, h3, .sidebar-link, .visual-card-title, .tool-panel-title, .panel-title, .chat-title { font-family: 'Poppins', system-ui, sans-serif; letter-spacing: 0; }
+    <div class="min-h-screen bg-[#f4f7fb]" style="font-family: 'Poppins', sans-serif;">
+        <div class="lg:grid lg:grid-cols-[232px,1fr]">
+            <aside class="hidden border-r border-[#e5eaf0] bg-white lg:block">
+                <div class="sticky top-16 flex min-h-[calc(100vh-4rem)] flex-col px-5 py-6">
+                    <div class="mb-8 flex items-center gap-3">
+                        <x-application-logo class="h-12 w-12 rounded-full shadow-sm" />
+                        <div>
+                            <p class="text-lg font-black tracking-tight text-[#1f2937]">Printify &amp; Co.</p>
+                            <p class="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#9ca3af]">
+                                {{ $isDeveloper ? 'Developer Portal' : 'Admin Client Portal' }}
+                            </p>
+                        </div>
+                    </div>
 
-        /* --- SIDEBAR --- */
-        .sidebar {
-            position: fixed; top: 0; left: 0; height: 100vh;
-            width: var(--sidebar-width); background: #FFFFFF;
-            border-right: 1px solid #E2E8F0; z-index: 1000;
-            display: flex; flex-direction: column;
-            transition: var(--transition);
-            box-shadow: 4px 0 24px rgba(0,0,0,0.02);
-        }
-        .sidebar.closed { width: var(--sidebar-closed-width); }
-        
-        .sidebar-header {
-            padding: 1.5rem; display: flex; align-items: center; gap: 15px;
-            border-bottom: 1px solid #F1F5F9;
-        }
-        .menu-toggle {
-            cursor: pointer; padding: 10px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.2s; color: #64748B; background: #F8FAFC;
-        }
-        .menu-toggle:hover { background: #F1F5F9; color: var(--staff-blue); }
-        .brand-name { font-weight: 900; font-size: 1.3rem; color: #0F172A; font-style: italic; letter-spacing: -1px; white-space: nowrap; }
-        
-        .nav-menu { flex: 1; padding: 14px 14px; overflow-y: auto; overflow-x: hidden; }
-        .sidebar-link {
-            display: flex; align-items: center; gap: 12px;
-            padding: 11px 16px; margin-bottom: 5px;
-            border-radius: 12px; color: #64748B;
-            text-decoration: none; font-weight: 800; 
-            font-size: 10px; text-transform: uppercase;
-            transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-            cursor: pointer; position: relative;
-            white-space: nowrap;
-        }
-        
-        .sidebar-link:hover {
-            background: #F1F5F9;
-            color: #334155;
-            box-shadow: none;
-        }
-        .sidebar-link.active {
-            background: var(--staff-blue-soft); color: var(--staff-blue);
-            box-shadow: none;
-        }
-        .sidebar-link.active::before {
-            content: ''; position: absolute; left: 0; top: 25%; bottom: 25%;
-            width: 4px; background: var(--staff-blue); border-radius: 0 4px 4px 0;
-        }
-        .sidebar-link.active::after {
-            content: '›';
-            margin-left: auto;
-            color: var(--staff-blue);
-            font-size: 16px;
-            font-weight: 950;
-        }
-        .sidebar.closed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
-        .sidebar.closed .sidebar-link.active::after { display: none; }
+                    <nav class="space-y-1">
+                        @foreach ($portalLinks as $link)
+                            <a href="{{ $link['href'] }}" class="group flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-bold transition {{ $link['active'] ? 'bg-[#eef2ff] text-[#4f46e5] shadow-sm' : 'text-[#5f6672] hover:bg-[#f6f8fb] hover:text-[#22201f]' }}">
+                                <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-[11px] font-black {{ $link['active'] ? 'border-[#c7d2fe] bg-white text-[#4f46e5]' : 'border-[#e5eaf0] bg-white text-[#8a94a3] group-hover:border-[#ffcf9c] group-hover:text-[#f97316]' }}">
+                                    {{ $link['icon'] }}
+                                </span>
+                                <span>{{ $link['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
 
-        .nav-text { transition: opacity 0.2s; }
-
-        /* --- MAIN WRAPPER --- */
-        .admin-main-shell { 
-            margin-left: var(--sidebar-width); 
-            transition: var(--transition); 
-        }
-        .admin-main-shell.expanded { margin-left: var(--sidebar-closed-width); }
-
-        /* --- HERO HEADER --- */
-        .hero-banner {
-            height: var(--header-height);
-            background: linear-gradient(120deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.36)), url('https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?q=80&w=2000');
-            background-size: cover; background-position: center;
-            padding: 5px 60px;
-            color: white; position: relative;
-            display: flex; flex-direction: column; justify-content: space-between;
-            overflow: visible;
-        }
-        .hero-banner::after {
-            content: '';
-            position: absolute;
-            right: -80px;
-            bottom: -130px;
-            width: 330px;
-            height: 330px;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.1);
-            pointer-events: none;
-        }
-
-        .top-nav { height:44px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 7px; position: relative; z-index: 20; flex-wrap: nowrap; }
-        .header-icon-no-box { 
-            position: relative; cursor: pointer; width: 38px; height: 38px; 
-            display: grid; place-items: center; 
-            padding: 0;
-            background: transparent;
-            border: 1px solid transparent;
-            border-radius: 14px;
-            font: inherit;
-            transition: color 0.18s, background-color 0.18s, border-color 0.18s;
-            color: rgba(255,255,255,0.7);
-        }
-        .header-icon-no-box:hover, .header-icon-no-box.is-active {
-            color: white;
-            background: rgba(241,245,249,0.24);
-            border-color: rgba(255,255,255,0.18);
-        }
-        .red-dot { position: absolute; top: 2px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; background: var(--staff-orange); color:#fff; border-radius: 999px; border: 2px solid rgba(15,23,42,.78); display:grid; place-items:center; font-size:8px; font-weight:950; line-height:1; }
-        
-        .profile-area { display: flex; align-items: center; gap: 10px; background: transparent; padding: 0; border-radius: 0; border: 0; }
-        .profile-pic { width: 40px; height: 40px; border-radius: 50%; border: 0; position: relative; overflow:hidden; background:var(--staff-blue); display:grid; place-items:center; color:white; font-weight:900; font-size:14px; }
-        .profile-pic img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-        .green-dot { position: absolute; bottom: 4px; right: 3px; width: 8px; height: 8px; background: #22C55E; border-radius: 50%; border: none; box-shadow: 0 0 0 3px rgba(34,197,94,.22); }
-
-        .hero-title-area { display: flex; flex-direction: column; justify-content: center; flex-grow: 1; margin-top: 20px; max-width:720px; position:relative; z-index:2; }
-        .hero-title-area::before { content:''; width:74px; height:4px; border-radius:999px; background:linear-gradient(90deg,var(--staff-blue),#60A5FA); margin-bottom:18px; box-shadow:0 8px 20px rgba(37,99,235,.35); }
-        .hero-kicker { font-size:13px; color:white; opacity:.9; font-weight:700; margin:0 0 2px; }
-        .hero-kicker::before { content:''; display:inline-block; width:7px; height:7px; margin-right:7px; border-radius:999px; background:#60A5FA; box-shadow:0 0 12px #60A5FA; }
-        .hero-main-title { font-size: clamp(2.1rem,4.4vw,3.35rem); font-weight: 700; color: var(--staff-orange); margin: 0; letter-spacing: 0; line-height:1; text-shadow: 0 4px 12px rgba(0,0,0,0.4); white-space:nowrap; }
-        .hero-subline { margin-top:16px; max-width:600px; font-size:13px; line-height:1.7; color:rgba(255,255,255,.78); font-weight:600; }
-        .dots-container{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
-        .dot{width:8px;height:8px;border:0;border-radius:50%;background:rgba(255,255,255,.42)}
-        .dot.active{background:var(--staff-blue);transform:scale(1.35)}
-        .quick-actions-container { position: absolute; right: 32px; bottom: 58px; display: flex; align-items: center; gap: 0; z-index: 10; padding:12px 14px; border:1px solid rgba(255,255,255,.22); border-radius:14px; background:rgba(17,24,39,.42); box-shadow:0 18px 50px rgba(0,0,0,.22); backdrop-filter:blur(12px); }
-        .action-circle-group { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; min-width:88px; border-right:1px solid rgba(255,255,255,.12); }
-        .action-circle-group:last-child { border-right:0; }
-        .action-circle {
-            width: 44px; height: 44px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: white; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-        }
-        .action-circle-group:hover .action-circle { transform: translateY(-4px) scale(1.04); }
-        .action-label { font-size: 9px; font-weight: 900; color: #E2E8F0; text-transform: capitalize; letter-spacing: 0.4px; }
-        .circle-purple { background: linear-gradient(135deg,#8B5CF6,#4F46E5); }
-        .circle-green { background: linear-gradient(135deg,#22C55E,#15803D); }
-        .circle-yellow { background: linear-gradient(135deg,#F59E0B,#D97706); }
-        .circle-blue { background: linear-gradient(135deg,#0EA5E9,#2563EB); }
-
-        .content-container { padding: 32px 70px 70px; }
-        .overview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-bottom: 30px; }
-
-        .visual-card {
-            background: white; border-radius: 12px; border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative;
-            overflow: hidden; display: flex; flex-direction: column;
-            transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease; cursor: pointer;
-            min-height: 290px;
-        }
-        .visual-card:hover { border-color: #CBD5E1; box-shadow: 0 14px 25px -10px rgba(15,23,42,0.2); transform: translateY(-2px); }
-        .visual-card-body { padding: 24px; flex: 1; min-height: 210px; }
-        .visual-card-title { font-size: 14px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; display: block; }
-        
-        .donut-wrapper { position: relative; width: 110px; height: 110px; }
-        .donut-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 14px; color: #1e293b; }
-        
-        .bar-chart-container { display: flex; align-items: flex-end; gap: 10px; height: 80px; margin-top: 20px; }
-        .bar-item { width: 100%; background: #CBD5E1; border-radius: 4px; position: relative; }
-
-        .visual-footer {
-            position: relative;
-            padding: 0 26px;
-            height: 56px;
-            font-weight: 800;
-            font-size: 11px;
-            text-transform: uppercase;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            overflow: hidden;
-            border-radius: 0 0 12px 12px;
-        }
-        .visual-footer::after {
-            content: '';
-            position: absolute;
-            right: -2px;
-            bottom: -1px;
-            width: 64px;
-            height: 31px;
-            background: white;
-            border-radius: 28px 0 0 0;
-            opacity: 0.94;
-        }
-        .visual-footer::before {
-            content: '';
-            position: absolute;
-            right: 42px;
-            bottom: 0;
-            width: 30px;
-            height: 30px;
-            background: inherit;
-            border-bottom-right-radius: 28px;
-            box-shadow: 12px 13px 0 white;
-        }
-        .visual-footer i, .visual-footer svg { position: relative; z-index: 1; }
-        .visual-footer span { position: relative; z-index: 1; }
-
-        .table-section { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .table-header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-        .table-controls { display: flex; align-items: center; gap: 12px; }
-        .btn-filter { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 12px; border: 1px solid #E2E8F0; background: white; color: #64748B; font-weight: 700; font-size: 13px; cursor: pointer; height: 45px; }
-        .btn-export { background: var(--primary-purple); color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; height: 45px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
-
-        .custom-table { width: 100%; border-collapse: collapse; }
-        .custom-table th { text-align: left; padding: 16px 18px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #E2E8F0; background: #F8FAFC; }
-        .custom-table td { padding: 16px 18px; font-size: 14px; border-bottom: 1px solid #E2E8F0; }
-        
-        .status-pill { padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
-        .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
-        .status-shipped { background: #DCFCE7; color: #15803D; }
-        .status-shipped::before { background: #15803D; }
-        .status-pending { background: #FEF3C7; color: #B45309; }
-        .status-pending::before { background: #B45309; }
-
-        .action-dots { width: 38px; height: 38px; border-radius: 10px; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; background: white; color: #94A3B8; cursor: pointer; }
-
-        .admin-section-content { padding: 32px 70px 70px; }
-        .admin-section-content > .main-wrapper,
-        .admin-section-content > .analytics-section,
-        .admin-section-content > .settings-section {
-            width: 100% !important;
-            max-width: 1400px !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-        }
-        .admin-section-content .main-wrapper,
-        .admin-section-content .analytics-section,
-        .admin-section-content .settings-section {
-            width: 100% !important;
-            max-width: 1400px !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-        }
-        .admin-section-content > .settings-section,
-        .admin-section-content .settings-section { padding-top: 0 !important; }
-        .admin-section-content .top-header { margin: 0 0 12px 0 !important; }
-        .admin-section-content .giant-title,
-        .admin-section-content .brand-font {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
-            font-size: 32px !important;
-            font-weight: 900 !important;
-            letter-spacing: -1px !important;
-            text-transform: none !important;
-            margin: 0 0 35px 0 !important;
-            color: #1E293B !important;
-            line-height: 1.2 !important;
-        }
-        .admin-section-content .box-container,
-        .admin-section-content .summary-card,
-        .admin-section-content .setting-card,
-        .admin-section-content .glass-card {
-            border-radius: 12px !important;
-            border: 1px solid #CBD5E1 !important;
-            box-shadow: 0 4px 6px -1px rgba(15,23,42,0.04) !important;
-        }
-        .admin-section-content .main-table,
-        .admin-section-content .custom-table,
-        .admin-section-content .modern-items-table {
-            width: 100% !important;
-            border-collapse: separate !important;
-            border-spacing: 0 !important;
-            table-layout: auto !important;
-        }
-        .admin-section-content .main-table th,
-        .admin-section-content .custom-table th,
-        .admin-section-content .modern-items-table th {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
-            font-size: 11px !important;
-            font-weight: 800 !important;
-            color: #475569 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.04em !important;
-            padding: 14px 18px !important;
-            background: #F8FAFC !important;
-            border-bottom: 1px solid #E2E8F0 !important;
-            text-align: left !important;
-            white-space: nowrap !important;
-        }
-        .admin-section-content .main-table td,
-        .admin-section-content .custom-table td,
-        .admin-section-content .modern-items-table td {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
-            font-size: 14px !important;
-            color: #1E293B !important;
-            padding: 14px 18px !important;
-            border-bottom: 1px solid #E2E8F0 !important;
-            vertical-align: middle !important;
-        }
-        .custom-table tbody tr:hover,
-        .admin-section-content .main-table tbody tr:hover,
-        .admin-section-content .custom-table tbody tr:hover,
-        .admin-section-content .modern-items-table tbody tr:hover {
-            background: #F8FAFC !important;
-        }
-        .admin-section-content .section-title {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
-            font-size: 14px !important;
-            font-weight: 900 !important;
-            color: #1E293B !important;
-        }
-        .admin-section-content *,
-        .sidebar *,
-        .admin-main-shell,
-        .hero-banner {
-            transition-property: background-color, color, border-color, box-shadow, opacity !important;
-        }
-
-        .header-search-wrap { display: flex; align-items: center; position: relative; width:270px; min-width:270px; }
-        .header-search-box {
-            width: 100%;
-            height: 34px;
-            border: 1px solid rgba(255,255,255,0.20);
-            background: rgba(255,255,255,0.12);
-            color: white;
-            border-radius: 999px;
-            padding: 0 44px 0 14px;
-            font-size: 11px;
-            font-weight: 700;
-            outline: none;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.18);
-            backdrop-filter: blur(10px);
-        }
-        .header-search-submit {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 38px;
-            height: 34px;
-            border: none;
-            border-radius: 0 999px 999px 0;
-            background: var(--staff-blue);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .header-search-submit:hover { background: #111827; color: white; }
-        .header-search-box::placeholder { color: rgba(255,255,255,0.74); }
-        .header-tool-panel {
-            position: absolute;
-            top: 48px;
-            right: 0;
-            width: 335px;
-            max-height: 430px;
-            overflow-y: auto;
-            background: white;
-            color: #1E293B;
-            border: 1px solid rgba(226,232,240,.95);
-            border-radius: 22px;
-            box-shadow: 0 28px 80px rgba(15,23,42,.26);
-            padding: 12px;
-            z-index: 1200;
-        }
-        .header-tool-panel::before { content:''; position:absolute; top:-9px; right:31px; width:18px; height:18px; background:white; border-left:1px solid rgba(226,232,240,.95); border-top:1px solid rgba(226,232,240,.95); transform:rotate(45deg); }
-        .tool-panel-title { font-size: 10px; font-weight: 950; color: #64748B; text-transform: uppercase; letter-spacing: .04em; padding: 8px 8px 10px; position:relative; z-index:1; }
-        .notification-item, .search-result-item {
-            padding: 11px 10px;
-            border-radius: 14px;
-            border: 1px solid #E2E8F0;
-            margin-bottom: 8px;
-            background: white;
-            cursor: pointer;
-            transition: background-color 0.18s ease, border-color 0.18s ease;
-            position: relative;
-            z-index: 1;
-        }
-        .notification-item:hover, .search-result-item:hover {
-            background: #EFF6FF;
-            border-color: #BFDBFE;
-        }
-        .notification-title, .search-result-title { font-size: 12px; font-weight: 950; color: #1E293B; }
-        .notification-body, .search-result-meta { font-size: 10px; color: #64748B; margin-top: 4px; line-height: 1.35; }
-        .notification-time { font-size: 9px; font-weight: 900; color: var(--staff-blue); margin-top: 6px; }
-        .chat-drawer {
-            position: fixed;
-            right: 28px;
-            bottom: 28px;
-            width: 360px;
-            height: 500px;
-            background: white;
-            border: 1px solid #E2E8F0;
-            border-radius: 20px;
-            box-shadow: 0 24px 60px rgba(15,23,42,0.22);
-            z-index: 1600;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .chat-head { background: #111827; color: white; padding: 14px 16px; display:flex; align-items:center; justify-content:space-between; }
-        .chat-thread-select { padding: 10px 12px; border-bottom: 1px solid #E2E8F0; background: white; }
-        .chat-thread-select select { width: 100%; border: 1px solid #CBD5E1; border-radius: 10px; padding: 9px 10px; font-size: 12px; font-weight: 800; color: #1E293B; outline: none; background: #F8FAFC; }
-        .chat-tools { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #E2E8F0; background: white; }
-        .chat-tools input { flex: 1; border: 1px solid #E2E8F0; border-radius: 999px; padding: 9px 12px; font-size: 11px; outline: none; }
-        .chat-chip { border: 1px solid #E2E8F0; background: #F8FAFC; border-radius: 999px; padding: 8px 10px; font-size: 10px; font-weight: 800; cursor: pointer; color: #475569; }
-        .chat-chip:hover { background: #EEF2FF; border-color: #C7D2FE; color: #4F46E5; }
-        .chat-title { font-size: 13px; font-weight: 900; }
-        .chat-status { font-size: 10px; color: #34D399; font-weight: 800; }
-        .chat-body { flex: 1; padding: 14px; overflow-y: auto; background: #F8FAFC; }
-        .chat-message { max-width: 82%; padding: 10px 12px; border-radius: 14px; margin-bottom: 10px; font-size: 12px; line-height: 1.4; }
-        .chat-message.customer { background: white; color: #1E293B; border: 1px solid #E2E8F0; }
-        .chat-message.me { margin-left: auto; background: var(--staff-blue); color: white; border-bottom-right-radius: 5px; }
-        .chat-input-row { padding: 12px; display:flex; gap:8px; border-top:1px solid #E2E8F0; }
-        .chat-input-row input { flex:1; border:1px solid #CBD5E1; border-radius:999px; padding:10px 12px; font-size:12px; outline:none; }
-        .chat-input-row button { width:40px; height:40px; border-radius:50%; border:none; background:var(--staff-blue); color:white; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-        .chat-input-row button:hover { background:var(--staff-blue-dark); }
-
-        .date-pill { background:white; padding:10px 20px; border-radius:12px; border:1px solid #111827; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; color:#111827; }
-        .date-pill i { width:16px; color:#111827; }
-
-        @media(max-width:1024px){
-            .admin-main-shell,.admin-main-shell.expanded{margin-left:var(--sidebar-closed-width)}
-            .sidebar{width:var(--sidebar-closed-width)}
-            .brand-name,.sidebar-link span,.sidebar-link.active::after{display:none!important}
-            .sidebar-link{justify-content:center;padding-left:0;padding-right:0}
-            .hero-banner{padding:5px 28px}
-            .header-search-wrap{width:225px;min-width:225px}
-            .quick-actions-container{right:28px}
-            .action-circle-group{min-width:82px}
-            .content-container,.admin-section-content{padding:32px 40px 60px}
-            .stats-grid{grid-template-columns:repeat(2,1fr)}
-        }
-        @media(max-width:760px){
-            .admin-main-shell,.admin-main-shell.expanded{margin-left:0}
-            .sidebar{transform:translateX(-100%)}
-            .sidebar.mobile-open{transform:translateX(0);width:var(--sidebar-width)}
-            .hero-banner{height:390px;padding:16px}
-            .top-nav{justify-content:flex-start;flex-wrap:wrap;height:auto}
-            .header-search-wrap{order:10;width:100%;min-width:0;flex-basis:100%;margin-top:8px}
-            .header-tool-panel{left:0;right:auto;width:100%}
-            .quick-actions-container{left:16px;right:16px;bottom:28px;justify-content:space-between;padding:12px}
-            .action-circle-group{min-width:auto;border-right:0}
-            .hero-main-title{white-space:normal}
-            .content-container,.admin-section-content{padding:20px 16px}
-            .stats-grid{grid-template-columns:1fr}
-            .overview-header{align-items:flex-start;gap:14px;flex-direction:column}
-        }
-
-        .detail-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .modal-card { background: white; width: 450px; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes modalPop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        [x-cloak] { display: none !important; }
-    </style>
-
-    <div x-data="{ 
-        sidebarOpen: true, 
-        showDetail: false,
-        searchOpen: false,
-        notificationOpen: false,
-        chatOpen: false,
-        searchTerm: '',
-        chatDraft: '',
-        chatSearch: '',
-        activeThreadId: 1,
-        notificationsRead: false,
-        notifications: @js($headerNotifications),
-        chatThreads: [
-            {
-                id: 1,
-                customer: 'Maria Santos',
-                subject: 'Order pickup inquiry',
-                messages: [
-                    { from: 'customer', text: 'Hello po, ready na po ba for pickup yung order ko?', time: 'Now' }
-                ]
-            },
-            {
-                id: 2,
-                customer: 'Juan Dela Cruz',
-                subject: 'Print quotation',
-                messages: [
-                    { from: 'customer', text: 'Magkano po ang 100 pcs flyers, full color?', time: 'Now' }
-                ]
-            },
-            {
-                id: 3,
-                customer: 'Aly Reyes',
-                subject: 'File upload concern',
-                messages: [
-                    { from: 'customer', text: 'Hindi po ma-upload yung PDF ko. Pwede po pa-check?', time: 'Now' }
-                ]
-            }
-        ],
-        init() {
-            const savedThreads = window.localStorage.getItem('printifyStaffInquiryThreads');
-            if (savedThreads) {
-                try { this.chatThreads = JSON.parse(savedThreads); } catch (error) {}
-            }
-        },
-        searchItems: @js($headerSearchItems),
-        modalTitle: '', modalData: '', modalColor: '',
-        get activeThread() {
-            return this.chatThreads.find(thread => thread.id == this.activeThreadId) || this.chatThreads[0];
-        },
-        get filteredSearchItems() {
-            if (!this.searchTerm.trim()) return this.searchItems;
-            const term = this.searchTerm.toLowerCase();
-            return this.searchItems.filter(item => (item.title + ' ' + item.meta).toLowerCase().includes(term));
-        },
-        get filteredChatMessages() {
-            const messages = this.activeThread ? this.activeThread.messages : [];
-            if (!this.chatSearch.trim()) return messages;
-            const term = this.chatSearch.toLowerCase();
-            return messages.filter(message => message.text.toLowerCase().includes(term));
-        },
-        submitSearch() {
-            const firstResult = this.filteredSearchItems[0];
-            if (firstResult) window.location.href = firstResult.url;
-        },
-        openNotifications() {
-            this.notificationOpen = !this.notificationOpen;
-            this.searchOpen = false;
-            if (this.notificationOpen) this.notificationsRead = true;
-        },
-        addQuickReply(text) {
-            this.chatDraft = text;
-            this.sendChatMessage();
-        },
-        clearChat() {
-            if (!this.activeThread) return;
-            this.activeThread.messages = [
-                { from: 'customer', text: 'Conversation cleared. Waiting for the next customer inquiry.', time: 'Now' }
-            ];
-            window.localStorage.setItem('printifyStaffInquiryThreads', JSON.stringify(this.chatThreads));
-        },
-        sendChatMessage() {
-            if (!this.chatDraft.trim() || !this.activeThread) return;
-            this.activeThread.messages.push({ from: 'me', text: this.chatDraft.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-            this.chatDraft = '';
-            window.localStorage.setItem('printifyStaffInquiryThreads', JSON.stringify(this.chatThreads));
-        },
-        openModal(title, info, color) {
-            this.modalTitle = title; this.modalData = info;
-            this.modalColor = color; this.showDetail = true;
-        }
-    }">
-        
-        <!-- SIDEBAR -->
-        <aside class="sidebar" :class="!sidebarOpen ? 'closed' : ''">
-            <div class="sidebar-header">
-                <div class="menu-toggle" @click="sidebarOpen = !sidebarOpen">
-                    <i data-lucide="menu"></i>
+                    <div class="mt-auto rounded-lg border border-[#fee2e2] bg-[#fff7f7] p-4">
+                        <p class="text-xs font-black uppercase text-[#b91c1c]">Secure Session</p>
+                        <p class="mt-2 text-sm font-semibold text-[#6f675f]">Staff portal email OTP is required before this workspace opens.</p>
+                    </div>
                 </div>
-                <span class="brand-name" x-show="sidebarOpen" x-transition>Printify Co.</span>
-            </div>
-            
-            <nav class="nav-menu">
-                <a href="{{ route('home') }}" class="sidebar-link">
-                    <i data-lucide="external-link"></i> 
-                    <span class="nav-text" x-show="sidebarOpen" x-transition>Go to Home</span>
-                </a>
-                <div class="my-4 border-t border-slate-50 mx-2" style="border-top: 1px solid #F1F5F9; margin: 15px 0;"></div>
+            </aside>
 
-                <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ in_array($section, ['dashboard', 'developer-dashboard', 'admin-client-dashboard'], true) ? 'active' : '' }}">
-                    <i data-lucide="layout-dashboard"></i> 
-                    <span class="nav-text" x-show="sidebarOpen" x-transition>Dashboard</span>
-                </a>
-
-                @if(isset($portalUser) && $portalUser->isDeveloper())
-                    <a href="{{ route('developer.admin-clients.index') }}" class="sidebar-link">
-                        <i data-lucide="shield-check"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Manage Admin Clients</span>
-                    </a>
-                    <a href="{{ route('developer.orders.index') }}" class="sidebar-link">
-                        <i data-lucide="shopping-cart"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Orders</span>
-                    </a>
-                    <a href="{{ route('developer.services.index') }}" class="sidebar-link">
-                        <i data-lucide="package"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Services</span>
-                    </a>
-                    <a href="{{ route('developer.customers.index') }}" class="sidebar-link">
-                        <i data-lucide="users"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Customers</span>
-                    </a>
-                    <a href="{{ route('developer.reports.index') }}" class="sidebar-link">
-                        <i data-lucide="file-text"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Reports</span>
-                    </a>
-                    <a href="{{ route('developer.analytics.index') }}" class="sidebar-link">
-                        <i data-lucide="bar-chart-3"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Analytics</span>
-                    </a>
-                    <a href="{{ route('developer.settings.index') }}" class="sidebar-link">
-                        <i data-lucide="settings"></i>
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Settings</span>
-                    </a>
-                @else
-                    <a href="{{ route('admin.customers') }}" class="sidebar-link {{ $section == 'customers' ? 'active' : '' }}">
-                        <i data-lucide="users"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Customer/User</span>
-                    </a>
-                    <a href="{{ route('admin.orders') }}" class="sidebar-link {{ $section == 'orders' ? 'active' : '' }}">
-                        <i data-lucide="shopping-cart"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Orders</span>
-                    </a>
-                    <a href="{{ route('admin.products') }}" class="sidebar-link {{ $section == 'products' ? 'active' : '' }}">
-                        <i data-lucide="package"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Products</span>
-                    </a>
-                    <a href="{{ route('admin.analytics') }}" class="sidebar-link {{ $section == 'analytics' ? 'active' : '' }}">
-                        <i data-lucide="bar-chart-3"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Analytics</span>
-                    </a>
-                    <a href="{{ route('admin.reports') }}" class="sidebar-link {{ $section == 'reports' ? 'active' : '' }}">
-                        <i data-lucide="file-text"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Reports</span>
-                    </a>
-                    <a href="{{ route('admin.settings') }}" class="sidebar-link {{ $section == 'settings' ? 'active' : '' }}">
-                        <i data-lucide="settings"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Settings</span>
-                    </a>
-                    <a href="{{ route('admin.helpcenter') }}" class="sidebar-link {{ $section == 'help center' ? 'active' : '' }}">
-                        <i data-lucide="help-circle"></i> 
-                        <span class="nav-text" x-show="sidebarOpen" x-transition>Help Center</span>
-                    </a>
-                @endif
-            </nav>
-
-            <form method="POST" action="{{ route('admin.logout') }}" style="padding: 20px; border-top: 1px solid #F1F5F9;">
-                @csrf
-                <button type="submit" class="sidebar-link" style="color: #EF4444; background: #FEF2F2; width: 100%; border: none;">
-                    <i data-lucide="log-out"></i> <span class="nav-text" x-show="sidebarOpen" x-transition>Log Out</span>
-                </button>
-            </form>
-        </aside>
-
-        <div class="admin-main-shell" :class="!sidebarOpen ? 'expanded' : ''">
-                <header class="hero-banner">
-                    <div class="top-nav">
-                        <div class="header-search-wrap" @click.outside="searchOpen = false">
-                            <form @submit.prevent="submitSearch()" style="position:relative;width:100%;">
-                                <input class="header-search-box" x-model="searchTerm" type="search" placeholder="Search admin sections..." @focus="searchOpen = true; notificationOpen = false" @keydown.escape="searchOpen = false">
-                                <button type="submit" class="header-search-submit" title="Search">
-                                    <i data-lucide="search" style="width:17px"></i>
-                                </button>
-                            </form>
-                            <div class="header-tool-panel" x-show="searchOpen || searchTerm.length > 0" x-transition x-cloak>
-                                <div class="tool-panel-title">Search Results</div>
-                                <template x-for="item in filteredSearchItems" :key="item.title">
-                                    <a :href="item.url" class="search-result-item" style="display:block; text-decoration:none;">
-                                        <div class="search-result-title" x-text="item.title"></div>
-                                        <div class="search-result-meta" x-text="item.meta"></div>
-                                    </a>
-                                </template>
-                            </div>
-                        </div>
-                        <div style="position:relative;" @click.outside="notificationOpen = false">
-                            <button type="button" class="header-icon-no-box" :class="notificationOpen ? 'is-active' : ''" @click="openNotifications()" title="Notifications">
-                                <i data-lucide="bell" style="width:20px"></i><div class="red-dot" x-show="!notificationsRead">3</div>
-                            </button>
-                            <div class="header-tool-panel" x-show="notificationOpen" x-transition x-cloak>
-                                <div class="tool-panel-title">Notifications</div>
-                                <template x-for="note in notifications" :key="note.title + note.time">
-                                    <div class="notification-item" @click="openModal(note.title, note.body, '#6366F1')">
-                                        <div class="notification-title" x-text="note.title"></div>
-                                        <div class="notification-body" x-text="note.body"></div>
-                                        <div class="notification-time" x-text="note.time"></div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                        <button type="button" class="header-icon-no-box" :class="chatOpen ? 'is-active' : ''" @click="chatOpen = !chatOpen" title="Customer inquiries"><i data-lucide="mail" style="width:20px"></i><div class="red-dot">1</div></button>
-                        
-                        <div class="profile-area">
-                            <div class="profile-pic">
-                                <img src="https://i.pravatar.cc/150?u={{ urlencode($portalDisplayName) }}" alt="{{ $portalDisplayName }}">
-                                <div class="green-dot"></div>
-                            </div>
-                            <div style="display: flex; flex-direction: column;">
-                                <span style="font-weight: 900; font-size: 10px; color: white; text-transform:uppercase;">{{ $portalRoleUpper }} / {{ $portalDisplayName }}</span>
-                                <span style="font-size: 9px; color: #E2E8F0; font-weight: 800; text-transform:uppercase;">{{ $portalRoleUpper }}</span>
-                            </div>
-                        </div>
+            <main class="min-w-0">
+                <section class="relative overflow-hidden bg-[#1f2937]">
+                    <div class="absolute inset-0">
+                        <img src="{{ $heroImage }}" alt="" class="h-full w-full object-cover opacity-24">
+                        <div class="absolute inset-0 bg-gradient-to-r from-[#111827] via-[#111827]/92 to-[#111827]/68"></div>
                     </div>
 
-                    <div class="hero-title-area">
-                        <p class="hero-kicker">{{ $portalKicker }}</p>
-                        <h1 class="hero-main-title">{{ $portalTitle }}</h1>
-                        <p class="hero-subline">{{ $portalTagline }}</p>
-                    </div>
-
-                    <div class="dots-container"><span class="dot"></span><span class="dot active"></span><span class="dot"></span></div>
-
-                    <div class="quick-actions-container">
-                        <div class="action-circle-group" @click="openModal('New Print Job', 'Initiating new printer workflow...', '#60A5FA')">
-                            <div class="action-circle circle-purple"><i data-lucide="file-plus-2" style="width:24px"></i></div>
-                            <span class="action-label">New Print Job</span>
-                        </div>
-                        <div class="action-circle-group" @click="openModal('System Status', 'All servers are running optimally.', '#4ADE80')">
-                            <div class="action-circle circle-green"><i data-lucide="bar-chart-3" style="width:24px"></i></div>
-                            <span class="action-label">System Status</span>
-                        </div>
-                        <div class="action-circle-group" @click="openModal('Printer Queue', '3 jobs currently in queue.', '#FBBF24')">
-                            <div class="action-circle circle-yellow"><i data-lucide="layers" style="width:24px"></i></div>
-                            <span class="action-label">Printer Queue</span>
-                        </div>
-                        <div class="action-circle-group" @click="chatOpen = true">
-                            <div class="action-circle circle-blue"><i data-lucide="headphones" style="width:24px"></i></div>
-                            <span class="action-label">Support</span>
-                        </div>
-                    </div>
-                </header>
-
-            @if($section == 'dashboard' || $section == 'developer-dashboard' || $section == 'admin-client-dashboard')
-                <main class="content-container">
-                    <div class="overview-header">
-                        <h2 style="font-size:32px; font-weight:900; letter-spacing:-1px; margin:0">Overview <span style="color:var(--primary-purple)">.</span></h2>
-                        <div class="date-pill">
-                            <i data-lucide="calendar"></i>
-                            May 14, 2026 - Present
-                        </div>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="visual-card" @click="openModal('User Account Status', 'Active accounts: 3,150\nInactive accounts: 630\nOverall active rate: 75%\n\nUse this card to monitor customer account health without leaving the dashboard.', '#10B981')">
-                            <div class="visual-card-body">
-                                <span class="visual-card-title">Account Status</span>
-                                <div style="display:flex; justify-content:center; margin-top:10px">
-                                    <div class="donut-wrapper">
-                                        <svg viewBox="0 0 36 36" style="transform: rotate(-90deg)">
-                                            <circle cx="18" cy="18" r="16" fill="none" stroke="#F1F5F9" stroke-width="3.5"></circle>
-                                            <circle cx="18" cy="18" r="16" fill="none" stroke="var(--green-card)" stroke-width="3.5" stroke-dasharray="75, 100" stroke-linecap="round"></circle>
-                                        </svg>
-                                        <div class="donut-text">75%</div>
-                                    </div>
-                                </div>
-                                <div style="margin-top:20px; display:flex; justify-content:space-between; font-size:11px; font-weight:700">
-                                    <span style="color:#64748B">Active</span>
-                                    <span style="color:#1e293b">3,150</span>
-                                </div>
-                                <div style="width:100%; height:4px; background:#F1F5F9; border-radius:10px; margin-top:5px">
-                                    <div style="width:75%; height:100%; background:var(--green-card); border-radius:10px"></div>
-                                </div>
+                    <div class="relative px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+                        @if (session('success'))
+                            <div class="mb-6 max-w-3xl rounded-lg border border-emerald-300/40 bg-emerald-50/95 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm">
+                                {{ session('success') }}
                             </div>
-                            <div class="visual-footer" style="background: var(--green-card)"><span>User Accounts</span> <i data-lucide="arrow-right" style="width:14px"></i></div>
-                        </div>
+                        @endif
 
-                        <div class="visual-card" @click="openModal('Total Orders', 'Total orders: 1,452\nWeekly growth: +12%\nRecent trend: increasing order activity\n\nThis summary helps you check order movement directly from the dashboard.', '#3B82F6')">
-                            <div class="visual-card-body">
-                                <span class="visual-card-title">Order Trends</span>
-                                <div style="font-size:28px; font-weight:900; color:#1e293b">1,452 <span style="font-size:12px; color:#10B981">+12%</span></div>
-                                <svg viewBox="0 0 100 40" style="margin-top:15px">
-                                    <path d="M0 35 L 20 20 L 40 25 L 60 10 L 80 15 L 100 5" fill="none" stroke="var(--blue-card)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                            <div class="visual-footer" style="background: var(--blue-card)"><span>Total Orders</span> <i data-lucide="arrow-right" style="width:14px"></i></div>
-                        </div>
-
-                        <div class="visual-card" @click="openModal('Product Inventory', 'Tracked catalog items: 754\nStrongest stock day: Wednesday\nInventory status: stable\n\nUse this popup for quick product and stock visibility.', '#F59E0B')">
-                            <div class="visual-card-body">
-                                <span class="visual-card-title">Stock Analysis</span>
-                                <div class="bar-chart-container">
-                                    <div class="bar-item" style="height: 60%"></div>
-                                    <div class="bar-item" style="height: 40%"></div>
-                                    <div class="bar-item" style="height: 95%; background:var(--yellow-card)"></div>
-                                    <div class="bar-item" style="height: 65%"></div>
-                                    <div class="bar-item" style="height: 30%"></div>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:9px; font-weight:800; color:#94a3b8">
-                                    <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span>
-                                </div>
-                            </div>
-                            <div class="visual-footer" style="background: var(--yellow-card)"><span>Products</span> <i data-lucide="arrow-right" style="width:14px"></i></div>
-                        </div>
-
-                        <div class="visual-card" @click="openModal('Revenue Trend', 'Projected revenue stream: $42.8k\nTrend signal: positive movement\nBest action: monitor order completion and payment updates\n\nThis card previews revenue without opening the Analytics section.', '#EC4899')">
-                            <div class="visual-card-body">
-                                <span class="visual-card-title">Revenue Stream</span>
-                                <div style="font-size:28px; font-weight:900; color:#1e293b">$42.8k</div>
-                                <svg viewBox="0 0 100 40" style="margin-top:15px">
-                                    <path d="M0 30 Q 10 35, 20 20 T 40 15 T 60 25 T 80 10 T 100 15" fill="none" stroke="var(--pink-card)" stroke-width="3" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="visual-footer" style="background: var(--pink-card)"><span>Revenue Trend</span> <i data-lucide="arrow-right" style="width:14px"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- RECENT TRANSACTIONS TABLE -->
-                    <div class="table-section">
-                        <div class="table-header-flex">
+                        <div class="grid gap-8 xl:grid-cols-[1fr,auto] xl:items-end">
                             <div>
-                                <h3 style="margin:0; font-size:24px; font-weight:900; color: #1E293B;">Recent Transactions</h3>
-                                <p style="margin:8px 0 0 0; font-size:12px; color:#64748B; font-weight:500">Managing total of 1,240 records across the platform.</p>
+                                <p class="text-sm font-semibold text-white/82">{{ $isDeveloper ? 'Staff and Developer Portal' : 'Admin Client Portal' }}</p>
+                                <h1 class="mt-2 max-w-3xl text-4xl font-black uppercase tracking-tight text-[#facc15] sm:text-5xl">
+                                    {{ $isDeveloper ? 'Developer Dashboard' : 'Admin Client Dashboard' }}
+                                </h1>
+                                <p class="mt-4 max-w-3xl text-sm leading-7 text-white/75">
+                                    {{ $isDeveloper
+                                        ? 'Monitor sales, orders, delivery readiness, customer accounts, admin-client access, services, and audit activity from one secured workspace.'
+                                        : 'Monitor assigned customer orders, sales activity, delivery readiness, service records, and your required reference profile.' }}
+                                </p>
                             </div>
-                            <div class="table-controls">
-                                <button class="btn-filter">
-                                    <i data-lucide="filter" style="width:18px"></i> Filter
-                                </button>
-                                <button class="btn-export">Export Report</button>
+
+                            <div class="flex flex-wrap gap-4">
+                                @foreach ($quickActions as $action)
+                                    <a href="{{ $action['href'] }}" class="group grid min-w-[110px] justify-items-center gap-2 text-center text-white">
+                                        <span class="grid h-14 w-14 place-items-center rounded-full {{ $action['tone'] }} text-xs font-black shadow-lg shadow-black/20 ring-4 ring-white/10 transition group-hover:-translate-y-0.5">
+                                            {{ $action['icon'] }}
+                                        </span>
+                                        <span class="text-[11px] font-black uppercase tracking-[0.12em] text-white/85">{{ $action['label'] }}</span>
+                                    </a>
+                                @endforeach
                             </div>
                         </div>
-                        
-                        <table class="custom-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 15%">Order ID</th>
-                                    <th style="width: 20%">Customer Name</th>
-                                    <th style="width: 20%">Product Item</th>
-                                    <th style="width: 15%">Date Ordered</th>
-                                    <th style="width: 12%">Total Amount</th>
-                                    <th style="width: 10%">Status</th>
-                                    <th style="text-align:center; width: 8%">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="font-weight: 700; color: #6366F1;">#ORD-3079101</td>
-                                    <td>
-                                        <div style="display:flex; align-items:center; gap:12px">
-                                            <div style="width:34px; height:34px; border-radius:8px; background:#EEF2FF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; color:#6366F1">AH</div>
-                                            <span style="font-weight: 700; color: #1E293B;">Amen Hanson</span>
+                    </div>
+                </section>
+
+                <section class="px-4 py-8 sm:px-6 lg:px-10">
+                    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm font-black uppercase tracking-[0.14em] text-[#6b7280]">Overview</p>
+                            <h2 class="mt-1 text-2xl font-black text-[#22201f]">Role-Based Operations</h2>
+                        </div>
+                        <div class="rounded-lg border border-[#e5eaf0] bg-white px-4 py-3 text-sm font-bold text-[#4b5563] shadow-sm">
+                            {{ now()->format('M d, Y') }} - Present
+                        </div>
+                    </div>
+
+                    <div class="grid gap-5 md:grid-cols-2 2xl:grid-cols-5">
+                        @foreach ($primaryStats as $stat)
+                            <article class="overflow-hidden rounded-lg border border-[#e5eaf0] bg-white shadow-sm">
+                                <div class="p-5">
+                                    <p class="text-xs font-black uppercase tracking-[0.12em] text-[#8a94a3]">{{ $stat['label'] }}</p>
+                                    <p class="mt-4 break-words text-3xl font-black text-[#1f2937]">{{ $stat['value'] }}</p>
+                                    <p class="mt-2 min-h-[2.5rem] text-sm font-semibold leading-5 text-[#667085]">{{ $stat['note'] }}</p>
+                                </div>
+                                <a href="{{ $stat['href'] }}" class="flex items-center justify-between bg-gradient-to-r {{ $stat['tone'] }} px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-white">
+                                    <span>Open</span>
+                                    <span>+</span>
+                                </a>
+                            </article>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-8 grid gap-6 xl:grid-cols-[1.35fr,0.65fr]">
+                        <section class="overflow-hidden rounded-lg border border-[#e5eaf0] bg-white shadow-sm">
+                            <div class="flex flex-col gap-3 border-b border-[#edf1f5] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-[0.14em] text-[#f97316]">Sales and Orders</p>
+                                    <h2 class="mt-1 text-lg font-black text-[#22201f]">Recent Transactions</h2>
+                                    <p class="mt-1 text-sm text-[#667085]">Recent order records visible to this portal role.</p>
+                                </div>
+                                <a href="{{ route('admin.orders.index') }}" class="inline-flex items-center justify-center rounded-lg bg-[#4f46e5] px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white transition hover:bg-[#4338ca]">
+                                    View Orders
+                                </a>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-left text-sm">
+                                    <thead class="bg-[#f8fafc] text-xs font-black uppercase tracking-[0.12em] text-[#8a94a3]">
+                                        <tr>
+                                            <th class="px-5 py-3">Order ID</th>
+                                            <th class="px-5 py-3">Customer</th>
+                                            @if ($isDeveloper)
+                                                <th class="px-5 py-3">Admin Client</th>
+                                            @endif
+                                            <th class="px-5 py-3">Status</th>
+                                            <th class="px-5 py-3">Payment</th>
+                                            <th class="px-5 py-3 text-right">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-[#edf1f5]">
+                                        @forelse ($recentOrders as $order)
+                                            @php
+                                                $paymentStatus = strtolower($order->payment_status ?? 'unpaid');
+                                            @endphp
+                                            <tr class="transition hover:bg-[#fff8ef]">
+                                                <td class="px-5 py-4">
+                                                    <a href="{{ route('admin.orders.show', $order) }}" class="font-black text-[#4f46e5] underline-offset-4 hover:underline">
+                                                        #{{ $order->id }}
+                                                    </a>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <p class="font-black text-[#22201f]">{{ $order->customer_name }}</p>
+                                                    <p class="text-xs text-[#667085]">{{ $order->customer_email ?? $order->user?->email ?? 'No email recorded' }}</p>
+                                                </td>
+                                                @if ($isDeveloper)
+                                                    <td class="px-5 py-4 text-sm font-semibold text-[#667085]">{{ $order->adminClient?->name ?? 'Unassigned' }}</td>
+                                                @endif
+                                                <td class="px-5 py-4">
+                                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ring-1 {{ $statusClasses[$order->status] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                                                        {{ $order->status }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-5 py-4">
+                                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ring-1 {{ $paymentClasses[$paymentStatus] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                                                        {{ str_replace('_', ' ', $order->payment_status ?? 'unpaid') }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-5 py-4 text-right font-black text-[#22201f]">{{ $money($order->total_price) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="{{ $isDeveloper ? 6 : 5 }}" class="px-5 py-12 text-center text-sm font-semibold text-[#667085]">
+                                                    No orders are available for this role scope yet.
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="rounded-lg border border-[#e5eaf0] bg-white p-5 shadow-sm">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-[0.14em] text-[#10b981]">System Status</p>
+                                    <h2 class="mt-1 text-lg font-black text-[#22201f]">Production Queue</h2>
+                                </div>
+                                <a href="{{ route('admin.analytics.index') }}" class="text-xs font-black uppercase tracking-[0.12em] text-[#4f46e5] underline">Analytics</a>
+                            </div>
+
+                            <div class="mt-5 space-y-4">
+                                @foreach ($pipeline as $stage)
+                                    @php
+                                        $count = (int) ($stage['count'] ?? 0);
+                                        $width = min(100, $count * 18);
+                                    @endphp
+                                    <div>
+                                        <div class="flex items-center justify-between gap-3">
+                                            <p class="text-sm font-black text-[#22201f]">{{ $stage['label'] }}</p>
+                                            <span class="rounded-lg bg-[#f8fafc] px-3 py-1 text-sm font-black text-[#4f46e5]">{{ $count }}</span>
                                         </div>
-                                    </td>
-                                    <td style="font-weight: 600; color: #475569;">Custom Apparel Mugs</td>
-                                    <td style="color: #64748B; font-weight:600">Apr 17, 2026</td>
-                                    <td style="font-weight: 800; color: #1E293B;">$120.00</td>
-                                    <td><span class="status-pill status-shipped">Shipped</span></td>
-                                    <td style="text-align:center">
-                                        <button class="action-dots"><i data-lucide="more-horizontal" style="width:18px"></i></button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: #6366F1;">#ORD-3073002</td>
-                                    <td>
-                                        <div style="display:flex; align-items:center; gap:12px">
-                                            <div style="width:34px; height:34px; border-radius:8px; background:#EEF2FF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px; color:#6366F1">JS</div>
-                                            <span style="font-weight: 700; color: #1E293B;">Jash Savrim</span>
+                                        <p class="mt-1 text-xs text-[#667085]">{{ $stage['note'] }}</p>
+                                        <div class="mt-2 h-2 rounded-full bg-[#edf1f5]">
+                                            <div class="h-2 rounded-full bg-gradient-to-r from-[#4f46e5] to-[#10b981]" style="width: {{ max(8, $width) }}%"></div>
                                         </div>
-                                    </td>
-                                    <td style="font-weight: 600; color: #475569;">Matte Black Mugs (2x)</td>
-                                    <td style="color: #64748B; font-weight:600">Apr 16, 2026</td>
-                                    <td style="font-weight: 800; color: #1E293B;">$45.50</td>
-                                    <td><span class="status-pill status-pending">Pending</span></td>
-                                    <td style="text-align:center">
-                                        <button class="action-dots"><i data-lucide="more-horizontal" style="width:18px"></i></button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </section>
                     </div>
-                </main>
 
-            @elseif($section == 'customers')
-                <main class="admin-section-content">@include('Admin.sections.customers')</main>
-            @elseif($section == 'orders')
-                <main class="admin-section-content">@include('Admin.sections.orders')</main>
-            @elseif($section == 'products')
-                <main class="admin-section-content">@include('Admin.sections.products')</main>
-            @elseif($section == 'rates')
-                <main class="admin-section-content">@include('Admin.sections.rates')</main>
-            @elseif($section == 'help center')
-                <main class="admin-section-content">@include('Admin.sections.helpcenter')</main>
-            @elseif($section == 'analytics')
-                <main class="admin-section-content">@include('Admin.sections.analytics')</main>
-            @elseif($section == 'reports')
-                <main class="admin-section-content">@include('Admin.sections.reports')</main>
-            @elseif($section == 'settings')
-                <main class="admin-section-content">@include('Admin.sections.settings')</main>
-            @endif
-        </div>
+                    <div class="mt-8 grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+                        <section class="overflow-hidden rounded-lg border border-[#e5eaf0] bg-white shadow-sm">
+                            <div class="flex items-center justify-between border-b border-[#edf1f5] px-5 py-4">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-[0.14em] text-[#4f46e5]">Customer Database</p>
+                                    <h2 class="mt-1 text-lg font-black text-[#22201f]">{{ $isDeveloper ? 'Recent Customer Accounts' : 'Assigned Customer Accounts' }}</h2>
+                                </div>
+                                <a href="{{ route('admin.customers.index') }}" class="text-xs font-black uppercase tracking-[0.12em] text-[#4f46e5] underline">Open</a>
+                            </div>
 
-        <div class="chat-drawer" x-show="chatOpen" x-transition x-cloak>
-            <div class="chat-head">
-                <div>
-                    <div class="chat-title">Customer Inquiries</div>
-                    <div class="chat-status" x-text="activeThread ? activeThread.customer + ' - ' + activeThread.subject : 'Online support'"></div>
-                </div>
-                <button @click="chatOpen = false" style="background:none;border:none;color:white;cursor:pointer;"><i data-lucide="x"></i></button>
-            </div>
-            <div class="chat-thread-select">
-                <select x-model="activeThreadId">
-                    <template x-for="thread in chatThreads" :key="thread.id">
-                        <option :value="thread.id" x-text="thread.customer + ' - ' + thread.subject"></option>
-                    </template>
-                </select>
-            </div>
-            <div class="chat-tools">
-                <input type="search" x-model="chatSearch" placeholder="Search messages...">
-                <button class="chat-chip" type="button" @click="addQuickReply('Hi, this is Printify Co. admin support. I am checking your inquiry now.')">Reply</button>
-                <button class="chat-chip" type="button" @click="clearChat()">Clear</button>
-            </div>
-            <div class="chat-body">
-                <template x-for="(message, index) in filteredChatMessages" :key="index">
-                    <div>
-                        <div class="chat-message" :class="message.from === 'me' ? 'me' : 'customer'" x-text="message.text"></div>
-                        <div :style="message.from === 'me' ? 'text-align:right' : 'text-align:left'" style="font-size:9px;color:#94A3B8;margin:-6px 4px 8px;" x-text="message.time || 'Now'"></div>
+                            <div class="divide-y divide-[#edf1f5]">
+                                @forelse ($recentCustomers as $customer)
+                                    <div class="grid gap-3 px-5 py-4 sm:grid-cols-[1fr,auto] sm:items-center">
+                                        <div class="min-w-0">
+                                            <p class="font-black text-[#22201f]">{{ $customer->name }}</p>
+                                            <p class="truncate text-sm text-[#667085]">{{ $customer->email }}</p>
+                                            @if ($isDeveloper)
+                                                <p class="mt-1 text-xs font-semibold text-[#8a6d52]">
+                                                    Admin client: {{ $customer->assignedAdminClient?->name ?? 'Unassigned' }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ring-1 {{ $customer->email_verified_at ? 'bg-emerald-50 text-emerald-800 ring-emerald-200' : 'bg-amber-50 text-amber-800 ring-amber-200' }}">
+                                            {{ $customer->email_verified_at ? 'Verified' : 'Needs OTP' }}
+                                        </span>
+                                    </div>
+                                @empty
+                                    <div class="px-5 py-12 text-center text-sm font-semibold text-[#667085]">
+                                        No customer accounts are available for this role scope yet.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </section>
+
+                        <section class="grid gap-6 lg:grid-cols-2">
+                            <div class="rounded-lg border border-[#e5eaf0] bg-white p-5 shadow-sm">
+                                <p class="text-xs font-black uppercase tracking-[0.14em] text-[#f97316]">Role Scope</p>
+                                <h2 class="mt-1 text-lg font-black text-[#22201f]">Access Boundaries</h2>
+
+                                <div class="mt-5 space-y-3">
+                                    @foreach ($scopeRows as $row)
+                                        <div class="rounded-lg border border-[#edf1f5] bg-[#f8fafc] px-4 py-3">
+                                            <p class="text-xs font-black uppercase tracking-[0.12em] text-[#8a94a3]">{{ $row['label'] }}</p>
+                                            <p class="mt-1 text-sm font-semibold text-[#22201f]">{{ $row['value'] }}</p>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            @if ($isDeveloper)
+                                <div class="overflow-hidden rounded-lg border border-[#e5eaf0] bg-white shadow-sm">
+                                    <div class="flex items-center justify-between border-b border-[#edf1f5] px-5 py-4">
+                                        <div>
+                                            <p class="text-xs font-black uppercase tracking-[0.14em] text-[#7c3aed]">Admin-Client Database</p>
+                                            <h2 class="mt-1 text-lg font-black text-[#22201f]">Account Coverage</h2>
+                                        </div>
+                                        <a href="{{ route('developer.admin-clients.index') }}" class="text-xs font-black uppercase tracking-[0.12em] text-[#4f46e5] underline">Manage</a>
+                                    </div>
+
+                                    <div class="divide-y divide-[#edf1f5]">
+                                        @forelse ($recentAdminClients as $adminClient)
+                                            <div class="px-5 py-4">
+                                                <p class="font-black text-[#22201f]">{{ $adminClient->name }}</p>
+                                                <p class="truncate text-sm text-[#667085]">{{ $adminClient->email }}</p>
+                                                <p class="mt-1 text-xs text-[#8a6d52]">{{ $adminClient->adminClientProfile?->business_name ?? 'No reference profile name' }}</p>
+                                                <p class="mt-2 text-xs font-black uppercase text-[#4f46e5]">{{ $adminClient->assigned_customers_count }} customers / {{ $adminClient->managed_orders_count }} orders</p>
+                                            </div>
+                                        @empty
+                                            <div class="px-5 py-12 text-center text-sm font-semibold text-[#667085]">
+                                                No admin-client accounts yet.
+                                            </div>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            @else
+                                <div class="rounded-lg border border-[#e5eaf0] bg-white p-5 shadow-sm">
+                                    <p class="text-xs font-black uppercase tracking-[0.14em] text-[#10b981]">Admin-Client Profile</p>
+                                    <h2 class="mt-1 text-lg font-black text-[#22201f]">Access Checklist</h2>
+
+                                    <div class="mt-5 space-y-3 text-sm">
+                                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 font-bold text-emerald-800">
+                                            Developer approval completed
+                                        </div>
+                                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 font-bold text-emerald-800">
+                                            Staff portal email OTP verified
+                                        </div>
+                                        <a href="{{ route('admin.admin-client-profile.edit') }}" class="block rounded-lg border border-[#e5eaf0] px-4 py-3 font-black text-[#22201f] transition hover:border-[#ffb970] hover:bg-[#fff8ef]">
+                                            Reference Profile
+                                        </a>
+                                    </div>
+
+                                    @if ($profile)
+                                        <div class="mt-5 rounded-lg bg-[#f8fafc] p-4 text-sm text-[#667085]">
+                                            <p class="font-black text-[#22201f]">{{ $profile->business_name }}</p>
+                                            <p class="mt-1">{{ $profile->contact_person }}</p>
+                                            <p class="mt-1">{{ $profile->contact_number }}</p>
+                                            <p class="mt-1">{{ $profile->business_address }}</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+                        </section>
                     </div>
-                </template>
-            </div>
-            <form class="chat-input-row" @submit.prevent="sendChatMessage()">
-                <input type="text" x-model="chatDraft" placeholder="Reply to customer...">
-                <button type="submit"><i data-lucide="send" style="width:18px"></i></button>
-            </form>
-        </div>
 
-        <!-- MODAL -->
-        <div class="detail-overlay" x-show="showDetail" x-transition.opacity x-cloak>
-            <div class="modal-card" @click.away="showDetail = false">
-                <div :style="'height: 12px; background:' + modalColor"></div>
-                <div style="padding: 45px; text-align: center;">
-                    <div :style="'width:70px; height:70px; border-radius:24px; background:' + modalColor + '15; color:' + modalColor + '; display:flex; align-items:center; justify-content:center; margin: 0 auto 25px auto;'">
-                        <i data-lucide="activity" style="width:32px; height:32px"></i>
+                    <div class="mt-8 grid gap-6 xl:grid-cols-[1fr,0.72fr]">
+                        <section class="overflow-hidden rounded-lg border border-[#e5eaf0] bg-white shadow-sm">
+                            <div class="flex items-center justify-between border-b border-[#edf1f5] px-5 py-4">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-[0.14em] text-[#f97316]">Audit Trail</p>
+                                    <h2 class="mt-1 text-lg font-black text-[#22201f]">Recent Audit Activity</h2>
+                                </div>
+                                <a href="{{ route('admin.help.index') }}" class="text-xs font-black uppercase tracking-[0.12em] text-[#4f46e5] underline">Help</a>
+                            </div>
+
+                            <div class="divide-y divide-[#edf1f5]">
+                                @forelse ($recentAuditLogs as $log)
+                                    <div class="px-5 py-4">
+                                        <p class="font-black text-[#22201f]">{{ str_replace('_', ' ', ucfirst($log->action)) }}</p>
+                                        <p class="mt-1 text-sm text-[#667085]">
+                                            Actor: {{ optional($log->actor)->email ?? 'System / invite link' }}
+                                        </p>
+                                        @if ($log->targetUser)
+                                            <p class="text-sm text-[#667085]">Target: {{ $log->targetUser->email }}</p>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <div class="px-5 py-12 text-center text-sm font-semibold text-[#667085]">
+                                        No audit activity yet.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </section>
+
+                        <section class="rounded-lg border border-[#e5eaf0] bg-[#111827] p-5 text-white shadow-sm">
+                            <p class="text-xs font-black uppercase tracking-[0.14em] text-[#facc15]">Admin Messages</p>
+                            <h2 class="mt-1 text-lg font-black">Support Channel</h2>
+                            <p class="mt-3 text-sm leading-6 text-white/72">
+                                Use Help Center for role access reminders, Reports for order follow-up, and Settings for portal security status.
+                            </p>
+
+                            <div class="mt-5 space-y-3">
+                                <a href="{{ route('admin.help.index') }}" class="block rounded-lg bg-white/10 px-4 py-3 text-sm font-black transition hover:bg-white/15">Help Center</a>
+                                <a href="{{ route('admin.reports.index') }}" class="block rounded-lg bg-white/10 px-4 py-3 text-sm font-black transition hover:bg-white/15">Reports</a>
+                                <a href="{{ route('admin.settings.index') }}" class="block rounded-lg bg-white/10 px-4 py-3 text-sm font-black transition hover:bg-white/15">Settings</a>
+                            </div>
+                        </section>
                     </div>
-                    <h3 x-text="modalTitle" style="font-size: 26px; font-weight: 900; margin: 0 0 12px 0; color:#1e293b;"></h3>
-                    <p x-text="modalData" style="color: #64748b; font-size: 15px; line-height:1.7; margin-bottom: 35px; font-weight:500; white-space:pre-line"></p>
-                    <button @click="showDetail = false" :style="'width: 100%; padding: 18px; border-radius: 18px; border: none; background:' + modalColor + '; color:white; font-weight: 800; cursor: pointer;'">
-                        Understood, Close
-                    </button>
-                </div>
-            </div>
+                </section>
+            </main>
         </div>
     </div>
-
-    <!-- SCRIPTS -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => { 
-            lucide.createIcons(); 
-        });
-        // Observer to re-run lucide when Alpine changes the DOM
-        window.addEventListener('click', () => { 
-            setTimeout(() => lucide.createIcons(), 50); 
-        });
-    </script>
-</body>
-</html>
+</x-app-layout>

@@ -8,12 +8,10 @@ use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class AdminAuthController extends Controller
@@ -22,6 +20,9 @@ class AdminAuthController extends Controller
     private const STAFF_OTP_MAX_ATTEMPTS = 3;
     private const STAFF_OTP_RESEND_MAX_ATTEMPTS = 1;
 
+    /**
+     * Staff login page.
+     */
     public function showLoginForm()
     {
         if (Auth::check() && Auth::user()->canAccessAdminPortal() && session('staff_otp_passed')) {
@@ -54,11 +55,11 @@ class AdminAuthController extends Controller
             ])->onlyInput('email');
         }
 
-        if (($user->isAdminClient() && !$user->isApprovedAdminClient()) || $user->isInvitedAdminPendingApproval()) {
+        if ($user->isAdminClient() && !$user->isApprovedAdminClient()) {
             RateLimiter::hit($this->staffLoginThrottleKey($request));
 
             return back()->withErrors([
-                'email' => 'This admin account is still awaiting developer approval.',
+                'email' => 'This staff account is still awaiting developer approval.',
             ])->onlyInput('email');
         }
 
@@ -82,87 +83,65 @@ class AdminAuthController extends Controller
             'staff_otp_passed',
         ]);
 
+        if (!$user->requiresStaffPortalOtp()) {
+            $user->forceFill([
+                'otp_code' => null,
+                'otp_expires_at' => null,
+                'email_verified_at' => $user->email_verified_at ?? now(),
+            ])->save();
+
+            $request->session()->put('staff_otp_passed', true);
+
+            return redirect()->route('admin.dashboard')
+                ->with('success', 'Developer access verified. Welcome to the staff portal.');
+        }
+
         session([
             'admin_auth_passed' => true,
             'admin_email' => $user->email,
-            'needs_email_otp' => !$user->isDeveloper(),
+            'needs_email_otp' => true,
         ]);
 
-        if ($user->isDeveloper()) {
-            $request->session()->put('staff_otp_passed', true);
-            $request->session()->forget([
-                'admin_auth_passed',
-                'needs_email_otp',
-                'admin_verified',
-                '2fa_passed',
-            ]);
+        $otp = sprintf('%06d', mt_rand(100000, 999999));
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
+        $user->save();
 
-            return redirect()->route('admin.dashboard')
-                ->with('success', 'Developer trusted sign-in complete.');
+        try {
+            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+            RateLimiter::hit($this->staffOtpResendThrottleKeyFromContext($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+        } catch (\Throwable $e) {
+            Log::error('Staff OTP send failed for ' . $user->email . ': ' . $e->getMessage());
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('admin.login')->withErrors([
+                'email' => 'Unable to send the staff verification code right now. Please try again in a moment.',
+            ])->onlyInput('email');
         }
 
-        return $this->sendStaffOtp($request, $user, 'A verification code has been sent to your email before portal access can continue.');
+        return redirect()->route('admin.otp.verify')
+            ->with('status', 'A verification code has been sent to your email before portal access can continue.');
     }
 
+    /**
+     * Public admin registration is disabled. Staff accounts are created by developers.
+     */
     public function showRegisterForm()
     {
-        if (Auth::check() && Auth::user()->canAccessAdminPortal() && session('staff_otp_passed')) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        return view('Admin.auth.admin-login');
+        abort(404);
     }
 
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'role' => ['required', 'in:' . User::ROLE_ADMIN . ',' . User::ROLE_DEVELOPER],
-            'password' => [
-                'required',
-                Password::min(8)->letters()->mixedCase()->numbers()->symbols(),
-            ],
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
-
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        $request->session()->forget([
-            'admin_verified',
-            '2fa_passed',
-            'staff_otp_passed',
-        ]);
-
-        session([
-            'admin_auth_passed' => true,
-            'admin_email' => $user->email,
-            'needs_email_otp' => !$user->isDeveloper(),
-        ]);
-
-        if ($user->isDeveloper()) {
-            $request->session()->put('staff_otp_passed', true);
-            $request->session()->forget([
-                'admin_auth_passed',
-                'needs_email_otp',
-                'admin_verified',
-                '2fa_passed',
-            ]);
-
-            return redirect()->route('admin.dashboard')
-                ->with('success', 'Developer account created. Trusted sign-in complete.');
-        }
-
-        return $this->sendStaffOtp($request, $user, 'Admin account created. Please verify your email to continue.');
+        abort(404);
     }
 
+    /**
+     * Staff email OTP screen.
+     */
     public function showOtpForm()
     {
         if (session('staff_otp_passed')) {
@@ -173,8 +152,8 @@ class AdminAuthController extends Controller
             return redirect()->route('admin.login');
         }
 
-        if (Auth::user()->isDeveloper()) {
-            request()->session()->put('staff_otp_passed', true);
+        if (!Auth::user()->requiresStaffPortalOtp()) {
+            session(['staff_otp_passed' => true]);
 
             return redirect()->route('admin.dashboard');
         }
@@ -211,7 +190,8 @@ class AdminAuthController extends Controller
             ]);
         }
 
-        if ($user->isDeveloper()) {
+        if (!$user->requiresStaffPortalOtp()) {
+            $request->session()->regenerate();
             $request->session()->put('staff_otp_passed', true);
 
             return redirect()->route('admin.dashboard');
@@ -225,11 +205,11 @@ class AdminAuthController extends Controller
             'otp'
         );
 
-        if (trim((string) $user->otp_code) !== trim((string) $request->otp)) {
+        if (!$user || trim((string) $user->otp_code) !== trim((string) $request->otp)) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
             if ($attempts >= self::STAFF_OTP_MAX_ATTEMPTS) {
-                $this->throwRateLimitException($otpThrottleKey, 'otp');
+                $this->throwOtpLockout($otpThrottleKey, 'otp');
             }
 
             return back()->withErrors([
@@ -241,7 +221,7 @@ class AdminAuthController extends Controller
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
             if ($attempts >= self::STAFF_OTP_MAX_ATTEMPTS) {
-                $this->throwRateLimitException($otpThrottleKey, 'otp');
+                $this->throwOtpLockout($otpThrottleKey, 'otp');
             }
 
             return back()->withErrors([
@@ -249,11 +229,10 @@ class AdminAuthController extends Controller
             ]);
         }
 
-        $user->forceFill([
-            'otp_code' => null,
-            'otp_expires_at' => null,
-            'email_verified_at' => $user->email_verified_at ?? now(),
-        ])->save();
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->email_verified_at = $user->email_verified_at ?? now();
+        $user->save();
 
         $request->session()->regenerate();
         $request->session()->put('staff_otp_passed', true);
@@ -271,8 +250,10 @@ class AdminAuthController extends Controller
 
     public function resendOtp(Request $request)
     {
+        $otpThrottleKey = $this->staffOtpThrottleKey($request);
+
         $this->ensureRateLimit(
-            $this->staffOtpThrottleKey($request),
+            $otpThrottleKey,
             self::STAFF_OTP_MAX_ATTEMPTS,
             'otp'
         );
@@ -289,15 +270,34 @@ class AdminAuthController extends Controller
             return redirect()->route('admin.login');
         }
 
-        if ($user->isDeveloper()) {
-            $request->session()->put('staff_otp_passed', true);
-
+        if (!$user->requiresStaffPortalOtp()) {
             return redirect()->route('admin.dashboard');
         }
 
-        return $this->sendStaffOtp($request, $user, 'A new verification code has been sent to your email.', back());
+        $otp = sprintf('%06d', mt_rand(100000, 999999));
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES);
+        $user->save();
+
+        try {
+            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+        } catch (\Throwable $e) {
+            Log::error('Staff OTP resend failed for ' . $user->email . ': ' . $e->getMessage());
+            RateLimiter::hit($this->staffOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+
+            return back()->withErrors([
+                'otp' => 'Unable to resend the verification code right now. Please try again later.',
+            ]);
+        }
+
+        RateLimiter::hit($this->staffOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+
+        return back()->with('status', 'A new verification code has been sent to your email.');
     }
 
+    /**
+     * Staff logout.
+     */
     public function logout(Request $request)
     {
         $request->session()->forget([
@@ -316,49 +316,16 @@ class AdminAuthController extends Controller
         return redirect()->route('admin.login');
     }
 
-    private function sendStaffOtp(Request $request, User $user, string $status, $redirect = null)
-    {
-        $otp = sprintf('%06d', mt_rand(100000, 999999));
-
-        $user->forceFill([
-            'otp_code' => $otp,
-            'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
-        ])->save();
-
-        try {
-            Mail::to($user->email)->send(new OTPVerificationMail($otp));
-            RateLimiter::hit($this->staffOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
-        } catch (\Throwable $e) {
-            Log::error('Staff OTP send failed for ' . $user->email . ': ' . $e->getMessage());
-
-            if ($redirect) {
-                return back()->withErrors([
-                    'otp' => 'Unable to resend the verification code right now. Please try again later.',
-                ]);
-            }
-
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('admin.login')->withErrors([
-                'email' => 'Unable to send the staff verification code right now. Please try again in a moment.',
-            ])->onlyInput('email');
-        }
-
-        return ($redirect ?: redirect()->route('admin.otp.verify'))->with('status', $status);
-    }
-
     private function ensureRateLimit(string $key, int $maxAttempts, string $bag): void
     {
         if (!RateLimiter::tooManyAttempts($key, $maxAttempts)) {
             return;
         }
 
-        $this->throwRateLimitException($key, $bag);
+        $this->throwOtpLockout($key, $bag);
     }
 
-    private function throwRateLimitException(string $key, string $bag): never
+    private function throwOtpLockout(string $key, string $bag): never
     {
         event(new Lockout(request()));
         $seconds = RateLimiter::availableIn($key);
