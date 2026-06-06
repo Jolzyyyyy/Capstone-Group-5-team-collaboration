@@ -216,6 +216,13 @@ function jumpToHero(index) {
     slideInterval = setInterval(nextHeroSlide, 8000);
 }
 
+function showStorefrontSections() {
+    document.querySelectorAll('#pageWrapper > .section').forEach(section => {
+        section.style.display = 'block';
+        section.classList.add('active');
+    });
+}
+
 // --- NAVIGATION & SECTION LOGIC ---
 function jumpTo(sectionId) {
     const productDetail = document.getElementById('productDetail');
@@ -247,22 +254,16 @@ function jumpTo(sectionId) {
         }
     }
 
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(sec => {
-        sec.classList.remove('active');
-        sec.style.display = 'none';
-    });
+    showStorefrontSections();
 
     const target = document.getElementById(sectionId);
     if (target) {
-        target.style.display = 'block';
-        setTimeout(() => { target.classList.add('active'); }, 10);
         updateActiveNavLink(sectionId);
-        
+
         if (sectionId === 'home') {
             window.scrollTo({ top: 0, behavior: 'instant' });
         } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: Math.max(0, target.offsetTop - 80), behavior: 'smooth' });
         }
     }
 }
@@ -296,14 +297,9 @@ function backToMain() {
     if (pageWrapper) pageWrapper.style.display = 'block';
     if (mainHeader) mainHeader.classList.remove('detail-active');
 
-    document.querySelectorAll('.section').forEach((section) => {
-        section.classList.remove('active');
-        section.style.display = 'none';
-    });
+    showStorefrontSections();
 
     if (servicesSection) {
-        servicesSection.style.display = 'block';
-        setTimeout(() => servicesSection.classList.add('active'), 10);
         updateActiveNavLink('services');
         window.scrollTo({ top: Math.max(0, servicesSection.offsetTop - 80), behavior: 'smooth' });
     }

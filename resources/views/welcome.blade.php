@@ -7,7 +7,7 @@
     <meta name="cart-sync-url" content="{{ route('cart.sync') }}">
     <meta name="checkout-url" content="{{ route('checkout.index') }}">
     <title>Printing Business Solution | Printify & Co.</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preload" as="image" href="{{ asset('images/optimized/Document PrintingS.webp') }}" type="image/webp">
     <link rel="preload" as="image" href="{{ asset('images/optimized/PhotocopyS.webp') }}" type="image/webp">
