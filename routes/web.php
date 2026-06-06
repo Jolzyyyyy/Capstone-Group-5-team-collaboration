@@ -59,6 +59,8 @@ Route::prefix('cart')->name('cart.')->group(function () {
 Route::middleware('guest')->prefix('p-co-2026')->group(function () {
     Route::get('/login-7b5e93-adm-key', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login-7b5e93-adm-key', [AdminAuthController::class, 'login'])->name('admin.login.submit');
+    Route::get('/register', [AdminAuthController::class, 'showRegisterForm'])->name('admin.register');
+    Route::post('/register', [AdminAuthController::class, 'register'])->name('admin.register.submit');
     Route::get('/admin-client-invite/{token}', [AdminClientInvitationController::class, 'show'])->name('admin-client-invitations.show');
     Route::post('/admin-client-invite/{token}', [AdminClientInvitationController::class, 'store'])->name('admin-client-invitations.store');
 });
