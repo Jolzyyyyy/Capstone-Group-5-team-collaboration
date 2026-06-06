@@ -103,8 +103,8 @@ class VerifyOtpController extends Controller
                 ->with('otp_attempt_count', min($attempts, self::CUSTOMER_OTP_MAX_ATTEMPTS));
         }
 
-        // 2. Security Check: Expired na ba ang code?
-        if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->isPast()) {
+        // 2. Security Check: may valid expiry ba ang code?
+        if (!$user->otp_expires_at || Carbon::parse($user->otp_expires_at)->isPast()) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
             if ($attempts >= self::CUSTOMER_OTP_MAX_ATTEMPTS) {

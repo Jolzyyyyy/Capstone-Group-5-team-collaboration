@@ -201,6 +201,50 @@ class AdminClientAccessTest extends TestCase
         $this->assertNull($adminClient->fresh()->otp_code);
     }
 
+    public function test_admin_client_otp_requires_an_expiry_timestamp(): void
+    {
+        $developer = User::factory()->create(['role' => User::ROLE_DEVELOPER]);
+        $adminClient = User::factory()->create([
+            'role' => User::ROLE_ADMIN_CLIENT,
+            'email' => 'missing-expiry-client@example.com',
+            'password' => Hash::make('Password1!'),
+            'approved_at' => now(),
+            'approved_by' => $developer->id,
+            'invitation_accepted_at' => now(),
+            'otp_code' => '123456',
+            'otp_expires_at' => null,
+            'email_verified_at' => null,
+        ]);
+
+        $adminClient->adminClientProfile()->create([
+            'business_name' => 'Missing Expiry Studio',
+            'contact_person' => 'Client Owner',
+            'contact_number' => '09171111111',
+            'business_address' => '123 Missing Expiry Street',
+            'profile_completed_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($adminClient)
+            ->withSession([
+                'admin_auth_passed' => true,
+                'admin_email' => $adminClient->email,
+                'needs_email_otp' => true,
+            ])
+            ->from(route('admin.otp.verify', absolute: false))
+            ->post(route('admin.otp.submit', absolute: false), [
+                'otp' => '123456',
+            ]);
+
+        $response
+            ->assertRedirect(route('admin.otp.verify', absolute: false))
+            ->assertSessionHasErrors('otp')
+            ->assertSessionMissing('staff_otp_passed');
+
+        $this->assertAuthenticatedAs($adminClient);
+        $this->assertNull($adminClient->fresh()->email_verified_at);
+    }
+
     public function test_admin_client_otp_uses_customer_three_attempt_lockout(): void
     {
         $developer = User::factory()->create(['role' => User::ROLE_DEVELOPER]);
