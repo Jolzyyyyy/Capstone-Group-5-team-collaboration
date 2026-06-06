@@ -100,6 +100,19 @@ Keep these responsibilities separate:
 - Blade views
   - Service cards, forms, cart tables, checkout screens, and status display only.
 
+## Cleanup Status
+
+The current frontend/backend separation cleanup has been completed at the Laravel boundary level:
+
+- The storefront homepage shell is now small and delegates major page sections to `resources/views/components/storefront/`.
+- Storefront Blade components now cover the header, hero, services, about, contact, product detail, cart drawer, and product modal markup.
+- Homepage service-card data is prepared by `FrontPageController` instead of being built inside `welcome.blade.php`.
+- Customer dashboard data is prepared by `CustomerPortalController`.
+- Auth dashboard redirect decisions live in `AuthenticatedSessionController`.
+- Route files are mostly declarative and should stay focused on URL, middleware, prefix, and controller mapping.
+
+Stop this cleanup track here unless there is a specific bug or duplication problem. The next meaningful phase is service-layer extraction, which touches business behavior and should be handled in separate, higher-review PRs.
+
 ## Commit And Branch Rules
 
 Use small branches and small commits.
