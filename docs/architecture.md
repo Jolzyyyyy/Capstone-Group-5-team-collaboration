@@ -113,6 +113,17 @@ The current frontend/backend separation cleanup has been completed at the Larave
 
 Stop this cleanup track here unless there is a specific bug or duplication problem. The next meaningful phase is service-layer extraction, which touches business behavior and should be handled in separate, higher-review PRs.
 
+## Service Layer Status
+
+The first service-layer cleanup phase is complete for the service catalog:
+
+- `ServiceController` still owns request validation, authorization checks, route responses, and view rendering.
+- `ServiceItemIdGenerator` owns service variation item-code generation.
+- `ServiceCatalogManager` owns service create, update, delete, active-status toggle, image cleanup, and variation replacement persistence.
+- Focused feature tests cover item-code generation and catalog manager behavior.
+
+Stop the service catalog cleanup here unless a specific catalog bug appears. The next service-layer phase should be checkout and payment extraction, but that is higher risk because it touches order placement, PayMongo requests, payment webhooks, and cart/session behavior.
+
 ## Commit And Branch Rules
 
 Use small branches and small commits.
