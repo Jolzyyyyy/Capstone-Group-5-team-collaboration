@@ -194,8 +194,8 @@ class SectionController extends Controller
         if ($user->isDeveloper()) {
             $cards[] = [
                 'label' => 'Admin Accounts',
-                'value' => User::where('role', User::ROLE_ADMIN)->whereNotNull('preregistered_by')->whereNotNull('approved_at')->count(),
-                'note' => User::whereIn('role', [User::ROLE_ADMIN, User::ROLE_ADMIN_CLIENT])
+                'value' => User::where('role', User::ROLE_ADMIN_CLIENT)->whereNotNull('preregistered_by')->whereNotNull('approved_at')->count(),
+                'note' => User::where('role', User::ROLE_ADMIN_CLIENT)
                     ->whereNotNull('preregistered_by')
                     ->whereNull('approved_at')
                     ->count() . ' pending approval',

@@ -9,12 +9,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use App\Models\User;
 use Carbon\Carbon;
-use App\Mail\OTPVerificationMail; 
-use Illuminate\Support\Facades\Mail;
+use App\Notifications\SendOTP;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -64,39 +62,39 @@ class AuthenticatedSessionController extends Controller
         // 4. Regenerate session para sa security
         $request->session()->regenerate();
 
+        $request->session()->forget([
+            'password_reset_email',
+            'password_reset_token',
+            'is_forgot_password',
+        ]);
+
         // 5. Generate 6-digit OTP (Formatted to ensure 6 digits)
         $otp = sprintf("%06d", mt_rand(0, 999999));
 
         // 6. I-save ang OTP sa database ('otp_code' column)
         $user->update([
             'otp_code' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
+            'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
         // 7. I-send ang OTP sa Email ng user
         try {
-            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+            $user->notify(new SendOTP($otp));
+            RateLimiter::hit(
+                $this->customerOtpResendThrottleKey($user->email, $request->ip()),
+                User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS
+            );
         } catch (\Exception $e) {
             Log::error('Login OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
-            // Itutuloy pa rin ang flow para manual resend later kung mag-fail ang initial email
         }
 
-        /**
-         * 8. Session Markers
-         * Mahalaga: 'customer_otp_passed' ay dapat FALSE para harangin ng middleware 'customer_otp'
-         */
         $request->session()->put([
             'customer_otp_passed' => false, 
             'otp_email' => $user->email,
-            'auth_type' => 'login',
+            'auth_type' => 'account_verification',
         ]);
 
-        /**
-         * 9. Redirect sa Smart Redirect Logic sa web.php
-         * Gagamitin natin ang 'dashboard.redirect' route para malaman kung sa OTP 
-         * o sa Dashboard ang tuloy ng user.
-         */
-        return redirect()->route('dashboard.redirect')
+        return redirect()->route('otp.verify', ['email' => $user->email])
             ->with('status', 'A verification code has been sent to your email.');
     }
 
@@ -121,4 +119,3 @@ class AuthenticatedSessionController extends Controller
         return 'customer-otp-resend:' . Str::transliterate(Str::lower($email) . '|' . $ip);
     }
 }
-

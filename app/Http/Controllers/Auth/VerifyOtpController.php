@@ -20,6 +20,11 @@ class VerifyOtpController extends Controller
     private const CUSTOMER_OTP_MAX_ATTEMPTS = 3;
     private const CUSTOMER_OTP_RESEND_MAX_ATTEMPTS = 1;
 
+    public function showVerifyForm(Request $request)
+    {
+        return $this->show($request);
+    }
+
     /**
      * Ipakita ang OTP verification form.
      * FIXED: Method name is 'show' to match the error requirement.
@@ -40,7 +45,12 @@ class VerifyOtpController extends Controller
         }
 
         // Siguraduhin na ang view file ay resources/views/auth/verify-otp.blade.php
-        return view('auth.verify-otp', ['email' => $email]);
+        return view('auth.verify-otp', [
+            'email' => $email,
+            'verificationEmail' => session('is_forgot_password') === true
+                ? session('password_reset_email')
+                : $email,
+        ]);
     }
 
     /**
@@ -63,7 +73,11 @@ class VerifyOtpController extends Controller
             'otp'
         );
 
-        $user = User::where('email', trim($request->email))->first();
+        $lookupEmail = session('is_forgot_password') === true
+            ? session('password_reset_email')
+            : $request->email;
+
+        $user = User::where('email', trim((string) $lookupEmail))->first();
 
         if (!$user) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
@@ -114,7 +128,7 @@ class VerifyOtpController extends Controller
         // --- SCENARIO A: FORGOT PASSWORD FLOW ---
         if (session('is_forgot_password') === true) {
             $token = session('password_reset_token');
-            $emailForReset = $user->email;
+            $emailForReset = session('password_reset_email', $user->email);
 
             $request->session()->put('customer_otp_passed', true);
             $request->session()->forget(['is_forgot_password', 'otp_email']);
@@ -161,13 +175,15 @@ class VerifyOtpController extends Controller
             'otp'
         );
 
-        $email = $request->email ?? session('otp_email') ?? session('password_reset_email');
+        $lookupEmail = session('is_forgot_password') === true
+            ? session('password_reset_email')
+            : ($request->email ?? session('otp_email') ?? session('password_reset_email'));
 
-        if (!$email) {
+        if (!$lookupEmail) {
             return back()->withErrors(['otp' => 'Email session expired. Please restart the process.']);
         }
 
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $lookupEmail)->first();
         if (!$user) return back()->withErrors(['otp' => 'User not found.']);
 
         // Generate bagong 6-digit OTP na may leading zeros
@@ -179,10 +195,19 @@ class VerifyOtpController extends Controller
         ]);
 
         try {
-            Mail::to($user->email)->send(new OTPVerificationMail($otp));
+            $deliveryEmail = session('is_forgot_password') === true
+                ? session('otp_email', $user->email)
+                : $user->email;
+
+            Mail::to($deliveryEmail)->send(new OTPVerificationMail($otp));
+            RateLimiter::hit(
+                $this->customerOtpResendThrottleKey($request),
+                User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS
+            );
+
             return back()->with('status', 'A new 6-digit verification code has been sent to your email.');
         } catch (\Exception $e) {
-            Log::error("OTP Resend failed for $email: " . $e->getMessage());
+            Log::error("OTP Resend failed for {$user->email}: " . $e->getMessage());
             return back()->withErrors(['otp' => 'Failed to send code. Please check your internet connection.']);
         }
     }

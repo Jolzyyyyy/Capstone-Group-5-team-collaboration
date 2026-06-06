@@ -63,13 +63,6 @@ class EnsureCustomerOtpIsVerified
 
         // 5. OTP VERIFICATION CHECK
         if (session('customer_otp_passed') !== true) {
-
-            // Backup check: Kung verified na sa DB at hindi naman bagong register, auto-pass
-            if ($user->email_verified_at && session('auth_type') !== 'register') {
-                session(['customer_otp_passed' => true]);
-                return $next($request);
-            }
-
             // Siguraduhin na may email sa session para sa view
             if (!session()->has('otp_email')) {
                 session(['otp_email' => $user->email]);
@@ -93,4 +86,3 @@ class EnsureCustomerOtpIsVerified
         return $next($request);
     }
 }
-

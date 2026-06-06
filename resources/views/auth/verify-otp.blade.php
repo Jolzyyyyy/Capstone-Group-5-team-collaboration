@@ -158,7 +158,7 @@
 
         <form method="POST" action="{{ route('customer.otp.submit') }}">
             @csrf
-            <input type="hidden" name="email" value="{{ $email ?? (Auth::user()->email ?? (session('otp_email') ?? request()->email)) }}">
+            <input type="hidden" name="email" value="{{ $verificationEmail ?? $email ?? (Auth::user()->email ?? (session('otp_email') ?? request()->email)) }}">
 
             <input
                 id="otp"
@@ -187,7 +187,7 @@
             <div>
                 <form method="POST" action="{{ route('customer.otp.resend') }}">
                     @csrf
-                    <input type="hidden" name="email" value="{{ $email ?? (Auth::user()->email ?? (session('otp_email') ?? request()->email)) }}">
+                    <input type="hidden" name="email" value="{{ $verificationEmail ?? $email ?? (Auth::user()->email ?? (session('otp_email') ?? request()->email)) }}">
                     
                     <button type="submit" x-show="canResend" class="nav-link resend-link">
                         Resend Code

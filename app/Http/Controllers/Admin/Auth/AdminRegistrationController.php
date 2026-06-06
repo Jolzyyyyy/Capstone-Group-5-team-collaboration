@@ -35,7 +35,6 @@ class AdminRegistrationController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => [
                 'required', 
-                'confirmed', 
                 Password::min(8)     // Minimum 8 characters
                     ->letters()      // Dapat may letters
                     ->mixedCase()    // Dapat may Uppercase at Lowercase

@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Notifications\SendOTP;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -21,6 +23,8 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
+        Notification::fake();
+
         $user = User::factory()->create();
 
         $response = $this->post('/login', [
@@ -29,7 +33,20 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('otp.verify', [
+            'email' => $user->email,
+        ], false));
+        $user->refresh();
+        $this->assertNotNull($user->otp_code);
+        $this->assertTrue($user->otp_expires_at->between(
+            now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES)->subSeconds(5),
+            now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES)->addSeconds(5)
+        ));
+        $this->assertTrue(RateLimiter::tooManyAttempts(
+            'customer-otp-resend:' . Str::transliterate(Str::lower($user->email) . '|127.0.0.1'),
+            1
+        ));
+        $this->assertFalse(session('customer_otp_passed', false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

@@ -12,9 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -40,6 +37,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_name',
         'email',
         'backup_email',
+        'phone',
+        'birthdate',
+        'gender',
+        'street',
+        'barangay',
+        'region',
+        'city',
+        'postal_code',
+        'company',
+        'profile_photo',
+        'preferences',
         'password',
         'role',               // 'admin' o 'customer'
         'admin_client_id',
@@ -98,6 +106,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'has_set_password'  => 'boolean',
         'google2fa_enabled' => 'boolean',
         'recovery_codes'    => 'json',
+        'preferences'       => 'array',
         'has_set_password'  => 'boolean', 
     ];
 
@@ -144,7 +153,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isInvitedAdminPendingApproval(): bool
     {
-        return $this->isAdmin()
+        return $this->isAdminClient()
             && $this->preregistered_by !== null
             && $this->approved_at === null;
     }
@@ -331,40 +340,5 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->first_name = $parts[0] ?? null;
         $this->last_name = $parts[1] ?? null;
         $this->name = trim(implode(' ', array_filter([$this->first_name, $this->last_name])));
-                $user->role = self::ROLE_CUSTOMER;
-            }
-        });
-
-        static::saving(function ($user) {
-            $user->syncNameParts();
-        });
-    }
-
-    public function syncNameParts(): void
-    {
-        $firstName = trim((string) ($this->first_name ?? ''));
-        $lastName = trim((string) ($this->last_name ?? ''));
-
-        if ($firstName !== '' || $lastName !== '') {
-            $this->first_name = $firstName !== '' ? $firstName : null;
-            $this->last_name = $lastName !== '' ? $lastName : null;
-            $this->name = trim(implode(' ', array_filter([$firstName, $lastName])));
-            return;
-        }
-
-        $fullName = trim((string) ($this->name ?? ''));
-
-        if ($fullName === '') {
-            $this->first_name = null;
-            $this->last_name = null;
-            $this->name = null;
-            return;
-        }
-
-        $parts = preg_split('/\s+/', $fullName, 2);
-        $this->first_name = $parts[0] ?? null;
-        $this->last_name = $parts[1] ?? null;
-        $this->name = trim(implode(' ', array_filter([$this->first_name, $this->last_name])));
     }
 }
-

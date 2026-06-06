@@ -131,12 +131,16 @@
         }
     </style>
 
-    <div class="auth-container" 
-         x-data="{ 
-            otp: '', 
-            timer: 60, 
-            canResend: false,
+    <div class="auth-container"
+         x-data="{
+            otp: '',
+            timer: {{ max((int) $resendCooldownSeconds, 0) }},
+            canResend: {{ (int) $resendCooldownSeconds <= 0 ? 'true' : 'false' }},
             init() {
+                if (this.canResend) {
+                    return;
+                }
+
                 let interval = setInterval(() => {
                     if (this.timer > 0) {
                         this.timer--;

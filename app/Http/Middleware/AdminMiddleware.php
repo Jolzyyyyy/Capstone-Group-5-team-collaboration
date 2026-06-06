@@ -14,16 +14,20 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !Auth::user()->canAccessAdminPortal()) {
-            if (Auth::check()) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-            }
-
+        if (!Auth::check()) {
             return redirect()->route('admin.login')->withErrors([
                 'email' => 'Unauthorized access. This area is for approved staff and developers only.',
             ]);
+        }
+
+        if (!Auth::user()->canAccessAdminPortal()) {
+            abort(403, 'Unauthorized access for ' . (Auth::user()->role ?? 'unknown role'));
+        }
+
+        if (Auth::user()->isDeveloper()) {
+            $request->session()->put('staff_otp_passed', true);
+
+            return $next($request);
         }
 
         $currentRoute = $request->route()->getName();

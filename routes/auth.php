@@ -9,13 +9,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Auth\VerifyOtpController; 
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\GoogleAuthController;
 
 /**
  * 🛠️ ADMIN AUTH CONTROLLERS
@@ -48,35 +46,13 @@ Route::middleware('guest')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-
-    // THE REDIRECTOR
-    Route::get('/dashboard-redirect', function () {
-        $user = auth()->user();
-        if ($user->canAccessAdminPortal()) {
-            return redirect()->route('admin.otp.verify');
-        }
-        
-        // FIXED: Inalign ang route name dito
-        return session('customer_otp_passed') === true 
-            ? redirect()->route('dashboard') 
-            : redirect()->route('customer.otp.verify');
-    })->name('dashboard.redirect');
-
-    // --- Customer OTP Flow ---
-    // FIXED: Pinalitan ang prefix name mula 'otp.' tungo sa 'customer.otp.' 
-    // para mag-match sa lahat ng controllers natin.
-    Route::prefix('verify-account')->name('customer.otp.')->group(function () {
-        Route::get('/', [VerifyOtpController::class, 'show'])->name('verify');   
-        Route::post('/', [VerifyOtpController::class, 'verify'])->name('submit'); 
-        Route::post('/resend', [VerifyOtpController::class, 'resend'])->name('resend'); 
-    });
-
-    // --- Admin OTP Flow ---
-    Route::prefix('admin-auth')->name('admin.otp.')->group(function () {
-        Route::get('/verify', [AdminAuthController::class, 'showOtpForm'])->name('verify');
-        Route::post('/verify', [AdminAuthController::class, 'verifyOtp'])->name('submit');
-        Route::post('/resend', [AdminAuthController::class, 'resendOtp'])->name('resend');
-    });
+    Route::get('verify-email', EmailVerificationPromptController::class)
+        ->name('verification.notice');
+    Route::post('verify-email', [VerifyEmailController::class, 'verifyOtp'])
+        ->name('verification.verify');
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
 
     // Security
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
@@ -85,4 +61,3 @@ Route::middleware('auth')->group(function () {
     Route::put('password-change', [PasswordController::class, 'update'])->name('password.change');
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
-

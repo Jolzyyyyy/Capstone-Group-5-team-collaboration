@@ -1,25 +1,3 @@
-<x-guest-layout :showcase="[
-    'kicker' => __('Reset Access'),
-    'title_intro' => __('Recover your account'),
-    'title_focus' => __('without losing momentum.'),
-    'text' => __('Request a secure verification code, confirm your identity, and move directly into a guided password reset flow.'),
-    'chips' => [
-        __('Password recovery with time-limited OTP protection'),
-        __('Clear next-step guidance from email to reset form'),
-        __('Built to get customers back into their account safely'),
-    ],
-    'metric_value' => __('Recover'),
-    'metric_text' => __('Made for users who need a safe path back into their account after forgetting their password.'),
-]">
-    <div class="mb-7 text-center">
-        <p class="auth-eyebrow">{{ __('Reset Access') }}</p>
-        <h2 class="auth-title">{{ __('Forgot Password?') }}</h2>
-        <p class="auth-subtitle">{{ __('Enter your registered email and we will send a verification code so you can securely reset your password.') }}</p>
-    </div>
-
-    <div class="auth-note">
-        {{ __('For security, the code is time-limited and can only be used once. If the first code expires, request a new one from the verification page.') }}
-    </div>
 <x-guest-layout>
     {{-- 1. LAYOUT RESET --}}
     <style>
@@ -137,14 +115,6 @@
             {{ __('Enter your email address and we will send you a code to reset your password.') }}
         </p>
 
-    <x-auth-session-status class="mb-4" :status="session('status')" />
-
-    @if ($errors->has('email'))
-        <div class="auth-feedback auth-feedback--error mb-5" role="alert">
-            <strong>{{ __('We could not continue to verification.') }}</strong>
-            <span>{{ __('Make sure you enter the same email address that was used when the account was registered.') }}</span>
-        </div>
-    @endif
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
         <form method="POST" action="{{ route('password.email') }}">
@@ -163,12 +133,6 @@
                 <x-input-error :messages="$errors->get('email')" class="mt-2 text-xs" />
             </div>
 
-        {{-- Button Section: Justify-end para sa kanan din ang button katulad sa Admin --}}
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button class="ms-3 primary-cta">
-                {{ __('Send Verification Code') }}
-            </x-primary-button>
-        </div>
             <div class="flex items-center mt-4 px-1">
                 <input id="use_backup" type="checkbox" 
                        class="rounded border-gray-300 text-red-500 focus:ring-red-500" 
@@ -178,13 +142,6 @@
                 </label>
             </div>
 
-        {{-- Back to Login Link --}}
-        <div class="mt-8 text-center">
-            <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none auth-link" href="{{ route('login') }}">
-                {{ __('Back to Login') }}
-            </a>
-        </div>
-    </form>
             <button type="submit" class="auth-btn">
                 {{ __('Send Reset Code') }}
             </button>

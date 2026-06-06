@@ -22,13 +22,7 @@ class DeveloperAdminClientController extends Controller
         $pendingAdminClients = User::query()
             ->with('adminClientProfile')
             ->withCount(['assignedCustomers', 'managedOrders'])
-            ->where(function ($query) {
-                $query->where('role', User::ROLE_ADMIN_CLIENT)
-                    ->orWhere(function ($adminQuery) {
-                        $adminQuery->where('role', User::ROLE_ADMIN)
-                            ->whereNotNull('preregistered_by');
-                    });
-            })
+            ->where('role', User::ROLE_ADMIN_CLIENT)
             ->whereNull('approved_at')
             ->latest()
             ->get();
@@ -36,7 +30,7 @@ class DeveloperAdminClientController extends Controller
         $approvedAdminClients = User::query()
             ->with('adminClientProfile')
             ->withCount(['assignedCustomers', 'managedOrders'])
-            ->where('role', User::ROLE_ADMIN)
+            ->where('role', User::ROLE_ADMIN_CLIENT)
             ->whereNotNull('preregistered_by')
             ->whereNotNull('approved_at')
             ->latest('approved_at')
@@ -66,7 +60,7 @@ class DeveloperAdminClientController extends Controller
                 'name' => trim($validated['name']),
                 'email' => strtolower(trim($validated['email'])),
                 'password' => Hash::make(Str::random(64)),
-                'role' => User::ROLE_ADMIN,
+                'role' => User::ROLE_ADMIN_CLIENT,
                 'preregistered_by' => $request->user()->id,
                 'approved_at' => null,
                 'approved_by' => null,
@@ -110,7 +104,7 @@ class DeveloperAdminClientController extends Controller
 
     public function approve(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->isAdminClient() || $user->isAdmin(), 404);
+        abort_unless($user->isAdminClient(), 404);
 
         if (!$user->hasAcceptedInvitation() && filled($user->invite_token)) {
             return redirect()
@@ -127,7 +121,7 @@ class DeveloperAdminClientController extends Controller
         $oldValues = $user->only(['role', 'approved_at', 'approved_by']);
 
         $user->forceFill([
-            'role' => User::ROLE_ADMIN,
+            'role' => User::ROLE_ADMIN_CLIENT,
             'approved_at' => now(),
             'approved_by' => $request->user()->id,
         ])->save();
@@ -149,7 +143,7 @@ class DeveloperAdminClientController extends Controller
 
     public function suspend(User $user): RedirectResponse
     {
-        abort_unless($user->isAdmin() || $user->isAdminClient(), 404);
+        abort_unless($user->isAdminClient(), 404);
 
         $oldValues = $user->only(['approved_at', 'approved_by', 'google2fa_enabled']);
 
@@ -182,7 +176,7 @@ class DeveloperAdminClientController extends Controller
 
     public function assignCustomer(Request $request, User $user): RedirectResponse
     {
-        abort_unless($user->isAdmin() || $user->isAdminClient(), 404);
+        abort_unless($user->isAdminClient(), 404);
         abort_unless($user->approved_at !== null, 422, 'Customer accounts can only be assigned to approved admins.');
 
         $validated = $request->validate([

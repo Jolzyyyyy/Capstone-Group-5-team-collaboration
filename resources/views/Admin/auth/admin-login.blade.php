@@ -613,4 +613,3 @@
         }
     </script>
 </x-guest-layout>
-

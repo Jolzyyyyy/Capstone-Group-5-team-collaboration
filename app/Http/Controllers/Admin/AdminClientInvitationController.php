@@ -41,7 +41,7 @@ class AdminClientInvitationController extends Controller
         }
 
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
+            'password' => ['required', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
             'business_name' => ['required', 'string', 'max:255'],
             'contact_person' => ['required', 'string', 'max:255'],
             'contact_number' => ['required', 'string', 'max:50'],

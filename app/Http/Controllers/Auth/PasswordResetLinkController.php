@@ -12,6 +12,8 @@ use Carbon\Carbon;
 use App\Notifications\SendOTP;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class PasswordResetLinkController extends Controller
 {
@@ -72,6 +74,12 @@ class PasswordResetLinkController extends Controller
             } else {
                 $user->notify(new SendOTP($otp));
             }
+
+            $deliveryEmail = $isBackup ? $user->backup_email : $user->email;
+            RateLimiter::hit(
+                $this->customerOtpResendThrottleKey((string) $deliveryEmail, $request->ip()),
+                User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS
+            );
             
         } catch (\Exception $e) {
             Log::error('Forgot Password OTP Email failed for ' . $user->email . ': ' . $e->getMessage());
@@ -97,7 +105,10 @@ class PasswordResetLinkController extends Controller
         /**
          * 8. Redirect to OTP verification page
          */
-        return redirect()->route('customer.otp.verify')
+        return redirect()->route('otp.verify', [
+            'email' => $isBackup ? $user->backup_email : $user->email,
+            'flow' => 'forgot_password',
+        ])
             ->with('status', 'A 6-digit verification code has been sent to your ' . ($isBackup ? 'backup' : 'email') . '.');
     }
 

@@ -178,13 +178,13 @@
             Set your new credentials below to regain access.
         </p>
 
-        <form method="POST" action="{{ route('password.update') }}" id="resetForm">
+        <form method="POST" action="{{ route('password.store') }}" id="resetForm">
             @csrf
             <input type="hidden" name="token" value="{{ $token ?? (request()->route('token') ?? session('password_reset_token')) }}">
             <input type="hidden" name="action_type" :value="actionType">
 
             <div class="input-group">
-                <input id="email" class="custom-input" type="email" name="email" :value="old('email')" placeholder="Email Address" required />
+                <input id="email" class="custom-input" type="email" name="email" value="{{ old('email', $email ?? request('email') ?? session('password_reset_email')) }}" placeholder="Email Address" required />
             </div>
 
             <div class="input-group">

@@ -43,15 +43,6 @@
                                 @enderror
                             </div>
 
-                            {{-- Confirm Password --}}
-                            <div class="mb-4">
-                                <label class="form-label small fw-semibold text-muted">CONFIRM PASSWORD</label>
-                                <input type="password" name="password_confirmation" id="password_confirmation"
-                                       class="form-control" 
-                                       style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 10px;" 
-                                       placeholder="Repeat your password" required>
-                            </div>
-
                             {{-- Submit Button --}}
                             <button type="submit" class="btn btn-dark w-100 py-3 fw-bold shadow-sm submit-btn" 
                                     style="background-color: #1a202c; border: none; border-radius: 10px; transition: 0.3s;">

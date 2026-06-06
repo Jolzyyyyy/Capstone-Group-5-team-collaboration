@@ -56,7 +56,7 @@ class DashboardController extends Controller
                 ? $this->developerManagedAdminQuery()->whereNull('approved_at')->count()
                 : 0,
             'approved_admin_clients' => $isDeveloper
-                ? User::where('role', User::ROLE_ADMIN)->whereNotNull('preregistered_by')->whereNotNull('approved_at')->count()
+                ? User::where('role', User::ROLE_ADMIN_CLIENT)->whereNotNull('preregistered_by')->whereNotNull('approved_at')->count()
                 : 0,
             'unassigned_orders' => $isDeveloper
                 ? Order::whereNull('admin_client_id')->count()
@@ -120,12 +120,7 @@ class DashboardController extends Controller
     private function developerManagedAdminQuery(): Builder
     {
         return User::query()
-            ->where(function (Builder $query) {
-                $query->where('role', User::ROLE_ADMIN_CLIENT)
-                    ->orWhere(function (Builder $adminQuery) {
-                        $adminQuery->where('role', User::ROLE_ADMIN)
-                            ->whereNotNull('preregistered_by');
-                    });
-            });
+            ->where('role', User::ROLE_ADMIN_CLIENT)
+            ->whereNotNull('preregistered_by');
     }
 }
