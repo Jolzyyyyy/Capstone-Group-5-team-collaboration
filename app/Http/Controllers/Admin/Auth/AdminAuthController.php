@@ -217,7 +217,7 @@ class AdminAuthController extends Controller
             ]);
         }
 
-        if ($user->otp_expires_at && now()->gt($user->otp_expires_at)) {
+        if (!$user->otp_expires_at || now()->gt($user->otp_expires_at)) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
             if ($attempts >= self::STAFF_OTP_MAX_ATTEMPTS) {

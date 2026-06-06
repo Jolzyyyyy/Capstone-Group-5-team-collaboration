@@ -87,6 +87,35 @@ class AuthenticationTest extends TestCase
             ->assertSessionMissing('is_forgot_password');
     }
 
+    public function test_customer_otp_requires_an_expiry_timestamp(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'missing-expiry@example.com',
+            'otp_code' => '123456',
+            'otp_expires_at' => null,
+            'email_verified_at' => null,
+        ]);
+
+        $response = $this
+            ->withSession([
+                'otp_email' => $user->email,
+                'auth_type' => 'account_verification',
+            ])
+            ->from(route('otp.verify', absolute: false))
+            ->post(route('otp.submit', absolute: false), [
+                'email' => $user->email,
+                'otp' => '123456',
+            ]);
+
+        $response
+            ->assertRedirect(route('otp.verify', absolute: false))
+            ->assertSessionHasErrors('otp')
+            ->assertSessionMissing('customer_otp_passed');
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
