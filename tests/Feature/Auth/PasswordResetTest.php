@@ -95,4 +95,42 @@ class PasswordResetTest extends TestCase
 
         $this->assertTrue(Hash::check('new-secure-password', $user->fresh()->password));
     }
+
+    public function test_forgot_password_otp_reset_flow_can_auto_login_user(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-flow@example.com',
+            'password' => Hash::make('old-password'),
+        ]);
+
+        $this->post('/forgot-password', [
+            'email' => $user->email,
+        ])->assertRedirect(route('otp.verify', [
+            'email' => $user->email,
+            'flow' => 'forgot_password',
+        ], false));
+
+        $otp = $user->fresh()->otp_code;
+
+        $this->post(route('customer.otp.submit', absolute: false), [
+            'email' => $user->email,
+            'otp' => $otp,
+        ])->assertRedirect(route('password.reset', [
+            'token' => session('password_reset_token'),
+            'email' => $user->email,
+        ], false));
+
+        $this->post(route('password.store', absolute: false), [
+            'token' => session('password_reset_token'),
+            'email' => $user->email,
+            'password' => 'new-secure-password',
+            'password_confirmation' => 'new-secure-password',
+            'action_type' => 'auto_login',
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertTrue(Hash::check('new-secure-password', $user->fresh()->password));
+    }
 }

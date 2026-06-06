@@ -9,7 +9,7 @@ class OrderController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | USER PAGES (My Orders)
+    | USER PAGES (My Orders - Customer Side)
     |--------------------------------------------------------------------------
     */
 
@@ -20,33 +20,33 @@ class OrderController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('orders.my_index', compact('orders'));
+        // Ito ang gagamitin nating file para sa Customer
+        return view('customer-orders', compact('orders'));
     }
 
+    /**
+     * Show a specific order that belongs to the logged-in user.
+     */
     public function myShow(Order $order)
     {
         if ((int) $order->user_id !== (int) auth()->id()) {
             abort(403, 'Unauthorized');
         }
 
-        // ✅ Load items + service + files (ZIP)
         $order->load(['items.service', 'files']);
-
-        // ✅ Reuse orders.show
         return view('orders.show', compact('order'));
     }
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN PAGES (Manage Orders)
+    | ADMIN PAGES (Manage Orders - Admin Side)
     |--------------------------------------------------------------------------
     */
 
     public function index()
     {
         $orders = Order::query()
-            ->visibleToPortalUser(request()->user())
-            ->with(['user', 'adminClient'])
+            ->visibleToPortalUser(auth()->user())
             ->latest()
             ->paginate(15);
 
@@ -55,10 +55,12 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $this->authorizePortalOrder($order);
+        abort_unless(Order::query()
+            ->visibleToPortalUser(auth()->user())
+            ->whereKey($order->getKey())
+            ->exists(), 403);
 
-        $order->load(['items.service', 'user', 'adminClient', 'files']);
-
+        $order->load(['items.service', 'user', 'files']);
         return view('orders.show', compact('order'));
     }
 
@@ -77,12 +79,9 @@ class OrderController extends Controller
             'status' => ['required', 'string', 'max:255'],
         ]);
 
-        $order->update([
-            'status' => $validated['status'],
-        ]);
+        $order->update(['status' => $validated['status']]);
 
-        return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Order updated successfully.');
+        return redirect()->route('admin.orders.index')->with('success', 'Order updated successfully.');
     }
 
     public function destroy(Order $order)
@@ -91,9 +90,7 @@ class OrderController extends Controller
         abort_unless(request()->user()->isDeveloper(), 403);
 
         $order->delete();
-
-        return redirect()->route('admin.orders.index')
-            ->with('success', 'Order deleted successfully.');
+        return redirect()->route('admin.orders.index')->with('success', 'Order deleted successfully.');
     }
 
     private function authorizePortalOrder(Order $order): void

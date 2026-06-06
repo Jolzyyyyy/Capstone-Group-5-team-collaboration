@@ -19,6 +19,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'admin_client_id',
+        'admin_client_id',
         'customer_name',
         'customer_email',
         'customer_phone',
@@ -67,7 +68,7 @@ class Order extends Model
 
     public function scopeVisibleToPortalUser(Builder $query, User $user): Builder
     {
-        if ($user->isDeveloper()) {
+        if ($user->canViewAllPortalRecords()) {
             return $query;
         }
 
@@ -85,7 +86,7 @@ class Order extends Model
 
     public function isVisibleToPortalUser(User $user): bool
     {
-        if ($user->isDeveloper()) {
+        if ($user->canViewAllPortalRecords()) {
             return true;
         }
 

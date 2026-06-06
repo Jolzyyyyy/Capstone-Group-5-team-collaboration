@@ -27,7 +27,8 @@ class DashboardAccessTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('Customer Access')
-            ->assertSee('Account Security');
+            ->assertSee('Account Security')
+            ->assertSee('Customer');
     }
 
     public function test_verified_customer_still_needs_session_otp_before_dashboard_access(): void
@@ -65,6 +66,90 @@ class DashboardAccessTest extends TestCase
             ->assertSee('Developer Dashboard')
             ->assertSee('Manage Admin Clients')
             ->assertSee('Recent Audit Activity');
+    }
+
+    public function test_admin_dashboard_does_not_render_developer_controls(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->withSession(['staff_otp_passed' => true])
+            ->get(route('admin.dashboard', absolute: false));
+
+        $response
+            ->assertOk()
+            ->assertSee('Admin Dashboard')
+            ->assertSee('Admin Portal')
+            ->assertDontSee('Developer Dashboard')
+            ->assertDontSee('Manage Admin Clients');
+    }
+
+    public function test_admin_cannot_access_developer_admin_client_management(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->withSession(['staff_otp_passed' => true])
+            ->get(route('developer.admin-clients.index', absolute: false));
+
+        $response->assertForbidden();
+    }
+
+    public function test_developer_admin_client_management_uses_developer_portal_shell(): void
+    {
+        $developer = User::factory()->create([
+            'role' => User::ROLE_DEVELOPER,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($developer)
+            ->withSession(['staff_otp_passed' => true])
+            ->get(route('developer.admin-clients.index', absolute: false));
+
+        $response
+            ->assertOk()
+            ->assertSee('Developer Access')
+            ->assertSee('Developer')
+            ->assertSee('Manage Admin Clients')
+            ->assertDontSee('Client Portal')
+            ->assertDontSee('My Orders');
+    }
+
+    public function test_developer_dashboard_sidebar_uses_required_sections_only(): void
+    {
+        $developer = User::factory()->create([
+            'role' => User::ROLE_DEVELOPER,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($developer)
+            ->withSession(['staff_otp_passed' => true])
+            ->get(route('admin.dashboard', absolute: false));
+
+        $response
+            ->assertOk()
+            ->assertSee('Go to Home')
+            ->assertSee('Dashboard')
+            ->assertSee('Manage Admin Clients')
+            ->assertSee('Orders')
+            ->assertSee('Services')
+            ->assertSee('Customers')
+            ->assertSee('Reports')
+            ->assertSee('Analytics')
+            ->assertSee('Settings')
+            ->assertDontSee('Products')
+            ->assertDontSee('Rates')
+            ->assertDontSee('Customer/User');
     }
 
     public function test_admin_client_dashboard_renders_after_approval_and_profile_completion(): void

@@ -13,8 +13,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('first_name')->nullable()->after('name');
-            $table->string('last_name')->nullable()->after('first_name');
+            if (!Schema::hasColumn('users', 'first_name')) {
+                $table->string('first_name')->nullable()->after('name');
+            }
+
+            if (!Schema::hasColumn('users', 'last_name')) {
+                $table->string('last_name')->nullable()->after('first_name');
+            }
         });
 
         DB::table('users')->orderBy('id')->get(['id', 'name'])->each(function ($user) {
@@ -43,7 +48,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['first_name', 'last_name']);
+            foreach (['first_name', 'last_name'] as $column) {
+                if (Schema::hasColumn('users', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

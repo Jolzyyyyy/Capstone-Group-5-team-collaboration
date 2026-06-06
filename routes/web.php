@@ -105,7 +105,7 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
     });
 });
 
-Route::middleware(['auth', 'role:developer,admin', 'admin'])->prefix('p-co-2026/developer')->name('developer.')->group(function () {
+Route::middleware(['auth', 'role:developer', 'admin'])->prefix('p-co-2026/developer')->name('developer.')->group(function () {
     Route::get('/admin-clients', [DeveloperAdminClientController::class, 'index'])->name('admin-clients.index');
     Route::post('/admin-clients', [DeveloperAdminClientController::class, 'store'])->name('admin-clients.store');
     Route::patch('/admin-clients/{user}/approve', [DeveloperAdminClientController::class, 'approve'])->name('admin-clients.approve');

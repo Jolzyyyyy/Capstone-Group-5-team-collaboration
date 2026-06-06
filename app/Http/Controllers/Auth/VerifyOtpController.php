@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\User;
-use App\Notifications\SendOTP;
+use App\Mail\OTPVerificationMail; 
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -19,49 +20,45 @@ class VerifyOtpController extends Controller
     private const CUSTOMER_OTP_MAX_ATTEMPTS = 3;
     private const CUSTOMER_OTP_RESEND_MAX_ATTEMPTS = 1;
 
+    public function showVerifyForm(Request $request)
+    {
+        return $this->show($request);
+    }
+
     /**
-     * Display the OTP verification form.
+     * Ipakita ang OTP verification form.
+     * FIXED: Method name is 'show' to match the error requirement.
      */
     public function show(Request $request)
     {
-        // Kunin ang email mula sa session flags
+        // 1. Kunin ang email mula sa session o authenticated user
         $email = session('otp_email') 
                  ?? session('password_reset_email') 
                  ?? $request->email 
                  ?? (Auth::check() ? Auth::user()->email : null);
 
-        $verificationFlow = $this->isForgotPasswordFlow($request)
-            ? 'forgot_password'
-            : 'account_verification';
-
-        $otpThrottleKey = $this->customerOtpThrottleKeyFromContext($email, $request->ip());
-        $resendThrottleKey = $this->customerOtpResendThrottleKeyFromContext($email, $request->ip());
-
+        // 2. Kung walang mahanap na email, ibalik sa login
         if (!$email) {
             return redirect()->route('login')->withErrors([
-                'email' => 'Session expired. Please try again.'
+                'email' => 'Session expired or invalid request. Please try again.'
             ]);
         }
 
+        // Siguraduhin na ang view file ay resources/views/auth/verify-otp.blade.php
         return view('auth.verify-otp', [
             'email' => $email,
-            'verificationFlow' => $verificationFlow,
-            'otpAttemptCount' => (int) session('otp_attempt_count', 0),
-            'otpAttemptMax' => self::CUSTOMER_OTP_MAX_ATTEMPTS,
-            'otpLockoutSeconds' => RateLimiter::tooManyAttempts($otpThrottleKey, self::CUSTOMER_OTP_MAX_ATTEMPTS)
-                ? RateLimiter::availableIn($otpThrottleKey)
-                : 0,
-            'resendCooldownSeconds' => RateLimiter::tooManyAttempts($resendThrottleKey, self::CUSTOMER_OTP_RESEND_MAX_ATTEMPTS)
-                ? RateLimiter::availableIn($resendThrottleKey)
-                : 0,
+            'verificationEmail' => session('is_forgot_password') === true
+                ? session('password_reset_email')
+                : $email,
         ]);
     }
 
     /**
-     * Handle OTP verification logic.
+     * Handle ang pag-verify ng OTP code.
      */
     public function verify(Request $request)
     {
+        // Validation for the OTP input
         $request->validate([
             'otp' => ['required', 'string', 'size:6'],
             'email' => ['required', 'email'],
@@ -76,7 +73,11 @@ class VerifyOtpController extends Controller
             'otp'
         );
 
-        $user = User::where('email', trim($request->email))->first();
+        $lookupEmail = session('is_forgot_password') === true
+            ? session('password_reset_email')
+            : $request->email;
+
+        $user = User::where('email', trim((string) $lookupEmail))->first();
 
         if (!$user) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
@@ -88,7 +89,7 @@ class VerifyOtpController extends Controller
             return back()->withErrors(['otp' => 'Account not found.']);
         }
 
-        // 1. Check if OTP matches
+        // 1. Security Check: Tugma ba ang OTP?
         if (trim((string)$user->otp_code) !== trim((string)$request->otp)) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
@@ -102,7 +103,7 @@ class VerifyOtpController extends Controller
                 ->with('otp_attempt_count', min($attempts, self::CUSTOMER_OTP_MAX_ATTEMPTS));
         }
 
-        // 2. Check if OTP is expired
+        // 2. Security Check: Expired na ba ang code?
         if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->isPast()) {
             $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
@@ -113,7 +114,7 @@ class VerifyOtpController extends Controller
             return back()->withErrors(['otp' => 'This code has expired. Please request a new one.']);
         }
 
-        // 3. Mark as verified in Database
+        // 3. Mark as verified and Clean up OTP fields
         $user->forceFill([
             'email_verified_at' => now(),
             'otp_code' => null,
@@ -121,53 +122,42 @@ class VerifyOtpController extends Controller
         ])->save();
 
         /**
-         * 4. FLOW REDIRECTION LOGIC
-         * Dito natin hihiwalayin ang FORGOT PASSWORD flow sa LOGIN/REGISTER flow.
+         * 🛡️ FLOW REDIRECTION
          */
 
-        RateLimiter::clear($otpThrottleKey);
-
-        // --- FLOW: FORGOT PASSWORD ---
-        if ($this->isForgotPasswordFlow($request)) {
+        // --- SCENARIO A: FORGOT PASSWORD FLOW ---
+        if (session('is_forgot_password') === true) {
             $token = session('password_reset_token');
-            $emailForReset = $user->email;
+            $emailForReset = session('password_reset_email', $user->email);
 
-            // Markahan na tapos na ang OTP verification para sa security middleware
             $request->session()->put('customer_otp_passed', true);
+            $request->session()->forget(['is_forgot_password', 'otp_email']);
             
-            // Linisin ang temporary flags pero itira ang kailangan para sa reset form
-            $request->session()->forget(['is_forgot_password', 'otp_email', 'auth_type']);
-            
-            // IMPORTANT: HUWAG MAG-AUTH::LOGIN DITO. 
-            // I-redirect sa Reset Password Section.
             return redirect()->route('password.reset', [
                 'token' => $token,
                 'email' => $emailForReset
-            ])->with('status', 'OTP Verified! You can now set your new password.');
+            ])->with('status', 'OTP Verified! Please set your new password below.');
         }
 
-        // --- FLOW: REGISTER / LOGIN ---
-        // Dito lang natin i-lo-log in ang user
+        // --- SCENARIO B: REGISTER / LOGIN FLOW ---
         if (!Auth::check()) {
             Auth::login($user);
         }
 
         $request->session()->regenerate();
+        
+        // MAHALAGA: Susi para makalampas sa 'customer_otp' middleware
         $request->session()->put('customer_otp_passed', true);
-        $request->session()->forget([
-            'otp_email',
-            'password_reset_email',
-            'password_reset_token',
-            'is_forgot_password',
-            'auth_type',
-            'otp_passed',
-        ]);
+        
+        // Linisin ang otp-related session data
+        $request->session()->forget(['otp_email', 'password_reset_email', 'auth_type']);
 
-        return redirect()->route('dashboard.redirect')->with('status', 'Verified successfully!');
+        // Redirect sa Dashboard
+        return redirect()->route('dashboard')->with('status', 'Verified successfully!');
     }
 
     /**
-     * Resend the OTP code.
+     * Resend ang OTP code sa user.
      */
     public function resend(Request $request)
     {
@@ -185,29 +175,40 @@ class VerifyOtpController extends Controller
             'otp'
         );
 
-        $email = $request->email ?? session('otp_email') ?? session('password_reset_email');
+        $lookupEmail = session('is_forgot_password') === true
+            ? session('password_reset_email')
+            : ($request->email ?? session('otp_email') ?? session('password_reset_email'));
 
-        if (!$email) {
-            return back()->withErrors(['otp' => 'Email not found.']);
+        if (!$lookupEmail) {
+            return back()->withErrors(['otp' => 'Email session expired. Please restart the process.']);
         }
 
-        $user = User::where('email', $email)->first();
+        $user = User::where('email', $lookupEmail)->first();
         if (!$user) return back()->withErrors(['otp' => 'User not found.']);
 
+        // Generate bagong 6-digit OTP na may leading zeros
         $otp = sprintf("%06d", mt_rand(0, 999999));
+        
         $user->update([
             'otp_code' => $otp,
             'otp_expires_at' => now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
 
         try {
-            $user->notify(new SendOTP($otp));
-            RateLimiter::hit($this->customerOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
+            $deliveryEmail = session('is_forgot_password') === true
+                ? session('otp_email', $user->email)
+                : $user->email;
+
+            Mail::to($deliveryEmail)->send(new OTPVerificationMail($otp));
+            RateLimiter::hit(
+                $this->customerOtpResendThrottleKey($request),
+                User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS
+            );
+
             return back()->with('status', 'A new 6-digit verification code has been sent to your email.');
         } catch (\Exception $e) {
-            Log::error("OTP Resend failed: " . $e->getMessage());
-            RateLimiter::hit($this->customerOtpResendThrottleKey($request), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
-            return back()->withErrors(['otp' => 'Failed to send code. Please try again later.']);
+            Log::error("OTP Resend failed for {$user->email}: " . $e->getMessage());
+            return back()->withErrors(['otp' => 'Failed to send code. Please check your internet connection.']);
         }
     }
 

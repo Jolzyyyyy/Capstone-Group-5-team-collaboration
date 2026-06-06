@@ -12,6 +12,13 @@ use Illuminate\Support\Str;
 class ServiceController extends Controller
 {
     /**
+     * Protect admin-only actions.
+     * Customers can access: index, show
+     * Admin (logged-in users) can access the rest.
+     */
+   
+
+    /**
      * Display a listing of services (customer-facing).
      * Optional filter: ?category=Photocopy
      */
@@ -31,7 +38,9 @@ class ServiceController extends Controller
 
         $services = $query->paginate(12)->withQueryString();
 
-        return view('welcome', compact('services'));
+        $activeSection = 'products';
+
+        return view('welcome', compact('services', 'activeSection'));
     }
 
     public function adminIndex()
@@ -41,7 +50,10 @@ class ServiceController extends Controller
             ->orderByDesc('updated_at')
             ->paginate(15);
 
-        return view('services.admin_index', compact('services'));
+        return view('services.admin_index', [
+            'services' => $services,
+            'isViewOnly' => auth()->user()?->isAdminClient() ?? false,
+        ]);
     }
 
     /**
@@ -63,6 +75,8 @@ class ServiceController extends Controller
      */
     public function create()
     {
+        $this->authorizeServiceManagement();
+
         return view('services.create');
     }
 
@@ -71,6 +85,8 @@ class ServiceController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorizeServiceManagement();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
@@ -147,6 +163,8 @@ class ServiceController extends Controller
      */
     public function edit(Service $service)
     {
+        $this->authorizeServiceManagement();
+
         $service->load('variations');
 
         return view('services.edit', compact('service'));
@@ -157,6 +175,8 @@ class ServiceController extends Controller
      */
     public function update(Request $request, Service $service)
     {
+        $this->authorizeServiceManagement();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
@@ -242,6 +262,8 @@ class ServiceController extends Controller
      */
     public function destroy(Service $service)
     {
+        $this->authorizeServiceManagement();
+
         if ($service->image_path) {
             Storage::disk('public')->delete($service->image_path);
         }
@@ -257,6 +279,8 @@ class ServiceController extends Controller
      */
     public function toggleActive(Service $service)
     {
+        $this->authorizeServiceManagement();
+
         $service->is_active = !$service->is_active;
         $service->save();
 
@@ -274,6 +298,13 @@ class ServiceController extends Controller
             'Custom' => 'CSP',
             default => 'GEN',
         };
+    }
+
+    private function authorizeServiceManagement(): void
+    {
+        $user = request()->user();
+
+        abort_unless($user && ($user->isDeveloper() || $user->isAdmin()), 403);
     }
 
     protected function printingPrefix(?string $printingCategory): ?string

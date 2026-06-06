@@ -66,6 +66,47 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
+    public function test_customer_profile_details_are_saved_to_the_account_record(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'customer@example.com',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->withSession(['customer_otp_passed' => true])
+            ->patchJson('/profile', [
+                'name' => 'Maria Santos',
+                'email' => 'customer@example.com',
+                'phone' => '+639171112222',
+                'birthdate' => '1998-04-12',
+                'gender' => 'Female',
+                'street' => 'Blk 6 Lot 8',
+                'barangay' => 'Ninada',
+                'region' => 'Metro Manila',
+                'city' => 'Quezon City',
+                'postal_code' => '1121',
+                'company' => 'Printify Co.',
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $user->refresh();
+
+        $this->assertSame('Maria Santos', $user->name);
+        $this->assertSame('+639171112222', $user->phone);
+        $this->assertSame('1998-04-12', $user->birthdate);
+        $this->assertSame('Female', $user->gender);
+        $this->assertSame('Blk 6 Lot 8', $user->street);
+        $this->assertSame('Ninada', $user->barangay);
+        $this->assertSame('Metro Manila', $user->region);
+        $this->assertSame('Quezon City', $user->city);
+        $this->assertSame('1121', $user->postal_code);
+        $this->assertSame('Printify Co.', $user->company);
+    }
+
     public function test_backup_email_can_be_updated(): void
     {
         $user = User::factory()->create();

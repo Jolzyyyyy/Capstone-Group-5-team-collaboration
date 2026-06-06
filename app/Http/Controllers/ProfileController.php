@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -27,17 +28,70 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request): RedirectResponse|JsonResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $validated = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $fullName = trim((string) ($validated['name'] ?? ''));
+        $firstName = trim((string) ($validated['first_name'] ?? ''));
+        $lastName = trim((string) ($validated['last_name'] ?? ''));
+
+        if ($fullName !== '' && ($firstName === '' && $lastName === '')) {
+            $parts = preg_split('/\s+/', $fullName, 2);
+            $firstName = $parts[0] ?? '';
+            $lastName = $parts[1] ?? '';
         }
 
-        $request->user()->save();
+        if ($fullName === '') {
+            $fullName = trim($firstName.' '.$lastName);
+        }
+
+        $profileData = [
+            'name' => $fullName ?: null,
+            'first_name' => $firstName ?: null,
+            'last_name' => $lastName ?: null,
+            'email' => $validated['email'],
+            'phone' => $this->nullableText($validated['phone'] ?? null),
+            'birthdate' => $this->nullableText($validated['birthdate'] ?? null),
+            'gender' => $this->nullableText($validated['gender'] ?? null),
+            'street' => $this->nullableText($validated['street'] ?? null),
+            'barangay' => $this->nullableText($validated['barangay'] ?? null),
+            'region' => $this->nullableText($validated['region'] ?? null),
+            'city' => $this->nullableText($validated['city'] ?? null),
+            'postal_code' => $this->nullableText($validated['postal_code'] ?? null),
+            'company' => $this->nullableText($validated['company'] ?? null),
+            'preferences' => $validated['preferences'] ?? $user->preferences,
+        ];
+
+        if (! empty($validated['photo_base64']) && str_starts_with($validated['photo_base64'], 'data:image/')) {
+            $profileData['profile_photo'] = $validated['photo_base64'];
+        }
+
+        $user->fill($profileData);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => 'Profile updated successfully.',
+                'user' => $user->fresh(),
+            ]);
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    private function nullableText(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     public function updateBackupEmail(Request $request): RedirectResponse

@@ -2,6 +2,7 @@
     @php
         $user = Auth::user();
         $isDeveloper = $user->isDeveloper();
+        $isAdmin = $user->isAdmin();
         $isAdminClient = $user->isAdminClient();
         $profile = $profile ?? ($isAdminClient ? $user->adminClientProfile : null);
         $stats = $stats ?? [];
@@ -108,7 +109,7 @@
                         <div>
                             <p class="text-lg font-black tracking-tight text-[#1f2937]">Printify &amp; Co.</p>
                             <p class="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#9ca3af]">
-                                {{ $isDeveloper ? 'Developer Portal' : 'Admin Client Portal' }}
+                                {{ $isDeveloper ? 'Developer Portal' : ($isAdmin ? 'Admin Portal' : 'Admin Client Portal') }}
                             </p>
                         </div>
                     </div>
@@ -147,9 +148,9 @@
 
                         <div class="grid gap-8 xl:grid-cols-[1fr,auto] xl:items-end">
                             <div>
-                                <p class="text-sm font-semibold text-white/82">{{ $isDeveloper ? 'Staff and Developer Portal' : 'Admin Client Portal' }}</p>
+                                <p class="text-sm font-semibold text-white/82">{{ $isDeveloper ? 'Staff and Developer Portal' : ($isAdmin ? 'Admin Portal' : 'Admin Client Portal') }}</p>
                                 <h1 class="mt-2 max-w-3xl text-4xl font-black uppercase tracking-tight text-[#facc15] sm:text-5xl">
-                                    {{ $isDeveloper ? 'Developer Dashboard' : 'Admin Client Dashboard' }}
+                                    {{ $isDeveloper ? 'Developer Dashboard' : ($isAdmin ? 'Admin Dashboard' : 'Admin Client Dashboard') }}
                                 </h1>
                                 <p class="mt-4 max-w-3xl text-sm leading-7 text-white/75">
                                     {{ $isDeveloper

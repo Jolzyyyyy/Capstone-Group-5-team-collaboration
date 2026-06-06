@@ -20,7 +20,7 @@ class AdminClientInvitationController extends Controller
 
         if (!$user) {
             return redirect()->route('admin.login')->withErrors([
-                'email' => 'This admin client invitation is invalid, expired, or already accepted.',
+                'email' => 'This admin invitation is invalid, expired, or already accepted.',
             ]);
         }
 
@@ -36,12 +36,12 @@ class AdminClientInvitationController extends Controller
 
         if (!$user) {
             return redirect()->route('admin.login')->withErrors([
-                'email' => 'This admin client invitation is invalid, expired, or already accepted.',
+                'email' => 'This admin invitation is invalid, expired, or already accepted.',
             ]);
         }
 
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
+            'password' => ['required', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
             'business_name' => ['required', 'string', 'max:255'],
             'contact_person' => ['required', 'string', 'max:255'],
             'contact_number' => ['required', 'string', 'max:50'],
@@ -95,7 +95,7 @@ class AdminClientInvitationController extends Controller
     private function findInvitedAdminClient(string $token): ?User
     {
         return User::query()
-            ->where('role', User::ROLE_ADMIN_CLIENT)
+            ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_ADMIN_CLIENT])
             ->where('invite_token', hash('sha256', $token))
             ->whereNull('invitation_accepted_at')
             ->where(function ($query) {

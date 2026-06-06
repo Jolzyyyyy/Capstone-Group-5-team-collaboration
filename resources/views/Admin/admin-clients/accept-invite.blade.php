@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="mb-6 text-center">
-        <p class="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Admin Client Setup</p>
+        <p class="text-xs font-bold uppercase tracking-[0.25em] text-blue-600">Admin Setup</p>
         <h2 class="mt-2 text-2xl font-black text-slate-900">Complete Your Reference Profile</h2>
         <p class="mt-2 text-sm text-slate-600">
             {{ $adminClient->email }} was invited to the staff portal. Set your password and provide the details needed for system records.
@@ -40,18 +40,10 @@
             <x-input-error :messages="$errors->get('reference_notes')" class="mt-2" />
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <x-input-label for="password" :value="__('Password')" />
-                <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required autocomplete="new-password" />
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
-            </div>
-
-            <div>
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-                <x-text-input id="password_confirmation" class="mt-1 block w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
-                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-            </div>
+        <div>
+            <x-input-label for="password" :value="__('Password')" />
+            <x-text-input id="password" class="mt-1 block w-full" type="password" name="password" required autocomplete="new-password" />
+            <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
         <div class="pt-2">

@@ -1,6 +1,6 @@
 <x-app-layout>
     @php
-        $canManageServices = Auth::user()?->isDeveloper();
+        $canManageServices = Auth::user()?->isDeveloper() || Auth::user()?->isAdmin();
     @endphp
 
     <div class="min-h-screen bg-[#f7f4ef]" style="font-family: 'Poppins', sans-serif;">

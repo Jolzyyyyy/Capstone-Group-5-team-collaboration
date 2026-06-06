@@ -44,13 +44,13 @@ class RoleMiddleware
             abort(403, 'Unauthorized access for ' . ($user->role ?? 'unknown role'));
         }
 
-        if ($user->isAdminClient() && !$user->isApprovedAdminClient()) {
+        if (($user->isAdminClient() && !$user->isApprovedAdminClient()) || $user->isInvitedAdminPendingApproval()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()->route('admin.login')->withErrors([
-                'email' => 'This staff account is not yet approved for portal access.',
+                'email' => 'This admin account is not yet approved for portal access.',
             ]);
         }
 
@@ -58,3 +58,4 @@ class RoleMiddleware
         return $next($request);
     }
 }
+

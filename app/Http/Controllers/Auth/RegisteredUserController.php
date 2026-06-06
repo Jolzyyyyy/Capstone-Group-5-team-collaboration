@@ -45,7 +45,6 @@ class RegisteredUserController extends Controller
             ],
             'password' => [
                 'required',
-                'confirmed',
                 Rules\Password::min(8)
                     ->letters()
                     ->mixedCase()
@@ -61,10 +60,11 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'first_name' => trim($request->first_name),
             'last_name' => trim($request->last_name),
+            'name' => trim($request->first_name . ' ' . $request->last_name),
             'email' => strtolower(trim($request->email)),
             'password' => Hash::make($request->password),
             'has_set_password' => true,
-            'role' => 'customer', 
+            'role' => User::ROLE_CUSTOMER,
             'otp_code' => $otp,
             'otp_expires_at' => Carbon::now()->addMinutes(User::EMAIL_OTP_TTL_MINUTES),
         ]);
@@ -73,7 +73,6 @@ class RegisteredUserController extends Controller
         try {
             $user->notify(new SendOTP($otp));
             RateLimiter::hit($this->customerOtpResendThrottleKey($user->email, $request->ip()), User::EMAIL_OTP_RESEND_COOLDOWN_SECONDS);
-            
         } catch (\Exception $e) {
             Log::error('Registration OTP failed for ' . $user->email . ': ' . $e->getMessage());
 

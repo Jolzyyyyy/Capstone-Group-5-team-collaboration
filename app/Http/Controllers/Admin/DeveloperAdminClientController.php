@@ -31,6 +31,7 @@ class DeveloperAdminClientController extends Controller
             ->with('adminClientProfile')
             ->withCount(['assignedCustomers', 'managedOrders'])
             ->where('role', User::ROLE_ADMIN_CLIENT)
+            ->whereNotNull('preregistered_by')
             ->whereNotNull('approved_at')
             ->latest('approved_at')
             ->get();
@@ -74,6 +75,7 @@ class DeveloperAdminClientController extends Controller
                 $user,
                 [],
                 [
+                    'role' => $user->role,
                     'email' => $user->email,
                     'name' => $user->name,
                     'invite_expires_at' => optional($user->invite_expires_at)->toDateTimeString(),
@@ -86,7 +88,7 @@ class DeveloperAdminClientController extends Controller
 
         $redirect = redirect()
             ->route('developer.admin-clients.index')
-            ->with('success', 'Admin client invitation created. The account can be approved after the client completes the setup form.')
+            ->with('success', 'Admin invitation created. The account can be approved after the admin completes the setup form.')
             ->with('invite_url', $inviteUrl);
 
         try {
@@ -107,16 +109,16 @@ class DeveloperAdminClientController extends Controller
         if (!$user->hasAcceptedInvitation() && filled($user->invite_token)) {
             return redirect()
                 ->route('developer.admin-clients.index')
-                ->withErrors(['approve' => 'This admin client must accept the invitation before approval.']);
+                ->withErrors(['approve' => 'This admin account must accept the invitation before approval.']);
         }
 
         if ($user->hasAcceptedInvitation() && !$user->hasCompletedAdminClientProfile()) {
             return redirect()
                 ->route('developer.admin-clients.index')
-                ->withErrors(['approve' => 'This admin client must complete the reference profile before approval.']);
+                ->withErrors(['approve' => 'This admin account must complete the reference profile before approval.']);
         }
 
-        $oldValues = $user->only(['approved_at', 'approved_by']);
+        $oldValues = $user->only(['role', 'approved_at', 'approved_by']);
 
         $user->forceFill([
             'role' => User::ROLE_ADMIN_CLIENT,
@@ -130,13 +132,13 @@ class DeveloperAdminClientController extends Controller
             $user,
             $user,
             $oldValues,
-            $user->only(['approved_at', 'approved_by']),
+            $user->only(['role', 'approved_at', 'approved_by']),
             $request
         );
 
         return redirect()
             ->route('developer.admin-clients.index')
-            ->with('success', 'Admin client approved successfully.');
+            ->with('success', 'Admin account approved successfully.');
     }
 
     public function suspend(User $user): RedirectResponse
@@ -175,7 +177,7 @@ class DeveloperAdminClientController extends Controller
     public function assignCustomer(Request $request, User $user): RedirectResponse
     {
         abort_unless($user->isAdminClient(), 404);
-        abort_unless($user->approved_at !== null, 422, 'Customer accounts can only be assigned to approved admin clients.');
+        abort_unless($user->approved_at !== null, 422, 'Customer accounts can only be assigned to approved admins.');
 
         $validated = $request->validate([
             'customer_email' => ['required', 'email', 'max:255'],

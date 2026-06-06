@@ -36,4 +36,9 @@ class SecurityController extends Controller
     {
         return $this->show2faForm($request);
     }
+
+    public function verify2fa(Request $request): RedirectResponse
+    {
+        return $this->activate2fa($request);
+    }
 }
