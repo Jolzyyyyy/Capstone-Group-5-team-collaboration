@@ -91,6 +91,21 @@ class AuthenticatedSessionController extends Controller
         return redirect()->route('dashboard.redirect');
     }
 
+    public function redirectDashboard(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->canAccessAdminPortal()) {
+            return session('staff_otp_passed') === true
+                ? redirect()->route('admin.dashboard')
+                : redirect()->route('admin.otp.verify');
+        }
+
+        return session('customer_otp_passed') === true
+            ? redirect()->route('dashboard')
+            : redirect()->route('otp.verify');
+    }
+
     /**
      * Destroy an authenticated session (Logout).
      */
