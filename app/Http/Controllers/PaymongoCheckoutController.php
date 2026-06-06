@@ -3,16 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\PaymongoCheckoutException;
+use App\Services\PaymongoCheckoutSessionCreator;
 use App\Services\PaymongoWebhookHandler;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class PaymongoCheckoutController extends Controller
 {
-    public function __construct(private PaymongoWebhookHandler $paymongoWebhookHandler)
-    {
+    public function __construct(
+        private PaymongoWebhookHandler $paymongoWebhookHandler,
+        private PaymongoCheckoutSessionCreator $paymongoCheckoutSessionCreator
+    ) {
     }
 
     public function checkout(Request $request, ?Order $order = null)
@@ -86,81 +87,17 @@ class PaymongoCheckoutController extends Controller
             return back()->with('error', 'Invalid checkout total. Please try again.');
         }
 
-        $secretKey = $this->paymongoSecretKey();
-        if (!$secretKey) {
-            return redirect()
-                ->route('payment.checkout', $order)
-                ->with('error', 'PAYMONGO_SECRET_KEY is missing in .env. The order was saved, but online payment cannot start yet.');
-        }
-
-        $reference = $this->paymongoOrderReference($order);
-        $payload = [
-            'data' => [
-                'attributes' => [
-                    'send_email_receipt' => false,
-                    'show_description' => true,
-                    'show_line_items' => true,
-                    'line_items' => $this->lineItemsFromOrder($order),
-                    'payment_method_types' => $this->mapPaymentMethodTypes($paymentMethod),
-                    'description' => "Order #{$order->id} payment",
-                    'success_url' => route('payment.success', $order),
-                    'cancel_url' => route('payment.cancel', $order),
-                    'amount' => $amountInCentavos,
-                    'currency' => 'PHP',
-                    'reference_number' => $reference,
-                    'metadata' => [
-                        'order_id' => (string) $order->id,
-                        'customer_id' => (string) $order->user_id,
-                        'pm_reference_number' => $reference,
-                    ],
-                ],
-            ],
-        ];
-
         try {
-            $response = Http::withBasicAuth($secretKey, '')
-                ->acceptJson()
-                ->connectTimeout(5)
-                ->timeout(15)
-                ->post('https://api.paymongo.com/v1/checkout_sessions', $payload);
-        } catch (ConnectionException $exception) {
-            Log::error('PayMongo connection failed for order '.$order->id.': '.$exception->getMessage());
-
+            $checkoutSession = $this->paymongoCheckoutSessionCreator->create($order, $paymentMethod);
+        } catch (PaymongoCheckoutException $exception) {
             return redirect()
                 ->route('payment.checkout', $order)
-                ->with('error', 'PayMongo did not respond in time. Please try again.');
+                ->with('error', $exception->getMessage());
         }
-
-        if (!$response->successful()) {
-            Log::warning('PayMongo checkout failed for order '.$order->id, [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            return redirect()
-                ->route('payment.checkout', $order)
-                ->with('error', 'PayMongo error: '.$response->body());
-        }
-
-        $checkoutSessionId = data_get($response->json(), 'data.id');
-        $checkoutUrl = data_get($response->json(), 'data.attributes.checkout_url');
-
-        if (!$checkoutUrl) {
-            return redirect()
-                ->route('payment.checkout', $order)
-                ->with('error', 'No checkout_url returned by PayMongo.');
-        }
-
-        $order->forceFill([
-            'payment_status' => Order::PAYMENT_PENDING,
-            'payment_method' => $paymentMethod,
-            'paymongo_checkout_session_id' => $checkoutSessionId,
-            'payment_reference' => $reference,
-        ])->save();
 
         session()->put('payment_order_id', $order->id);
 
-        return redirect()->away($checkoutUrl);
+        return redirect()->away($checkoutSession['checkout_url']);
     }
 
     public function success(Request $request, Order $order)
@@ -206,17 +143,6 @@ class PaymongoCheckoutController extends Controller
         ]);
     }
 
-    private function mapPaymentMethodTypes(string $method): array
-    {
-        return match ($method) {
-            'gcash' => ['gcash'],
-            'card' => ['card'],
-            'grab_pay' => ['grab_pay'],
-            'paymaya' => ['paymaya'],
-            default => ['gcash'],
-        };
-    }
-
     private function authorizeCustomerOrder(Request $request, Order $order): void
     {
         abort_unless($this->customerOwnsOrder($request, $order), 403);
@@ -238,31 +164,6 @@ class PaymongoCheckoutController extends Controller
                 'subtotal' => (float) $item->subtotal,
             ];
         })->values()->all();
-    }
-
-    private function lineItemsFromOrder(Order $order): array
-    {
-        return collect($this->itemsFromOrder($order))->map(function (array $item) {
-            return [
-                'name' => $item['name'] ?? 'Item',
-                'quantity' => max(1, (int) ($item['qty'] ?? 1)),
-                'amount' => (int) round(((float) ($item['price'] ?? 0)) * 100),
-                'currency' => 'PHP',
-                'description' => $item['variation_label'] ?? null,
-            ];
-        })->values()->all();
-    }
-
-    private function paymongoOrderReference(Order $order): string
-    {
-        return 'ORDER-'.$order->id;
-    }
-
-    private function paymongoSecretKey(): ?string
-    {
-        $secretKey = trim((string) config('services.paymongo.secret_key', ''));
-
-        return $secretKey !== '' ? $secretKey : null;
     }
 
     private function getCheckoutItems(): array
