@@ -742,6 +742,94 @@ class CartFeatureTest extends TestCase
         $this->assertNotNull($order->fresh()->paid_at);
     }
 
+    public function test_paymongo_webhook_rejects_invalid_signature_when_secret_is_configured(): void
+    {
+        config(['services.paymongo.webhook_secret' => 'whsec_test']);
+
+        $this
+            ->withHeaders(['Paymongo-Signature' => 't=1778942400,te=invalid'])
+            ->postJson(route('payment.webhook', absolute: false), [
+                'data' => [
+                    'attributes' => [
+                        'type' => 'checkout_session.payment.paid',
+                    ],
+                ],
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_paymongo_webhook_marks_matching_order_as_failed(): void
+    {
+        [$service, $variation] = $this->createServiceWithVariation();
+        $customer = User::factory()->create([
+            'role' => User::ROLE_CUSTOMER,
+            'email_verified_at' => now(),
+        ]);
+        $order = $this->createOrderForCustomer($customer, $service, $variation, 1);
+        $order->forceFill([
+            'payment_status' => Order::PAYMENT_PENDING,
+            'paymongo_checkout_session_id' => 'cs_failed_123',
+            'payment_reference' => 'ORDER-'.$order->id,
+        ])->save();
+
+        $this
+            ->postJson(route('payment.webhook', absolute: false), [
+                'data' => [
+                    'type' => 'event',
+                    'attributes' => [
+                        'type' => 'payment.failed',
+                        'data' => [
+                            'id' => 'cs_failed_123',
+                            'type' => 'checkout_session',
+                            'attributes' => [
+                                'metadata' => [
+                                    'order_id' => (string) $order->id,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertJson(['message' => 'received']);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'status' => 'Pending',
+            'payment_status' => Order::PAYMENT_FAILED,
+        ]);
+    }
+
+    public function test_paid_order_does_not_start_a_new_paymongo_payment(): void
+    {
+        [$service, $variation] = $this->createServiceWithVariation();
+        $customer = User::factory()->create([
+            'role' => User::ROLE_CUSTOMER,
+            'email_verified_at' => now(),
+        ]);
+        $order = $this->createOrderForCustomer($customer, $service, $variation, 1);
+        $order->forceFill([
+            'payment_status' => Order::PAYMENT_PAID,
+            'payment_reference' => 'pay_existing_123',
+        ])->save();
+
+        config(['services.paymongo.secret_key' => 'sk_test_123']);
+        Http::fake();
+
+        $this
+            ->actingAs($customer)
+            ->withSession([
+                'customer_otp_passed' => true,
+            ])
+            ->post(route('payment.pay', $order, false), [
+                'payment_method' => 'gcash',
+            ])
+            ->assertRedirect(route('orders.my.show', $order, false))
+            ->assertSessionHas('success', 'This order has already been paid.');
+
+        Http::assertNothingSent();
+    }
+
     /**
      * @return array{0: \App\Models\Service, 1: \App\Models\ServiceVariation}
      */
