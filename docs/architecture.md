@@ -124,6 +124,20 @@ The first service-layer cleanup phase is complete for the service catalog:
 
 Stop the service catalog cleanup here unless a specific catalog bug appears. The next service-layer phase should be checkout and payment extraction, but that is higher risk because it touches order placement, PayMongo requests, payment webhooks, and cart/session behavior.
 
+## Checkout And Payment Status
+
+The checkout and payment service-layer cleanup is complete for the current separation concern:
+
+- `CheckoutController` owns checkout request flow, redirects, form validation, and handoff to payment.
+- `CheckoutCartSummary` owns checkout cart row normalization, totals, missing-print-file checks, and PayMongo configuration status.
+- `CheckoutOrderPlacer` owns order creation, order item and file persistence, fallback reviewed-item catalog resolution, cart clearing, and payment-order session storage.
+- `PaymongoCheckoutController` owns payment route flow, customer order authorization, success and cancel responses, and webhook endpoint responses.
+- `PaymongoCheckoutSessionCreator` owns PayMongo checkout-session payload creation, API calls, checkout URL handling, and order payment reference updates.
+- `PaymongoWebhookHandler` owns PayMongo webhook signature validation, order matching, and paid/failed payment status updates.
+- Feature tests cover cart checkout, missing files, order placement, PayMongo checkout requests, payment success, webhook paid/failed handling, invalid webhook signatures, and already-paid payment retry behavior.
+
+Stop the separation cleanup here. Future PRs should be driven by bugs, features, security needs, or API migration plans, not by more structural cleanup alone.
+
 ## Commit And Branch Rules
 
 Use small branches and small commits.
