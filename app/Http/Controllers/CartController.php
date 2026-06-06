@@ -193,7 +193,15 @@ class CartController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.name' => ['required', 'string'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:999'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.service_id' => ['nullable'],
+            'items.*.variation_id' => ['nullable'],
+            'items.*.service_item_id' => ['nullable', 'string'],
+            'items.*.category' => ['nullable', 'string'],
+            'items.*.variation_label' => ['nullable', 'string'],
+            'items.*.unit' => ['nullable', 'string'],
+            'items.*.image_path' => ['nullable', 'string'],
             'items.*.service_code' => ['nullable', 'string'],
             'items.*.price_type' => ['nullable', 'in:retail,bulk'],
         ]);
@@ -201,29 +209,32 @@ class CartController extends Controller
         $cart = [];
 
         foreach ($validated['items'] as $idx => $i) {
-            $key = $i['service_code'] ?: ('LS-' . $idx . '-' . uniqid());
+            $key = !empty($i['service_code']) ? $i['service_code'] : ('LS-' . $idx . '-' . uniqid());
+            $unitPrice = (float) ($i['unit_price'] ?? $i['price'] ?? 0);
 
             $cart[$key] = [
-                'name'       => $i['name'],
-                'category'   => null,
-                'unit'       => null,
-                'price'      => (float) $i['unit_price'], // ✅ unit price
-                'price_type' => $i['price_type'] ?? 'retail',
-                'qty'        => (int) $i['qty'],
-                'image_path' => null,
+                'service_id'      => (int) ($i['service_id'] ?? 0),
+                'variation_id'    => (int) ($i['variation_id'] ?? 0),
+                'service_item_id' => $i['service_item_id'] ?? $key,
+                'name'            => $i['name'],
+                'category'        => $i['category'] ?? null,
+                'variation_label' => $i['variation_label'] ?? null,
+                'unit'            => $i['unit'] ?? null,
+                'price'           => $unitPrice,
+                'price_type'      => $i['price_type'] ?? 'retail',
+                'qty'             => (int) $i['qty'],
+                'image_path'      => $i['image_path'] ?? null,
             ];
         }
 
         session()->put('cart', $cart);
-
-        // important: clear buy_now para cart-based checkout ang priority
         session()->forget('buy_now');
 
         return response()->json(['ok' => true]);
     }
 
     /**
-     * ✅ BUY NOW (Product Detail -> Laravel Session 'buy_now')
+     * BUY NOW (Product Detail -> Laravel Session 'buy_now')
      * POST /cart/buy-now
      *
      * Expects JSON:

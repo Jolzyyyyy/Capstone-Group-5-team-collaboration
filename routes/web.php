@@ -2,17 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\Request;
 
 // --- CUSTOMER CONTROLLERS ---
 use App\Http\Controllers\FrontPageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\CustomerPortalController;
-use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PaymongoCheckoutController;
+use App\Http\Controllers\SupportTicketController;
 
 // --- CUSTOMER AUTH CONTROLLERS ---
 use App\Http\Controllers\Auth\AuthenticatedSessionController; 
@@ -30,7 +30,6 @@ use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\SectionController as AdminSectionController;
-use App\Models\Service;
 
 // --- THIRD PARTY AUTH CONTROLLERS ---
 use App\Http\Controllers\GoogleController;
@@ -43,43 +42,59 @@ use App\Http\Controllers\Auth\FacebookController;
 */
 Route::get('/', fn () => redirect('/home'))->name('root');
 Route::get('/home', [FrontPageController::class, 'home'])->name('home');
-Route::get('/products', fn () => redirect('/services'))->name('landing.products');
+Route::get('/products', [FrontPageController::class, 'products'])->name('landing.products');
+Route::get('/search', [FrontPageController::class, 'home'])->name('landing.search');
 Route::get('/about', [FrontPageController::class, 'about'])->name('landing.about');
+Route::get('/aboutus', [FrontPageController::class, 'about'])->name('landing.aboutus');
 Route::get('/contact', [FrontPageController::class, 'contact'])->name('landing.contact');
-Route::get('/service-detail', [FrontPageController::class, 'serviceDetail'])->name('landing.service-detail');
-Route::get('/service-details', [FrontPageController::class, 'serviceDetail'])->name('landing.service-details');
-Route::get('/checkout', [FrontPageController::class, 'checkout'])->name('checkout.index');
+Route::get('/contactus', [FrontPageController::class, 'contact'])->name('landing.contactus');
+Route::middleware(['auth', 'role:customer', 'customer_otp'])->group(function () {
+    Route::get('/service-detail', [FrontPageController::class, 'serviceDetail'])->name('landing.service-detail');
+    Route::get('/service-details', [FrontPageController::class, 'serviceDetail'])->name('landing.service-details');
+    Route::get('/checkout', [FrontPageController::class, 'checkout'])->name('checkout.index');
+});
 
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
 
-Route::prefix('cart')->name('cart.')->group(function () {
+Route::middleware(['auth', 'role:customer', 'customer_otp'])->prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::post('/add/{service}', [CartController::class, 'add'])->name('add');
     Route::post('/update/{cartKey}', [CartController::class, 'update'])->name('update');
     Route::post('/remove/{service}', [CartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CartController::class, 'clear'])->name('clear');
+    Route::post('/sync', [CartController::class, 'syncCart'])->name('sync');
 });
+
+Route::get('/payment/checkout', [PaymongoCheckoutController::class, 'checkout'])->name('payment.checkout');
+Route::post('/payment/start', [PaymongoCheckoutController::class, 'start'])->name('payment.start');
+Route::post('/payment/pay', [PaymongoCheckoutController::class, 'pay'])->name('payment.pay');
+Route::get('/payment/success', [PaymongoCheckoutController::class, 'success'])->name('payment.success');
+Route::get('/payment/cancel', [PaymongoCheckoutController::class, 'cancel'])->name('payment.cancel');
+Route::get('/checkout.php', fn () => redirect('/checkout'));
 
 /*
 |--------------------------------------------------------------------------
 | 2. OTP & PASSWORD SETUP (STAY)
 |--------------------------------------------------------------------------
 */
+Route::get('/verify-account', [VerifyOtpController::class, 'showVerifyForm'])
+    ->name('customer.otp.verify');
+
+Route::get('/verify-account/otp', [VerifyOtpController::class, 'showVerifyForm'])
+    ->name('otp.verify');
+
+Route::get('/verify-otp-page', [VerifyOtpController::class, 'showVerifyForm'])
+    ->name('verify-account');
+
+Route::post('/verify-otp-submit', [VerifyOtpController::class, 'verify'])
+    ->name('customer.otp.submit');
+
+Route::post('/resend-otp', [VerifyOtpController::class, 'resend'])
+    ->name('customer.otp.resend');
+
 Route::middleware(['auth'])->group(function () {
-    
-    Route::get('/verify-account', [VerifyOtpController::class, 'showVerifyForm'])
-        ->name('customer.otp.verify');
 
-    Route::get('/verify-otp-page', [VerifyOtpController::class, 'showVerifyForm'])
-        ->name('verify-account'); 
-
-    Route::post('/verify-otp-submit', [VerifyOtpController::class, 'verify'])
-        ->name('customer.otp.submit');
-
-    Route::post('/resend-otp', [VerifyOtpController::class, 'resend'])
-        ->name('customer.otp.resend');
-    
     Route::get('/setup-password', [GoogleController::class, 'showSetupPassword'])->name('setup-password');
     Route::post('/setup-password-submit', [GoogleController::class, 'updateSetupPassword'])->name('password.setup.submit');
 
@@ -107,7 +122,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:customer', 'customer_otp'])->group(function () {
     
     // FIXED: Ngayon, kapag kinlick ang HOME sa sidebar, babalik ito sa main landing page ('welcome')
-    Route::get('/home', function () {
+    Route::get('/customer-home', function () {
         return redirect()->route('home'); 
     })->name('customer.home');
 
@@ -120,6 +135,7 @@ Route::middleware(['auth', 'role:customer', 'customer_otp'])->group(function () 
         Route::get('/', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/', [ProfileController::class, 'update'])->name('update');
         Route::patch('/backup-email', [ProfileController::class, 'updateBackupEmail'])->name('backup-email.update');
+        Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
     });
 
     // --- FIXED ORDERS SECTION PARA SA CUSTOMER ---
@@ -137,6 +153,24 @@ Route::middleware(['auth', 'role:customer', 'customer_otp'])->group(function () 
     Route::get('/settings', function() {
         return view('settings'); 
     })->name('settings');
+    Route::post('/settings/save', function(Request $request) {
+        $data = $request->validate([
+            'key' => ['required', 'string', 'max:120'],
+            'value' => ['nullable'],
+            'group' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $settings = session('customer_settings', []);
+        $group = $data['group'] ?? 'general';
+        $settings[$group][$data['key']] = $data['value'];
+        session(['customer_settings' => $settings]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Settings saved.',
+            'settings' => $settings[$group],
+        ]);
+    })->name('settings.save');
 
     // 4. SECURITY
     Route::get('/security', function() {
@@ -147,10 +181,9 @@ Route::middleware(['auth', 'role:customer', 'customer_otp'])->group(function () 
     Route::get('/help-center', function() {
         return view('help-center'); 
     })->name('help-center');
+    Route::post('/help-center/tickets', [SupportTicketController::class, 'store'])->name('help-center.tickets.store');
 
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
-    Route::post('/cart/sync', [CartController::class, 'syncCart'])->name('cart.sync');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('customer.logout');
 });
 
@@ -168,6 +201,7 @@ Route::middleware('guest')->group(function () {
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.update');
+    Route::post('reset-password/store', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
 /*
@@ -187,7 +221,7 @@ Route::middleware('guest')->prefix('p-co-2026')->group(function () {
 });
 
 // Admin Authenticated Routes
-Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('p-co-2026/admin')->group(function () {
     
     // Phase 1: Email OTP
     Route::get('/verify-access', [AdminAuthController::class, 'showOtpForm'])->name('admin.otp.verify');
@@ -199,7 +233,7 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
     Route::post('/security-2fa-verify', [SecurityController::class, 'verify2fa'])->name('admin.security.2fa.activate');
 
     // Admin Dashboard & Resources
-    Route::middleware(['role:admin,developer,admin_client'])->group(function () {
+    Route::middleware(['role:admin,developer,admin_client', 'admin.client.profile'])->group(function () {
         
         // 1. DASHBOARD
         Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
@@ -220,10 +254,13 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
         // 4. PRODUCTS
         Route::get('/products', [AdminController::class, 'products'])->name('admin.products');
         Route::get('/services', [ServiceController::class, 'adminIndex'])->name('admin.services.index');
-        Route::get('/services/create', [ServiceController::class, 'create'])->name('admin.services.create');
-        Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('admin.services.toggle');
         Route::middleware('role:developer,admin')->group(function () {
+            Route::get('/services/create', [ServiceController::class, 'create'])->name('admin.services.create');
+            Route::post('/services', [ServiceController::class, 'store'])->name('admin.services.store');
             Route::get('/services/{service}/edit', [ServiceController::class, 'edit'])->name('admin.services.edit');
+            Route::put('/services/{service}', [ServiceController::class, 'update'])->name('admin.services.update');
+            Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('admin.services.destroy');
+            Route::patch('/services/{service}/toggle', [ServiceController::class, 'toggleActive'])->name('admin.services.toggle');
         });
         
         // 5. RATES
@@ -251,12 +288,11 @@ Route::middleware(['auth'])->prefix('p-co-2026/admin')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'adminUpdate'])->name('admin.profile.update');
         Route::get('/reference-profile', [AdminClientProfileController::class, 'edit'])->name('admin.admin-client-profile.edit');
         Route::put('/reference-profile', [AdminClientProfileController::class, 'update'])->name('admin.admin-client-profile.update');
-        Route::resource('services-admin', ServiceController::class)->except(['index', 'show']);
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     });
 });
 
-Route::middleware(['auth', 'role:developer', 'admin'])->prefix('p-co-2026/developer')->name('developer.')->group(function () {
+Route::middleware(['auth', 'admin', 'role:developer'])->prefix('p-co-2026/developer')->name('developer.')->group(function () {
     Route::get('/orders', [AdminSectionController::class, 'orders'])->name('orders.index');
     Route::get('/services', [AdminSectionController::class, 'services'])->name('services.index');
     Route::get('/customers', [AdminSectionController::class, 'customers'])->name('customers.index');
@@ -285,5 +321,7 @@ if (file_exists(__DIR__ . '/auth.php')) {
 }
 
 // Routes para sa CRUD operations ng Customers
-Route::post('/admin/customers/save', [AdminController::class, 'saveCustomer'])->name('admin.customers.save');
-Route::delete('/admin/customers/delete/{id}', [AdminController::class, 'deleteCustomer'])->name('admin.customers.delete');
+Route::middleware(['auth', 'admin', 'role:developer,admin'])->group(function () {
+    Route::post('/admin/customers/save', [AdminController::class, 'saveCustomer'])->name('admin.customers.save');
+    Route::delete('/admin/customers/delete/{id}', [AdminController::class, 'deleteCustomer'])->name('admin.customers.delete');
+});

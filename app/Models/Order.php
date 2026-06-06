@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Builder;
 
 class Order extends Model
 {
@@ -31,19 +30,9 @@ class Order extends Model
         return $this->belongsTo(User::class, 'admin_client_id');
     }
 
-    public function adminClient()
-    {
-        return $this->belongsTo(User::class, 'admin_client_id');
-    }
-
     public function items()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    public function files()
-    {
-        return $this->hasMany(\App\Models\OrderFile::class);
     }
 
     public function files()

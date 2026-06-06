@@ -4,47 +4,70 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class PaymongoCheckoutController extends Controller
 {
     public function checkout(Request $request)
     {
-        $cartItems = $this->getCheckoutItems();
-
-        if (empty($cartItems)) {
-            return view('payment.checkout', [
-                'cartItems' => [],
-                'cartTotal' => 0,
-                'emptyMessage' => 'Your cart is empty. Please add items before checkout.',
-            ]);
-        }
-
-        $cartTotal = $this->computeTotal($cartItems);
-
-        return view('payment.checkout', [
-            'cartItems' => $cartItems,
-            'cartTotal' => $cartTotal,
-            'emptyMessage' => null,
-        ]);
+        return redirect('/checkout');
     }
 
     public function pay(Request $request)
     {
         $request->validate([
-            'payment_method' => ['required', 'in:gcash,card,grab_pay,paymaya'],
+            'payment_method' => ['required', 'in:gcash,card,grab_pay,paymaya,maya,bank'],
         ]);
 
+        try {
+            $checkoutUrl = $this->createCheckoutUrl($request);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return redirect()->away($checkoutUrl);
+    }
+
+    public function start(Request $request)
+    {
+        $request->validate([
+            'payment_method' => ['required', 'in:gcash,card,grab_pay,paymaya,maya,bank'],
+        ]);
+
+        try {
+            return response()->json([
+                'ok' => true,
+                'redirect_url' => $this->createCheckoutUrl($request),
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'ok' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    private function createCheckoutUrl(Request $request): string
+    {
         $cartItems = $this->getCheckoutItems();
 
         if (empty($cartItems)) {
-            return back()->with('error', 'No items found for checkout. Please add items first.');
+            throw new \RuntimeException('No items found for checkout. Please add items first.');
         }
 
         $cartTotal = $this->computeTotal($cartItems);
         $amountInCentavos = (int) round($cartTotal * 100);
 
         if ($amountInCentavos < 1) {
-            return back()->with('error', 'Invalid checkout total. Please try again.');
+            throw new \RuntimeException('Invalid checkout total. Please try again.');
+        }
+
+        if (in_array($request->payment_method, ['paymaya', 'maya'], true)) {
+            return $this->createMayaCheckoutUrl($request, $cartItems, $cartTotal);
         }
 
         $lineItems = collect($cartItems)->map(function ($item) {
@@ -60,15 +83,16 @@ class PaymongoCheckoutController extends Controller
             ];
         })->values()->all();
 
-        $secretKey = env('PAYMONGO_SECRET_KEY');
+        $secretKey = trim((string) config('services.paymongo.secret_key'));
         if (!$secretKey) {
-            return back()->with('error', 'PAYMONGO_SECRET_KEY is missing in .env');
+            throw new \RuntimeException('PAYMONGO_SECRET_KEY is missing in .env');
         }
 
         $successUrl = url('/payment/success');
         $cancelUrl  = url('/payment/cancel');
 
         $response = Http::withBasicAuth($secretKey, '')
+            ->timeout(30)
             ->acceptJson()
             ->post('https://api.paymongo.com/v1/checkout_sessions', [
                 'data' => [
@@ -88,27 +112,27 @@ class PaymongoCheckoutController extends Controller
             ]);
 
         if (!$response->successful()) {
-            return back()->with('error', 'PayMongo error: ' . $response->body());
+            throw new \RuntimeException('PayMongo error: ' . $response->body());
         }
 
         $checkoutUrl = data_get($response->json(), 'data.attributes.checkout_url');
         if (!$checkoutUrl) {
-            return back()->with('error', 'No checkout_url returned by PayMongo.');
+            throw new \RuntimeException('No checkout_url returned by PayMongo.');
         }
 
-        return redirect()->away($checkoutUrl);
+        return $checkoutUrl;
     }
 
     public function success(Request $request)
     {
         session()->forget('buy_now');
         session()->forget('cart');
-        return view('payment.success');
+        return redirect('/checkout?payment=success&ref=' . urlencode((string) $request->query('ref', '')));
     }
 
     public function cancel(Request $request)
     {
-        return view('payment.cancel');
+        return redirect('/checkout?payment=cancel&ref=' . urlencode((string) $request->query('ref', '')));
     }
 
     private function mapPaymentMethodTypes(string $method): array
@@ -117,9 +141,91 @@ class PaymongoCheckoutController extends Controller
             'gcash' => ['gcash'],
             'card' => ['card'],
             'grab_pay' => ['grab_pay'],
-            'paymaya' => ['paymaya'],
+            'paymaya', 'maya' => ['paymaya'],
+            'bank' => ['dob'],
             default => ['gcash'],
         };
+    }
+
+    private function createMayaCheckoutUrl(Request $request, array $cartItems, float $cartTotal): string
+    {
+        $publicKey = trim((string) config('services.maya.public_key'));
+        $checkoutUrl = trim((string) config('services.maya.checkout_url'));
+
+        if (!$publicKey) {
+            throw new \RuntimeException('MAYA_PUBLIC_KEY is missing in .env');
+        }
+        if (!$checkoutUrl) {
+            throw new \RuntimeException('MAYA_CHECKOUT_URL is missing in .env');
+        }
+
+        $reference = 'PFY-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6));
+        $items = collect($cartItems)->map(function ($item, $index) {
+            $name = (string) ($item['name'] ?? 'Print Item');
+            $qty = max(1, (int) ($item['qty'] ?? 1));
+            $price = round((float) ($item['price'] ?? 0), 2);
+
+            return [
+                'name' => Str::limit($name, 120, ''),
+                'code' => 'ITEM-' . ($index + 1),
+                'description' => Str::limit($name, 255, ''),
+                'quantity' => $qty,
+                'amount' => [
+                    'value' => $price,
+                    'currency' => 'PHP',
+                ],
+                'totalAmount' => [
+                    'value' => round($price * $qty, 2),
+                    'currency' => 'PHP',
+                ],
+            ];
+        })->values()->all();
+
+        $user = $request->user();
+        $nameParts = preg_split('/\s+/', trim((string) ($user?->name ?: 'Printify Customer'))) ?: [];
+        $firstName = Str::limit($nameParts[0] ?? 'Printify', 60, '');
+        $lastName = Str::limit(count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : 'Customer', 60, '');
+        $payload = [
+            'totalAmount' => [
+                'value' => round($cartTotal, 2),
+                'currency' => 'PHP',
+            ],
+            'buyer' => [
+                'firstName' => $firstName,
+                'lastName' => $lastName,
+                'contact' => [
+                    'email' => $user?->email ?: 'customer@printify.local',
+                ],
+            ],
+            'items' => $items,
+            'requestReferenceNumber' => $reference,
+            'redirectUrl' => [
+                'success' => url('/payment/success?ref=' . urlencode($reference)),
+                'failure' => url('/payment/cancel?ref=' . urlencode($reference)),
+                'cancel' => url('/payment/cancel?ref=' . urlencode($reference)),
+            ],
+        ];
+
+        $response = Http::withBasicAuth($publicKey, '')
+            ->timeout(30)
+            ->acceptJson()
+            ->asJson()
+            ->post($checkoutUrl, $payload);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Maya checkout error: ' . $response->body());
+        }
+
+        $body = $response->json();
+        $redirectUrl = data_get($body, 'redirectUrl')
+            ?: data_get($body, 'checkoutUrl')
+            ?: data_get($body, 'data.redirectUrl');
+
+        if (!$redirectUrl) {
+            throw new \RuntimeException('No redirect URL returned by Maya.');
+        }
+
+        return $redirectUrl;
     }
 
     /**

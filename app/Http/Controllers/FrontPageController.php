@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class FrontPageController extends Controller
 {
@@ -48,9 +49,13 @@ class FrontPageController extends Controller
 
     private function page(string $activeSection)
     {
-        $services = Schema::hasTable('services')
-            ? Service::where('is_active', 1)->with('activeVariations')->get()
-            : collect();
+        try {
+            $services = Schema::hasTable('services')
+                ? Service::where('is_active', 1)->with('activeVariations')->get()
+                : collect();
+        } catch (Throwable $exception) {
+            $services = collect();
+        }
 
         return view('welcome', compact('services', 'activeSection'));
     }
