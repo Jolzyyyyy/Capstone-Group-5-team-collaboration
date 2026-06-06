@@ -1,3 +1,7 @@
+@php
+    $paymongoConfigured = filled(trim((string) config('services.paymongo.secret_key')));
+@endphp
+
 <!doctype html>
 <html>
 <head>
@@ -143,6 +147,11 @@
             margin-bottom: 10px;
             font-weight: 600;
             font-size: 12px;
+        }
+        .setup-warning {
+            color:#991b1b;
+            background:#fff1f2;
+            border-color:#fecaca;
         }
         .empty {
             color: #555;
@@ -860,6 +869,12 @@
         @if(session('error'))
             <div class="error">{{ session('error') }}</div>
         @endif
+
+        @unless($paymongoConfigured)
+            <div class="error setup-warning">
+                PAYMONGO_SECRET_KEY is missing in .env. This saved order can retry online payment after the key is added and config cache is cleared.
+            </div>
+        @endunless
 
         {{-- ✅ show validation errors (no layout change) --}}
         @if($errors->any())

@@ -29,8 +29,8 @@ return [
     ],
 
     'paymongo' => [
-        'secret_key' => env('PAYMONGO_SECRET_KEY'),
-        'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
+        'secret_key' => trim((string) env('PAYMONGO_SECRET_KEY', '')) ?: null,
+        'webhook_secret' => trim((string) env('PAYMONGO_WEBHOOK_SECRET', '')) ?: null,
     ],
 
     'ses' => [

@@ -440,6 +440,56 @@ class CartFeatureTest extends TestCase
         $this->assertSame('artwork.pdf', $cart[$updatedKey]['attached_file']['original_name']);
     }
 
+    public function test_checkout_does_not_save_order_when_paymongo_secret_is_missing(): void
+    {
+        [$service, $variation] = $this->createServiceWithVariation();
+        $customer = User::factory()->create([
+            'role' => User::ROLE_CUSTOMER,
+            'email_verified_at' => now(),
+        ]);
+        $cartKey = "{$service->id}_{$variation->id}_retail";
+
+        config(['services.paymongo.secret_key' => null]);
+        Http::fake();
+
+        $this
+            ->actingAs($customer)
+            ->withSession([
+                'customer_otp_passed' => true,
+                'cart' => [
+                    $cartKey => [
+                        'service_id' => $service->id,
+                        'variation_id' => $variation->id,
+                        'service_item_id' => $variation->service_item_id,
+                        'name' => $service->name,
+                        'category' => $service->category,
+                        'variation_label' => $variation->variation_label,
+                        'unit' => $service->unit,
+                        'price' => 25,
+                        'price_type' => 'retail',
+                        'qty' => 2,
+                        'attached_file' => $this->attachedFileMetadata('order-artwork.pdf'),
+                    ],
+                ],
+            ])
+            ->from(route('checkout.index', absolute: false))
+            ->post(route('checkout.place', absolute: false), [
+                'customer_name' => 'PayMongo Missing',
+                'customer_email' => 'paymongo-missing@example.com',
+                'customer_phone' => '+63 912 345 6789',
+                'fulfillment_method' => 'pickup',
+                'customer_note' => 'Hold until payment is available.',
+                'payment_method' => 'gcash',
+                'print_file_confirmed' => '1',
+            ])
+            ->assertRedirect(route('checkout.index', absolute: false))
+            ->assertSessionHas('error', 'Online payment is not configured yet. Add PAYMONGO_SECRET_KEY in .env before placing PayMongo orders.');
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertArrayHasKey($cartKey, session('cart', []));
+        Http::assertNothingSent();
+    }
+
     public function test_checkout_places_order_with_service_page_attached_file(): void
     {
         [$service, $variation] = $this->createServiceWithVariation();

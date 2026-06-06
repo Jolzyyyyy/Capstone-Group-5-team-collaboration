@@ -115,7 +115,6 @@
 
             <div class="hero-text animate" id="homeText">
                 <img src="{{ asset('images/printify-co-logo.png') }}" alt="Printify & Co." class="hero-brand-logo">
-                <h1>Printify & Co.</h1>
                 <p class="hero-tagline">
                     Crafting Your Vision into Reality
                 </p>
