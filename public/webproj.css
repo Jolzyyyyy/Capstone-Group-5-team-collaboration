@@ -3561,6 +3561,14 @@ body.contact-active .top-nav-bar {
     gap: 22px;
 }
 
+.services-results-summary {
+    min-height: 18px;
+    margin: 18px 0 0;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .featured-service-card {
     min-width: 0;
     border: 1px solid #111;
@@ -3570,6 +3578,10 @@ body.contact-active .top-nav-bar {
     box-shadow: 0 16px 34px rgba(17, 24, 39, .08);
     cursor: pointer;
     transition: transform .22s ease, box-shadow .22s ease;
+}
+
+.featured-service-card[hidden] {
+    display: none;
 }
 
 .featured-service-card:hover,
@@ -3653,6 +3665,61 @@ body.contact-active .top-nav-bar {
 
 .featured-service-body button i {
     color: #ff5f16;
+}
+
+.featured-services-grid.is-list-view {
+    grid-template-columns: 1fr;
+}
+
+.featured-services-grid.is-list-view .featured-service-card {
+    display: grid;
+    grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+}
+
+.featured-services-grid.is-list-view .featured-service-card[hidden] {
+    display: none;
+}
+
+.featured-services-grid.is-list-view .featured-service-media {
+    aspect-ratio: auto;
+    min-height: 220px;
+}
+
+.featured-services-grid.is-list-view .featured-service-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.services-empty-state {
+    margin-top: 26px;
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 10px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    color: #6b7280;
+    text-align: center;
+}
+
+.services-empty-state[hidden] {
+    display: none;
+}
+
+.services-empty-state i {
+    color: #ff5f16;
+    font-size: 28px;
+}
+
+.services-empty-state strong {
+    color: #111;
+    font-size: 16px;
+}
+
+.services-empty-state span {
+    font-size: 13px;
 }
 
 @media (max-width: 1320px) {
@@ -3845,6 +3912,10 @@ body.contact-active .top-nav-bar {
     }
 
     .featured-services-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .featured-services-grid.is-list-view .featured-service-card {
         grid-template-columns: 1fr;
     }
 }

@@ -2454,6 +2454,92 @@ function initMap() {
     }
 }
 
+function initStorefrontServiceControls() {
+    const searchForm = document.getElementById('storefrontSearchForm');
+    const searchInput = document.getElementById('storefrontSearchInput');
+    const grid = document.getElementById('featuredServicesGrid');
+    const emptyState = document.getElementById('servicesEmptyState');
+    const summary = document.getElementById('servicesResultsSummary');
+    const sortSelect = document.getElementById('servicesSortSelect');
+    const filterButtons = Array.from(document.querySelectorAll('[data-service-filter]'));
+    const viewButtons = Array.from(document.querySelectorAll('[data-service-view]'));
+
+    if (!grid) return;
+
+    const cards = Array.from(grid.querySelectorAll('[data-service-card]'));
+    let activeFilter = 'all';
+
+    const applyFilters = () => {
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+            const title = card.dataset.serviceTitle || '';
+            const key = card.dataset.serviceKey || '';
+            const matchesFilter = activeFilter === 'all' || key === activeFilter;
+            const matchesSearch = query === '' || title.includes(query) || key.includes(query);
+            const isVisible = matchesFilter && matchesSearch;
+
+            card.hidden = !isVisible;
+            if (isVisible) visibleCount += 1;
+        });
+
+        if (emptyState) emptyState.hidden = visibleCount > 0;
+        if (summary) {
+            summary.textContent = query || activeFilter !== 'all'
+                ? `${visibleCount} service${visibleCount === 1 ? '' : 's'} found`
+                : '';
+        }
+    };
+
+    const applySort = () => {
+        const sortedCards = [...cards];
+        const direction = sortSelect?.value || 'popular';
+
+        if (direction !== 'popular') {
+            sortedCards.sort((a, b) => {
+                const first = a.dataset.serviceTitle || '';
+                const second = b.dataset.serviceTitle || '';
+                return direction === 'za' ? second.localeCompare(first) : first.localeCompare(second);
+            });
+        }
+
+        sortedCards.forEach((card) => grid.appendChild(card));
+        applyFilters();
+    };
+
+    searchForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        activeFilter = 'all';
+        filterButtons.forEach((button) => button.classList.toggle('active', button.dataset.serviceFilter === 'all'));
+        jumpTo('services');
+        applyFilters();
+    });
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    filterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            activeFilter = button.dataset.serviceFilter || 'all';
+            filterButtons.forEach((item) => item.classList.toggle('active', item.dataset.serviceFilter === activeFilter));
+            applyFilters();
+            jumpTo('services');
+        });
+    });
+
+    sortSelect?.addEventListener('change', applySort);
+
+    viewButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const view = button.dataset.serviceView || 'grid';
+            grid.classList.toggle('is-list-view', view === 'list');
+            viewButtons.forEach((item) => item.classList.toggle('active', item === button));
+        });
+    });
+
+    applySort();
+}
+
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     if (isLoggedIn) {
@@ -2468,6 +2554,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHero();
     handleContactForm();
     initMap();
+    initStorefrontServiceControls();
     hydrateCartFiles()
         .then(() => {
             persistCart();
