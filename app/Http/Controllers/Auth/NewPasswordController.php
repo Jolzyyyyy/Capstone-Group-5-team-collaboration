@@ -92,7 +92,6 @@ class NewPasswordController extends Controller
             'otp_email',
             'is_forgot_password',
             'auth_type',
-            'otp_passed',
         ]);
 
         /**

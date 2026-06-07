@@ -100,7 +100,6 @@ class GoogleAuthController extends Controller
             'password_reset_email',
             'password_reset_token',
             'is_forgot_password',
-            'otp_passed',
         ]);
 
         $otp = sprintf('%06d', mt_rand(0, 999999));
