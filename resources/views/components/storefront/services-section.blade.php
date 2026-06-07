@@ -78,9 +78,18 @@
                         <div class="featured-service-body">
                             <p>Printify &amp; Co.</p>
                             <h3>{{ Str::title(Str::lower($service['title'])) }}</h3>
-                            <button type="button">
-                                View Service <i class="fa-solid fa-arrow-right"></i>
-                            </button>
+                            <div class="featured-service-actions">
+                                <button type="button">
+                                    View Service <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="featured-service-quote"
+                                    onclick="event.stopPropagation(); prefillQuoteRequest(@js(Str::title(Str::lower($service['title']))));"
+                                >
+                                    Quote <i class="fa-regular fa-file-lines"></i>
+                                </button>
+                            </div>
                         </div>
                     </article>
                 @endforeach

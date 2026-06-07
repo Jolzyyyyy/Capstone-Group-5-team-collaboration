@@ -2423,15 +2423,35 @@ async function placeOrderNow() {
 }
 
 // --- FORMS & EXTERNAL APIS ---
+function prefillQuoteRequest(serviceName = '') {
+    const categoryInput = document.getElementById('contactCategory');
+    const messageInput = document.getElementById('contactMessage');
+    const selectedService = String(serviceName || '').trim();
+    const quoteMessage = selectedService
+        ? `Hi Printify & Co., I would like to request a quotation for ${selectedService}. Please share pricing, turnaround time, and file requirements.`
+        : 'Hi Printify & Co., I would like to request a quotation. Please share pricing, turnaround time, and file requirements.';
+
+    if (categoryInput) categoryInput.value = 'quotation';
+    if (messageInput && !messageInput.value.trim()) {
+        messageInput.value = quoteMessage;
+    }
+
+    jumpTo('contact');
+    setTimeout(() => {
+        (messageInput || document.getElementById('contactName'))?.focus();
+    }, 350);
+}
+
 function handleContactForm() {
     const btn = document.querySelector('.contact-form button');
     if (!btn) return;
 
     btn.addEventListener('click', (e) => {
         e.preventDefault();
-        const nameInput = document.querySelector('input[placeholder="Your Name"]');
-        const emailInput = document.querySelector('input[placeholder="Email Address"]');
-        const msgInput = document.querySelector('textarea');
+        const nameInput = document.getElementById('contactName');
+        const emailInput = document.getElementById('contactEmail');
+        const categoryInput = document.getElementById('contactCategory');
+        const msgInput = document.getElementById('contactMessage');
 
         if(!nameInput.value || !emailInput.value || !msgInput.value) return alert("Please fill in all fields.");
         
@@ -2443,6 +2463,7 @@ function handleContactForm() {
             btn.innerText = "SEND MESSAGE";
             btn.disabled = false;
             nameInput.value = ''; emailInput.value = ''; msgInput.value = '';
+            if (categoryInput) categoryInput.value = '';
         }, 1500);
     });
 }
