@@ -21,8 +21,9 @@
             </button>
         </form>
 
-        <button type="button" class="storefront-icon-btn" aria-label="Favorites">
+        <button type="button" class="storefront-icon-btn" id="storefrontFavoritesToggle" aria-label="Show saved services" aria-pressed="false">
             <i class="fa-regular fa-heart"></i>
+            <span class="favorites-badge" id="favoritesBadge" hidden>0</span>
         </button>
 
         <a onclick="toggleCart()" id="navCart" class="storefront-icon-btn storefront-cart-btn" style="cursor: pointer;" aria-label="Open cart">
