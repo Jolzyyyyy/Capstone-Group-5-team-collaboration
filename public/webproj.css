@@ -3685,8 +3685,15 @@ body.contact-active .top-nav-bar {
     line-height: 1.28;
 }
 
-.featured-service-body button {
+.featured-service-actions {
     margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.featured-service-body button {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -3697,6 +3704,10 @@ body.contact-active .top-nav-bar {
     font: 900 12px/1 'Poppins', sans-serif;
     text-transform: uppercase;
     cursor: pointer;
+}
+
+.featured-service-body .featured-service-quote {
+    color: #ff5f16;
 }
 
 .featured-service-body button i {

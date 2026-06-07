@@ -21,7 +21,7 @@
                     <button type="button" class="hero-primary-btn" onclick="jumpTo('services')">
                         Explore Services <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <a href="#contact" class="hero-secondary-btn" onclick="jumpTo('contact'); return false;">
+                    <a href="#contact" class="hero-secondary-btn" onclick="prefillQuoteRequest(); return false;">
                         Get a Quote <i class="fa-regular fa-file-lines"></i>
                     </a>
                 </div>

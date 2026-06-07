@@ -32,15 +32,15 @@
                 <h3 class="contact-panel-title">Send a Message</h3>
                 <p class="contact-form-intro">Tell us what you need and our team will get back to you with the right printing guidance.</p>
                 <form id="contactForm" class="contact-form">
-                    <input type="text" placeholder="Your Name">
-                    <input type="email" placeholder="Email Address">
-                    <select>
+                    <input id="contactName" type="text" placeholder="Your Name">
+                    <input id="contactEmail" type="email" placeholder="Email Address">
+                    <select id="contactCategory">
                         <option value="">Inquiry Category</option>
                         <option value="general">General Inquiry</option>
                         <option value="quotation">Request a Quotation</option>
                         <option value="service">Service Support</option>
                     </select>
-                    <textarea placeholder="Your Message" rows="5"></textarea>
+                    <textarea id="contactMessage" placeholder="Your Message" rows="5"></textarea>
                     <button type="button" class="contact-submit-btn">Send Message</button>
                     <p class="contact-form-note">An auto-response confirmation will be sent to your email.</p>
                 </form>
