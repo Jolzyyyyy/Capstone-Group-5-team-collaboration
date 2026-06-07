@@ -59,4 +59,42 @@ class EmailVerificationTest extends TestCase
             ->assertSessionHasErrors('otp')
             ->assertRedirect('/verify-email');
     }
+
+    public function test_email_otp_requires_an_expiry_timestamp(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $user->forceFill([
+            'otp_code' => '123456',
+            'otp_expires_at' => null,
+        ])->save();
+
+        $response = $this->actingAs($user)->from('/verify-email')->post(route('verification.verify'), [
+            'otp' => '123456',
+        ]);
+
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+        $response
+            ->assertSessionHasErrors('otp')
+            ->assertRedirect('/verify-email');
+    }
+
+    public function test_email_otp_rejects_expired_code(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $user->forceFill([
+            'otp_code' => '123456',
+            'otp_expires_at' => now()->subSecond(),
+        ])->save();
+
+        $response = $this->actingAs($user)->from('/verify-email')->post(route('verification.verify'), [
+            'otp' => '123456',
+        ]);
+
+        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+        $response
+            ->assertSessionHasErrors('otp')
+            ->assertRedirect('/verify-email');
+    }
 }

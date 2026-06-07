@@ -64,8 +64,8 @@ class VerifyEmailController extends Controller
 
         if (trim((string) $user->otp_code) === trim((string) $request->otp)) {
 
-            // Check expiration
-            if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->isPast()) {
+            // Strictly require a fresh OTP expiry timestamp on every verification.
+            if (!$user->otp_expires_at || Carbon::parse($user->otp_expires_at)->isPast()) {
                 $attempts = RateLimiter::hit($otpThrottleKey, User::EMAIL_OTP_LOCKOUT_SECONDS);
 
                 if ($attempts >= self::CUSTOMER_OTP_MAX_ATTEMPTS) {
