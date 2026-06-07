@@ -65,7 +65,13 @@
                                 alt="{{ $service['title'] }}"
                                 onerror="this.onerror=null;this.src='{{ asset('images/Prdcts1.jpg') }}';"
                             >
-                            <button type="button" class="featured-service-heart" aria-label="Save {{ $service['title'] }}">
+                            <button
+                                type="button"
+                                class="featured-service-heart"
+                                data-service-favorite="{{ $service['key'] }}"
+                                aria-label="Save {{ $service['title'] }}"
+                                aria-pressed="false"
+                            >
                                 <i class="fa-regular fa-heart"></i>
                             </button>
                         </div>

@@ -2461,13 +2461,59 @@ function initStorefrontServiceControls() {
     const emptyState = document.getElementById('servicesEmptyState');
     const summary = document.getElementById('servicesResultsSummary');
     const sortSelect = document.getElementById('servicesSortSelect');
+    const favoritesToggle = document.getElementById('storefrontFavoritesToggle');
+    const favoritesBadge = document.getElementById('favoritesBadge');
     const filterButtons = Array.from(document.querySelectorAll('[data-service-filter]'));
     const viewButtons = Array.from(document.querySelectorAll('[data-service-view]'));
+    const favoriteButtons = Array.from(document.querySelectorAll('[data-service-favorite]'));
 
     if (!grid) return;
 
     const cards = Array.from(grid.querySelectorAll('[data-service-card]'));
+    const storageKey = 'printifySavedServices';
     let activeFilter = 'all';
+    let showSavedOnly = false;
+
+    const readSavedServices = () => {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            return Array.isArray(parsed) ? new Set(parsed.map(String)) : new Set();
+        } catch (error) {
+            return new Set();
+        }
+    };
+
+    let savedServices = readSavedServices();
+
+    const saveServices = () => {
+        localStorage.setItem(storageKey, JSON.stringify([...savedServices]));
+    };
+
+    const updateFavoriteUi = () => {
+        favoriteButtons.forEach((button) => {
+            const key = button.dataset.serviceFavorite || '';
+            const isSaved = savedServices.has(key);
+            button.classList.toggle('is-saved', isSaved);
+            button.setAttribute('aria-pressed', String(isSaved));
+            button.setAttribute('aria-label', `${isSaved ? 'Remove saved' : 'Save'} service`);
+            const icon = button.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-solid', isSaved);
+                icon.classList.toggle('fa-regular', !isSaved);
+            }
+        });
+
+        if (favoritesBadge) {
+            const count = savedServices.size;
+            favoritesBadge.hidden = count === 0;
+            favoritesBadge.textContent = String(count);
+        }
+
+        if (favoritesToggle) {
+            favoritesToggle.classList.toggle('is-active', showSavedOnly);
+            favoritesToggle.setAttribute('aria-pressed', String(showSavedOnly));
+        }
+    };
 
     const applyFilters = () => {
         const query = (searchInput?.value || '').trim().toLowerCase();
@@ -2478,7 +2524,8 @@ function initStorefrontServiceControls() {
             const key = card.dataset.serviceKey || '';
             const matchesFilter = activeFilter === 'all' || key === activeFilter;
             const matchesSearch = query === '' || title.includes(query) || key.includes(query);
-            const isVisible = matchesFilter && matchesSearch;
+            const matchesSaved = !showSavedOnly || savedServices.has(key);
+            const isVisible = matchesFilter && matchesSearch && matchesSaved;
 
             card.hidden = !isVisible;
             if (isVisible) visibleCount += 1;
@@ -2486,7 +2533,7 @@ function initStorefrontServiceControls() {
 
         if (emptyState) emptyState.hidden = visibleCount > 0;
         if (summary) {
-            summary.textContent = query || activeFilter !== 'all'
+            summary.textContent = query || activeFilter !== 'all' || showSavedOnly
                 ? `${visibleCount} service${visibleCount === 1 ? '' : 's'} found`
                 : '';
         }
@@ -2511,6 +2558,8 @@ function initStorefrontServiceControls() {
     searchForm?.addEventListener('submit', (event) => {
         event.preventDefault();
         activeFilter = 'all';
+        showSavedOnly = false;
+        updateFavoriteUi();
         filterButtons.forEach((button) => button.classList.toggle('active', button.dataset.serviceFilter === 'all'));
         jumpTo('services');
         applyFilters();
@@ -2521,6 +2570,8 @@ function initStorefrontServiceControls() {
     filterButtons.forEach((button) => {
         button.addEventListener('click', () => {
             activeFilter = button.dataset.serviceFilter || 'all';
+            showSavedOnly = false;
+            updateFavoriteUi();
             filterButtons.forEach((item) => item.classList.toggle('active', item.dataset.serviceFilter === activeFilter));
             applyFilters();
             jumpTo('services');
@@ -2537,6 +2588,36 @@ function initStorefrontServiceControls() {
         });
     });
 
+    favoriteButtons.forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const key = button.dataset.serviceFavorite || '';
+            if (!key) return;
+
+            if (savedServices.has(key)) {
+                savedServices.delete(key);
+            } else {
+                savedServices.add(key);
+            }
+
+            saveServices();
+            updateFavoriteUi();
+            applyFilters();
+        });
+    });
+
+    favoritesToggle?.addEventListener('click', () => {
+        showSavedOnly = !showSavedOnly;
+        activeFilter = 'all';
+        filterButtons.forEach((button) => button.classList.toggle('active', button.dataset.serviceFilter === 'all'));
+        updateFavoriteUi();
+        applyFilters();
+        jumpTo('services');
+    });
+
+    updateFavoriteUi();
     applySort();
 }
 
