@@ -83,6 +83,8 @@ The app has four important roles:
 
 Role and OTP behavior belongs in controllers, middleware, policies, tests, or dedicated backend services. Blade files should only render the state they receive.
 
+See `docs/auth-otp-policy.md` for the current role-by-role OTP rules, active controllers, and removed legacy auth files.
+
 ## Service Catalog Boundaries
 
 Service catalog behavior should stay consistent across storefront, cart, checkout, and admin management.
