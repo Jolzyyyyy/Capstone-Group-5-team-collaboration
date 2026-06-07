@@ -55,12 +55,6 @@ class ConfirmablePasswordController extends Controller
             return redirect()->intended(route('admin.dashboard'));
         }
 
-        // Customer/User Flow
-        // Kung galing sila sa sensitive action, sinisiguro nating bypass na ang OTP check
-        if (!$request->session()->has('otp_passed')) {
-            $request->session()->put('otp_passed', true);
-        }
-
         return redirect()->intended(route('dashboard'));
     }
 }

@@ -93,7 +93,6 @@ class RegisteredUserController extends Controller
             'password_reset_email',
             'password_reset_token',
             'is_forgot_password',
-            'otp_passed',
         ]);
         $request->session()->put('otp_email', $user->email);
         $request->session()->put('auth_type', 'account_verification');

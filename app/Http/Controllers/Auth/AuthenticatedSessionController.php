@@ -50,7 +50,6 @@ class AuthenticatedSessionController extends Controller
             'password_reset_token',
             'is_forgot_password',
             'auth_type',
-            'otp_passed',
         ]);
 
         if ($user->isCustomer()) {
@@ -112,7 +111,6 @@ class AuthenticatedSessionController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $request->session()->forget([
-            'otp_passed',
             'otp_email',
             'auth_type',
             'customer_otp_passed',
