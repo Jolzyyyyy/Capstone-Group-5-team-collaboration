@@ -100,6 +100,8 @@ class GoogleAuthController extends Controller
             'password_reset_email',
             'password_reset_token',
             'is_forgot_password',
+            'auth_type',
+            'customer_otp_passed',
         ]);
 
         $otp = sprintf('%06d', mt_rand(0, 999999));
@@ -132,8 +134,6 @@ class GoogleAuthController extends Controller
 
         request()->session()->put('otp_email', $user->email);
         request()->session()->put('auth_type', 'account_verification');
-        request()->session()->forget('customer_otp_passed');
-
         return redirect()->route('otp.verify', [
             'email' => $user->email,
         ])->with('status', 'Google sign-in completed. Enter the verification code sent to your email to finish setup.');

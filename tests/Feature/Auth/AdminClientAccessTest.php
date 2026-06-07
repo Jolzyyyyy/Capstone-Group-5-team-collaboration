@@ -132,6 +132,96 @@ class AdminClientAccessTest extends TestCase
         Mail::assertSent(OTPVerificationMail::class);
     }
 
+    public function test_admin_login_requires_email_otp_before_dashboard(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'email' => 'admin@example.com',
+            'password' => Hash::make('Password1!'),
+            'email_verified_at' => null,
+            'otp_code' => '000000',
+            'otp_expires_at' => now()->subMinute(),
+        ]);
+
+        $response = $this
+            ->withSession([
+                'staff_otp_passed' => true,
+                'admin_verified' => true,
+                '2fa_passed' => true,
+            ])
+            ->post(route('admin.login.submit', absolute: false), [
+                'email' => 'admin@example.com',
+                'password' => 'Password1!',
+            ]);
+
+        $response
+            ->assertRedirect(route('admin.otp.verify', absolute: false))
+            ->assertSessionHas('needs_email_otp', true)
+            ->assertSessionHas('admin_email', 'admin@example.com')
+            ->assertSessionMissing('staff_otp_passed')
+            ->assertSessionMissing('admin_verified')
+            ->assertSessionMissing('2fa_passed');
+
+        $this->assertAuthenticatedAs($admin);
+        $this->assertNotNull($admin->fresh()->otp_code);
+        $this->assertTrue($admin->fresh()->otp_expires_at->isFuture());
+        Mail::assertSent(OTPVerificationMail::class);
+    }
+
+    public function test_fresh_admin_client_login_replaces_stale_otp_session_and_code(): void
+    {
+        Mail::fake();
+
+        $developer = User::factory()->create(['role' => User::ROLE_DEVELOPER]);
+        $adminClient = User::factory()->create([
+            'role' => User::ROLE_ADMIN_CLIENT,
+            'email' => 'fresh-client@example.com',
+            'password' => Hash::make('Password1!'),
+            'email_verified_at' => now(),
+            'approved_at' => now(),
+            'approved_by' => $developer->id,
+            'invitation_accepted_at' => now(),
+            'otp_code' => '111111',
+            'otp_expires_at' => now()->subMinute(),
+        ]);
+
+        $adminClient->adminClientProfile()->create([
+            'business_name' => 'Fresh Studio',
+            'contact_person' => 'Fresh Owner',
+            'contact_number' => '09172222222',
+            'business_address' => '123 Fresh Street',
+            'profile_completed_at' => now(),
+        ]);
+
+        $response = $this
+            ->withSession([
+                'staff_otp_passed' => true,
+                'admin_auth_passed' => true,
+                'admin_email' => 'stale-client@example.com',
+                'needs_email_otp' => true,
+            ])
+            ->post(route('admin.login.submit', absolute: false), [
+                'email' => 'fresh-client@example.com',
+                'password' => 'Password1!',
+            ]);
+
+        $adminClient->refresh();
+
+        $response
+            ->assertRedirect(route('admin.otp.verify', absolute: false))
+            ->assertSessionHas('admin_auth_passed', true)
+            ->assertSessionHas('admin_email', 'fresh-client@example.com')
+            ->assertSessionHas('needs_email_otp', true)
+            ->assertSessionMissing('staff_otp_passed');
+
+        $this->assertAuthenticatedAs($adminClient);
+        $this->assertNotSame('111111', $adminClient->otp_code);
+        $this->assertTrue($adminClient->otp_expires_at->isFuture());
+        Mail::assertSent(OTPVerificationMail::class);
+    }
+
     public function test_developer_login_bypasses_email_otp_and_opens_dashboard(): void
     {
         Mail::fake();

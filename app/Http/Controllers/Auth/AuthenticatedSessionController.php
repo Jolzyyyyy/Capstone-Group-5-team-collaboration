@@ -50,6 +50,7 @@ class AuthenticatedSessionController extends Controller
             'password_reset_token',
             'is_forgot_password',
             'auth_type',
+            'customer_otp_passed',
         ]);
 
         if ($user->isCustomer()) {
@@ -80,8 +81,6 @@ class AuthenticatedSessionController extends Controller
 
             $request->session()->put('otp_email', $user->email);
             $request->session()->put('auth_type', 'account_verification');
-            $request->session()->forget('customer_otp_passed');
-
             return redirect()->route('otp.verify', [
                 'email' => $user->email,
             ])->with('status', 'A 6-digit verification code has been sent to your email.');
