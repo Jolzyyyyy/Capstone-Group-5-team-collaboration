@@ -14,8 +14,8 @@
     </nav>
 
     <div class="hero-signin-container storefront-actions" id="authContainer">
-        <form class="storefront-search" role="search" onsubmit="jumpTo('services'); return false;">
-            <input type="search" placeholder="Search products or services..." aria-label="Search products or services">
+        <form class="storefront-search" id="storefrontSearchForm" role="search">
+            <input id="storefrontSearchInput" type="search" placeholder="Search products or services..." aria-label="Search products or services">
             <button type="submit" aria-label="Search">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
