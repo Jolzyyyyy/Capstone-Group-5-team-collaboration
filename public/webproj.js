@@ -2422,6 +2422,126 @@ async function placeOrderNow() {
     await checkoutSelected();
 }
 
+function initAboutSection() {
+    const about = document.getElementById('about');
+    if (!about) return;
+
+    const feedback = document.getElementById('aboutFeedback');
+    let feedbackTimer = null;
+    let countersStarted = false;
+
+    const showAboutFeedback = (message) => {
+        if (!feedback) return;
+        feedback.textContent = message;
+        feedback.classList.add('show');
+        clearTimeout(feedbackTimer);
+        feedbackTimer = setTimeout(() => feedback.classList.remove('show'), 1800);
+    };
+
+    const formatNumber = (num, suffix) => num.toLocaleString('en-US') + suffix;
+    const runCounters = () => {
+        if (countersStarted) return;
+        countersStarted = true;
+
+        about.querySelectorAll('.about-counter').forEach((counter) => {
+            const target = parseInt(counter.dataset.value, 10) || 0;
+            const suffix = counter.dataset.suffix || '';
+            const step = Math.max(1, Math.ceil(target / 42));
+            let value = 0;
+
+            counter.textContent = formatNumber(0, suffix);
+            const timer = setInterval(() => {
+                value += step;
+                if (value >= target) {
+                    value = target;
+                    clearInterval(timer);
+                }
+                counter.textContent = formatNumber(value, suffix);
+            }, 22);
+        });
+    };
+
+    if ('IntersectionObserver' in window) {
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) runCounters();
+            });
+        }, { threshold: 0.22 });
+        counterObserver.observe(about);
+    } else {
+        setTimeout(runCounters, 500);
+    }
+
+    about.querySelector('[data-about-contact]')?.addEventListener('click', () => {
+        jumpTo('contact');
+        showAboutFeedback('Contact section opened.');
+    });
+
+    const learnBtn = document.getElementById('aboutLearnBtn');
+    const moreText = document.getElementById('aboutMoreText');
+    learnBtn?.addEventListener('click', () => {
+        if (!moreText) return;
+        moreText.classList.toggle('show');
+        const isOpen = moreText.classList.contains('show');
+        learnBtn.innerHTML = isOpen
+            ? 'Show Less <i class="fa-solid fa-arrow-up"></i>'
+            : 'Learn More About Us <i class="fa-solid fa-arrow-right"></i>';
+        showAboutFeedback(isOpen ? 'More about us opened.' : 'About details closed.');
+    });
+
+    const valueCards = Array.from(about.querySelectorAll('[data-about-value]'));
+    valueCards.forEach((card) => {
+        card.addEventListener('click', () => {
+            valueCards.forEach((item) => item.classList.remove('is-active'));
+            card.classList.add('is-active');
+            const title = card.querySelector('h3')?.textContent?.trim();
+            if (title) showAboutFeedback(`${title} selected.`);
+        });
+    });
+
+    const content = {
+        mission: {
+            title: 'Our Mission',
+            text: [
+                'To deliver high-quality, affordable, and reliable printing services that help customers turn ideas, designs, and business materials into professional printed outputs.',
+                'We aim to make every transaction simple and stress-free through clear assistance, organized production, and consistent quality checked before release.',
+            ],
+        },
+        vision: {
+            title: 'Our Vision',
+            text: [
+                'To become a trusted local printing partner known for consistent quality, fast turnaround, modern production, and excellent customer experience.',
+                'We envision Printify & Co. as a reliable creative service provider that supports students, professionals, businesses, and organizations with accessible printing solutions.',
+            ],
+        },
+        process: {
+            title: 'Our Process',
+            text: [
+                'We guide customers through service selection, file checking, order confirmation, production scheduling, quality inspection, and safe order release or delivery.',
+            ],
+        },
+    };
+
+    const tabs = Array.from(about.querySelectorAll('[data-about-tab]'));
+    const mvTitle = document.getElementById('mvTitle');
+    const mvText = document.getElementById('mvText');
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const data = content[tab.dataset.aboutTab];
+            if (!data) return;
+
+            tabs.forEach((item) => item.classList.remove('active'));
+            tab.classList.add('active');
+            if (mvTitle) mvTitle.textContent = data.title;
+            if (mvText) {
+                mvText.innerHTML = data.text.map((paragraph) => `<p>${paragraph}</p>`).join('');
+            }
+            showAboutFeedback(`${data.title} loaded.`);
+        });
+    });
+}
+
 // --- FORMS & EXTERNAL APIS ---
 function prefillQuoteRequest(serviceName = '') {
     const categoryInput = document.getElementById('contactCategory');
@@ -2657,6 +2777,7 @@ document.addEventListener('DOMContentLoaded', () => {
     handleContactForm();
     initMap();
     initStorefrontServiceControls();
+    initAboutSection();
     hydrateCartFiles()
         .then(() => {
             persistCart();
