@@ -2432,6 +2432,7 @@ function initAboutSection() {
 
     const showAboutFeedback = (message) => {
         if (!feedback) return;
+        if (!String(message || '').trim()) return;
         feedback.textContent = message;
         feedback.classList.add('show');
         clearTimeout(feedbackTimer);
