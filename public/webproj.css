@@ -1942,6 +1942,16 @@ body.user-logged-in #navCart {
     letter-spacing: 0;
 }
 
+.contact-section::before {
+    content: "";
+    display: block;
+    width: min(260px, 42vw);
+    height: 6px;
+    margin: 0 auto 30px;
+    border-radius: 999px;
+    background: #111827;
+}
+
 .contact-container {
     width: 100%;
     max-width: 1450px;
