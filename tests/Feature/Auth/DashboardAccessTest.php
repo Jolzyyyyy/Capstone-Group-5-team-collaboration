@@ -47,6 +47,31 @@ class DashboardAccessTest extends TestCase
             ->assertSessionHas('otp_email', $customer->email);
     }
 
+    public function test_customer_portal_pages_render_for_verified_customer(): void
+    {
+        $customer = User::factory()->create([
+            'role' => User::ROLE_CUSTOMER,
+            'email_verified_at' => now(),
+        ]);
+
+        $pages = [
+            'orders.my.index' => 'My Orders',
+            'customer.notifications' => 'Notifications',
+            'customer.security' => 'Security & Privacy',
+            'customer.settings' => 'Settings',
+            'customer.help' => 'Help Center',
+        ];
+
+        foreach ($pages as $routeName => $expectedText) {
+            $this
+                ->actingAs($customer)
+                ->withSession(['customer_otp_passed' => true])
+                ->get(route($routeName, absolute: false))
+                ->assertOk()
+                ->assertSee($expectedText);
+        }
+    }
+
     public function test_developer_dashboard_renders_developer_controls(): void
     {
         $developer = User::factory()->create([

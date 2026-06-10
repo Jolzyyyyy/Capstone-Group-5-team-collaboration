@@ -1256,9 +1256,9 @@
 
                     <section class="sp-card"><div class="sp-card-pad">
                         <div class="sp-row-left"><span class="sp-icon"><i class="fa-solid fa-key"></i></span><div><h2 class="sp-card-title">Change Password</h2><p class="sp-card-desc">Use a strong password that you don’t use on other websites.</p></div></div>
-                        <form method="POST" action="{{ route('password.change') }}">
+                        <form method="POST" action="{{ route('profile.update') }}">
                             @csrf
-                            @method('put')
+                            @method('patch')
                             <div class="sp-field"><label for="current_password">Current Password</label><div class="sp-input-wrap"><input id="current_password" class="sp-input" type="password" name="current_password" value="••••••••••••" autocomplete="current-password"><button class="sp-eye" type="button" data-toggle-pass><i class="fa-regular fa-eye"></i></button></div></div>
                             <div class="sp-field"><label for="password">New Password</label><div class="sp-input-wrap"><input id="password" class="sp-input" type="password" name="password" value="••••••••••" autocomplete="new-password"><button class="sp-eye" type="button" data-toggle-pass><i class="fa-regular fa-eye"></i></button></div><div class="sp-strength"><i></i><i></i><i></i><i></i><i class="off"></i><span style="font-size:12px;color:var(--sp-green);font-weight:800">Strong</span></div><p class="sp-card-desc">Use 8 or more characters with a mix of letters, numbers &amp; symbols.</p></div>
                             <div class="sp-field"><label for="password_confirmation">Confirm New Password</label><div class="sp-input-wrap"><input id="password_confirmation" class="sp-input" type="password" name="password_confirmation" value="••••••••••" autocomplete="new-password"><button class="sp-eye" type="button" data-toggle-pass><i class="fa-regular fa-eye"></i></button></div></div>

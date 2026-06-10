@@ -92,7 +92,7 @@
             'step' => $statusStep($order->status ?? ''),
             'icon' => $visual['icon'],
             'tone' => $visual['tone'],
-            'url' => route('my-orders.show', $order->id),
+            'url' => route('orders.my.show', $order->id),
         ];
     });
 @endphp
@@ -198,7 +198,7 @@
                         <button class="co-action" type="button" onclick="focusOrderSearch()"><span class="co-mini-icon blue"><i class="fa-solid fa-magnifying-glass"></i></span><span><strong>Track Order</strong><small>Check delivery status</small></span><i class="fa-solid fa-chevron-right"></i></button>
                         <button class="co-action" type="button" onclick="exportOrderSummary()"><span class="co-mini-icon green"><i class="fa-solid fa-download"></i></span><span><strong>Download Invoice</strong><small>Get order invoice</small></span><i class="fa-solid fa-chevron-right"></i></button>
                         <button class="co-action" type="button" onclick="location.href='{{ route('services.index') }}'"><span class="co-mini-icon purple"><i class="fa-solid fa-rotate-right"></i></span><span><strong>Reorder</strong><small>Order again quickly</small></span><i class="fa-solid fa-chevron-right"></i></button>
-                        <button class="co-action" type="button" onclick="location.href='{{ route('help-center') }}#support-ticket'"><span class="co-mini-icon red"><i class="fa-solid fa-headset"></i></span><span><strong>Contact Support</strong><small>Get help from team</small></span><i class="fa-solid fa-chevron-right"></i></button>
+                        <button class="co-action" type="button" onclick="location.href='{{ route('customer.help') }}#support-ticket'"><span class="co-mini-icon red"><i class="fa-solid fa-headset"></i></span><span><strong>Contact Support</strong><small>Get help from team</small></span><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
             </section>
@@ -224,7 +224,7 @@
                         <div class="co-break-row"><span>Tax (12%)</span><strong id="selectedTax">{{ $selectedOrder ? '₱' . number_format($moneyValue($selectedOrder) * .12, 2) : '₱0.00' }}</strong></div>
                         <div class="co-break-row"><span>Total Amount</span><strong id="selectedTotal" style="color:var(--co-orange)">{{ $selectedOrder ? '₱' . number_format($moneyValue($selectedOrder), 2) : '₱0.00' }}</strong></div>
                     </div>
-                    <button id="selectedDetailsLink" type="button" data-href="{{ $selectedOrder ? route('my-orders.show', $selectedOrder->id) : '' }}" class="co-btn" style="width:100%" onclick="openSelectedDetails()"><i class="fa-regular fa-eye"></i>View Order Details</button>
+                    <button id="selectedDetailsLink" type="button" data-href="{{ $selectedOrder ? route('orders.my.show', $selectedOrder->id) : '' }}" class="co-btn" style="width:100%" onclick="openSelectedDetails()"><i class="fa-regular fa-eye"></i>View Order Details</button>
                 </div>
             </section>
         </aside>
