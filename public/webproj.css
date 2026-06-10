@@ -1936,16 +1936,16 @@ body.user-logged-in #navCart {
     width: 100%;
     background: #fff;
     color: var(--contact-text);
-    padding: 42px 18px 70px 100px;
+    padding: 34px 20px 70px;
     font-family: "Inter", "Poppins", Arial, sans-serif;
     font-weight: 400;
     letter-spacing: 0;
 }
 
 .contact-container {
-    width: 100%;
+    width: min(1450px, calc(100% - 118px));
     max-width: 1450px;
-    margin: 0;
+    margin: 0 18px 0 100px;
 }
 
 .contact-head {
@@ -2010,6 +2010,15 @@ body.user-logged-in #navCart {
 .contact-toast.show {
     opacity: 1;
     transform: translate(-50%, 0);
+}
+
+.contact-toast:empty {
+    display: none;
+}
+
+.contact-toast.show:empty {
+    display: none;
+    opacity: 0;
 }
 
 .contact-grid {
@@ -2626,12 +2635,17 @@ body.user-logged-in #navCart {
 
 @media (max-width: 1320px) {
     .contact-section {
-        padding-left: 40px;
-        padding-right: 30px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .contact-container {
+        width: min(1270px, calc(100% - 118px));
+        margin: 0 18px 0 100px;
     }
 
     .contact-grid {
-        grid-template-columns: 400px 1fr 340px;
+        grid-template-columns: 400px minmax(0, 1fr) 300px;
         gap: 18px;
     }
 }
@@ -2644,6 +2658,7 @@ body.user-logged-in #navCart {
     .contact-container {
         max-width: 100%;
         margin: 0 auto;
+        width: 100%;
     }
 
     .contact-grid {

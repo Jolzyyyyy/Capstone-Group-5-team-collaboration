@@ -2567,15 +2567,21 @@ function handleContactForm() {
     const btn = document.querySelector('.contact-form button');
     const toast = document.getElementById('contactToast');
     const toastFeedback = (message) => {
+        const cleanMessage = String(message || '').trim();
+        if (!cleanMessage) return;
+
         if (!toast) {
-            alert(message);
+            alert(cleanMessage);
             return;
         }
 
-        toast.textContent = message;
+        toast.textContent = cleanMessage;
         toast.classList.add('show');
         clearTimeout(window.contactToastTimer);
-        window.contactToastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+        window.contactToastTimer = setTimeout(() => {
+            toast.classList.remove('show');
+            toast.textContent = '';
+        }, 2400);
     };
 
     document.querySelectorAll('[data-open-map]').forEach((mapButton) => {
