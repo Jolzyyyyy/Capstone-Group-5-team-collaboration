@@ -2565,6 +2565,46 @@ function prefillQuoteRequest(serviceName = '') {
 
 function handleContactForm() {
     const btn = document.querySelector('.contact-form button');
+    const toast = document.getElementById('contactToast');
+    const toastFeedback = (message) => {
+        if (!toast) {
+            alert(message);
+            return;
+        }
+
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(window.contactToastTimer);
+        window.contactToastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+    };
+
+    document.querySelectorAll('[data-open-map]').forEach((mapButton) => {
+        mapButton.addEventListener('click', () => {
+            toastFeedback('Opening map directions...');
+            window.open('https://www.google.com/maps/search/?api=1&query=Makati+City+Metro+Manila+Philippines', '_blank');
+        });
+    });
+
+    document.querySelectorAll('[data-contact-quick]').forEach((quickButton) => {
+        quickButton.addEventListener('click', () => {
+            const topic = quickButton.dataset.contactQuick || 'Contact request';
+            const categoryInput = document.getElementById('contactCategory');
+            const turnaroundInput = document.getElementById('contactTurnaround');
+            const messageInput = document.getElementById('contactMessage');
+
+            if (topic === 'Turnaround Time' && turnaroundInput) turnaroundInput.value = 'rush';
+            if ((topic === 'Request a Quote' || topic === 'File Guide') && categoryInput) categoryInput.value = 'quotation';
+
+            if (messageInput) {
+                messageInput.value = `Hi Printify & Co., I need help with ${topic}.`;
+                messageInput.focus();
+                messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            toastFeedback(`${topic} selected.`);
+        });
+    });
+
     if (!btn) return;
 
     btn.addEventListener('click', (e) => {
@@ -2574,14 +2614,18 @@ function handleContactForm() {
         const categoryInput = document.getElementById('contactCategory');
         const msgInput = document.getElementById('contactMessage');
 
-        if(!nameInput.value || !emailInput.value || !msgInput.value) return alert("Please fill in all fields.");
+        if(!nameInput.value || !emailInput.value || !msgInput.value) {
+            toastFeedback('Please fill in all required fields.');
+            return;
+        }
         
-        btn.innerText = "SENDING...";
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = "SENDING...";
         btn.disabled = true;
 
         setTimeout(() => {
-            alert(`Thank you, ${nameInput.value}! Your message has been sent.`);
-            btn.innerText = "SEND MESSAGE";
+            toastFeedback(`Thank you, ${nameInput.value}! Your message has been sent.`);
+            btn.innerHTML = originalContent;
             btn.disabled = false;
             nameInput.value = ''; emailInput.value = ''; msgInput.value = '';
             if (categoryInput) categoryInput.value = '';
